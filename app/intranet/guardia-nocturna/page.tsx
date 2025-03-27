@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -25,50 +25,6 @@ const camasData = [
   { number: 12, status: "disponible", name: null, rank: null },
 ]
 
-// Datos estáticos para las reservas
-const reservasData = [
-  {
-    id: 1,
-    usuario: "Juan Pérez",
-    rango: "Capitán",
-    cama: 1,
-    fecha: new Date().toISOString().split("T")[0],
-    horario: "20:00 - 08:00",
-  },
-  {
-    id: 2,
-    usuario: "María García",
-    rango: "Teniente",
-    cama: 2,
-    fecha: new Date().toISOString().split("T")[0],
-    horario: "20:00 - 08:00",
-  },
-  {
-    id: 3,
-    usuario: "Carlos López",
-    rango: "Sargento",
-    cama: 5,
-    fecha: new Date().toISOString().split("T")[0],
-    horario: "20:00 - 08:00",
-  },
-  {
-    id: 4,
-    usuario: "Ana Martínez",
-    rango: "Oficial",
-    cama: 8,
-    fecha: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split("T")[0],
-    horario: "20:00 - 08:00",
-  },
-  {
-    id: 5,
-    usuario: "Roberto Sánchez",
-    rango: "Bombero",
-    cama: 11,
-    fecha: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split("T")[0],
-    horario: "20:00 - 08:00",
-  },
-]
-
 // Datos estáticos para el historial
 const historialGuardias = [
   { date: "15/03/2024", cama: 3, horario: "20:00 - 08:00" },
@@ -81,18 +37,6 @@ const historialGuardias = [
 export default function GuardiaNocturna() {
   const [activeTab, setActiveTab] = useState("reservas")
   const [isAdmin, setIsAdmin] = useState(true) // Simulamos que el usuario es admin
-  const [currentDate, setCurrentDate] = useState("")
-  const [reservasHoy, setReservasHoy] = useState<typeof reservasData>([])
-
-  useEffect(() => {
-    // Formatear la fecha actual
-    const today = new Date().toISOString().split("T")[0]
-    setCurrentDate(today)
-
-    // Filtrar reservas para la fecha actual
-    const reservasDelDia = reservasData.filter((reserva) => reserva.fecha === today)
-    setReservasHoy(reservasDelDia)
-  }, [])
 
   return (
     <div className="space-y-6">
@@ -135,24 +79,13 @@ export default function GuardiaNocturna() {
         </TabsList>
         <TabsContent value="reservas" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2">
               <Card className="bg-gray-800 border-gray-700">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="space-y-1">
-                    <CardTitle className="text-white">Disponibilidad de Camas (Hoy)</CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Estado actual de las camas para la guardia de hoy -{" "}
-                      {new Date().toLocaleDateString("es-ES", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-blue-600">
-                    {camasData.filter((c) => c.status === "disponible").length} disponibles
-                  </Badge>
+                <CardHeader>
+                  <CardTitle className="text-white">Disponibilidad de Camas</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Estado actual de las camas para la guardia nocturna
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -186,45 +119,6 @@ export default function GuardiaNocturna() {
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white">Reservas de Hoy</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Personal asignado a guardia nocturna para hoy
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {reservasHoy.length > 0 ? (
-                    <div className="space-y-4">
-                      {reservasHoy.map((reserva) => (
-                        <div key={reserva.id} className="flex items-center justify-between p-4 bg-gray-750 rounded-lg">
-                          <div className="flex items-center">
-                            <div className="p-2 bg-red-900/50 rounded-lg mr-4">
-                              <User className="h-5 w-5 text-red-400" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-white">{reserva.usuario}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs py-0 h-5 px-1.5 border-gray-600">
-                                  {reserva.rango}
-                                </Badge>
-                                <span className="text-xs text-gray-400">Cama {reserva.cama}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <Badge className="bg-blue-900/30 text-blue-400">{reserva.horario}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      <Clock className="h-8 w-8 mx-auto mb-2" />
-                      <p>No hay reservas para hoy</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
