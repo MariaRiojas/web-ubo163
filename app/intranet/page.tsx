@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Shield, Flame, Lock, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Link from "next/link"
+import { authenticateUser } from "@/lib/auth"
 
 export default function IntranetLogin() {
   const router = useRouter()
@@ -19,10 +19,6 @@ export default function IntranetLogin() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  // Credenciales de acceso
-  const ADMIN_USER = "admin"
-  const ADMIN_PASSWORD = "Bomberos2024"
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -30,8 +26,13 @@ export default function IntranetLogin() {
 
     // Simulamos una pequeña demora para dar sensación de procesamiento
     setTimeout(() => {
-      if (username === ADMIN_USER && password === ADMIN_PASSWORD) {
-        // Login exitoso
+      const user = authenticateUser(username, password)
+
+      if (user) {
+        // Guardamos los datos del usuario en localStorage
+        localStorage.setItem('currentUser', JSON.stringify(user))
+
+        // Login exitoso - redirigir según el rol
         router.push("/intranet/dashboard")
       } else {
         // Login fallido
@@ -42,38 +43,43 @@ export default function IntranetLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-red-900 to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Efecto de fondo animado */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10"></div>
+      <div className="absolute top-20 left-20 w-72 h-72 bg-red-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
+      <div className="absolute bottom-20 right-20 w-72 h-72 bg-amber-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style={{animationDelay: '1s'}}></div>
+
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="relative transform transition-transform duration-300 hover:scale-110 group">
-              <Shield className="h-16 w-16 text-red-500" />
-              <Flame className="h-6 w-6 text-amber-400 absolute -right-1 -bottom-1 animate-pulse" />
+              <Shield className="h-20 w-20 text-white drop-shadow-2xl" />
+              <Flame className="h-8 w-8 text-amber-300 absolute -right-2 -bottom-2 animate-pulse drop-shadow-lg" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Intranet Bomberos</h1>
-          <p className="text-red-200">Acceso exclusivo para personal autorizado</p>
+          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">Bomberos Ancón 163</h1>
+          <p className="text-red-100 text-lg drop-shadow">Intranet - Acceso Seguro</p>
         </div>
 
-        <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-md text-white">
+        <Card className="border-0 shadow-2xl glass-strong backdrop-blur-xl text-white">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center text-gray-300">
+            <CardTitle className="text-2xl text-center text-white">Iniciar Sesión</CardTitle>
+            <CardDescription className="text-center text-red-100">
               Ingrese sus credenciales para acceder al sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
-              <Alert variant="destructive" className="mb-4 bg-red-900/50 border-red-800 text-white">
+              <Alert variant="destructive" className="mb-4 bg-red-900/50 border-red-700 text-white backdrop-blur-sm">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>Error de Autenticación</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             <form onSubmit={handleLogin}>
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-gray-200">
+                  <Label htmlFor="username" className="text-white font-medium">
                     Usuario
                   </Label>
                   <Input
@@ -82,15 +88,15 @@ export default function IntranetLogin() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="bg-white/20 border-white/10 text-white placeholder:text-gray-400"
+                    className="bg-white/20 border-white/30 text-white placeholder:text-red-200/60 backdrop-blur-sm focus:bg-white/30 focus:border-red-300 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-gray-200">
+                    <Label htmlFor="password" className="text-white font-medium">
                       Contraseña
                     </Label>
-                    <Link href="#" className="text-sm text-red-300 hover:text-white transition-colors">
+                    <Link href="#" className="text-sm text-red-200 hover:text-white transition-colors">
                       ¿Olvidó su contraseña?
                     </Link>
                   </div>
@@ -101,12 +107,12 @@ export default function IntranetLogin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-white/20 border-white/10 text-white placeholder:text-gray-400"
+                    className="bg-white/20 border-white/30 text-white placeholder:text-red-200/60 backdrop-blur-sm focus:bg-white/30 focus:border-red-300 transition-all"
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg shadow-red-600/20 hover:shadow-red-600/30 transform hover:scale-105 transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mt-2"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -136,7 +142,7 @@ export default function IntranetLogin() {
                   ) : (
                     <div className="flex items-center">
                       <Lock className="mr-2 h-4 w-4" />
-                      Acceder
+                      Acceder al Sistema
                     </div>
                   )}
                 </Button>
@@ -144,19 +150,26 @@ export default function IntranetLogin() {
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <div className="text-center text-sm text-gray-300">
-              <p>Credenciales de demostración:</p>
-              <p className="font-mono bg-white/10 px-2 py-1 rounded mt-1">Usuario: admin | Contraseña: Bomberos2024</p>
-            </div>
-            <div className="text-center text-sm text-gray-300">
-              <Link href="/" className="text-red-300 hover:text-white transition-colors">
-                Volver al sitio principal
+            <div className="text-center text-sm text-red-100">
+              <Link href="/" className="text-white hover:text-red-200 transition-colors font-medium underline decoration-dotted">
+                ← Volver al sitio público
               </Link>
+            </div>
+            <div className="text-center text-xs text-red-200/80 border-t border-white/20 pt-4 w-full">
+              <p>Sistema de gestión interna</p>
+              <p className="mt-1">Compañía de Bomberos Voluntarios Ancón N° 163</p>
             </div>
           </CardFooter>
         </Card>
+
+        {/* Nota de seguridad */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-red-100 glass px-4 py-3 rounded-lg backdrop-blur-sm">
+            <Lock className="inline h-4 w-4 mr-2" />
+            Acceso restringido solo para personal autorizado
+          </p>
+        </div>
       </div>
     </div>
   )
 }
-

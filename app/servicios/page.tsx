@@ -1,256 +1,256 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { MainNav } from "@/components/main-nav"
+import { MainFooter } from "@/components/main-footer"
 import {
   Flame,
   Car,
-  Anchor,
-  PawPrintIcon as Paw,
+  Mountain,
   Stethoscope,
   AlertTriangle,
-  Shield,
   Award,
-  Calendar,
-  Send,
-  CheckCircle,
+  GraduationCap,
+  CheckCircle2,
+  Phone,
 } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
 
 export default function ServiciosPage() {
+  // Servicios de emergencia
+  const emergencias = [
+    {
+      icon: Flame,
+      titulo: "Incendios Estructurales y Forestales",
+      descripcion: "Respuesta rápida y profesional ante incendios en edificaciones, viviendas y áreas forestales.",
+      color: "from-red-500 to-red-700",
+    },
+    {
+      icon: Car,
+      titulo: "Accidentes Vehiculares",
+      descripcion: "Rescate y excarcelación de víctimas en accidentes de tránsito con equipamiento especializado.",
+      color: "from-red-600 to-red-800",
+    },
+    {
+      icon: Mountain,
+      titulo: "Rescate con Cuerda",
+      descripcion: "Operaciones de rescate vertical en altura, espacios confinados y terrenos difíciles.",
+      color: "from-red-700 to-red-900",
+    },
+    {
+      icon: Mountain,
+      titulo: "Rescate Animal",
+      descripcion: "Rescate seguro de mascotas y animales en situaciones de peligro o lugares de difícil acceso.",
+      color: "from-amber-500 to-amber-700",
+    },
+    {
+      icon: Stethoscope,
+      titulo: "Emergencias Médicas",
+      descripcion: "Atención prehospitalaria y primeros auxilios avanzados en escena de emergencia.",
+      color: "from-red-500 to-amber-600",
+    },
+    {
+      icon: AlertTriangle,
+      titulo: "Materiales Peligrosos (Hazmat)",
+      descripcion: "Identificación, contención y mitigación de incidentes con materiales peligrosos.",
+      color: "from-amber-600 to-red-700",
+    },
+  ]
+
+  // Servicios de capacitación
+  const capacitacion = [
+    "Curso ESBAS (Educación y Servicios Básicos) - 30 lecciones",
+    "Primeros Auxilios Básicos y Avanzados",
+    "Manejo de Extintores y Prevención de Incendios",
+    "Evacuación y Planes de Emergencia",
+    "Rescate y Salvamento",
+    "Atención Prehospitalaria",
+  ]
+
+  // Certificaciones
+  const certificaciones = [
+    { titulo: "ESBAS", organismo: "Cuerpo General de Bomberos Voluntarios del Perú" },
+    { titulo: "Primeros Auxilios", organismo: "Cruz Roja Peruana" },
+    { titulo: "Materiales Peligrosos", organismo: "NFPA International" },
+    { titulo: "Rescate en Altura", organismo: "IRATA Internacional" },
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <header className="relative py-24 bg-gradient-to-r from-red-900 to-red-800 text-white">
-        <div className="absolute inset-0 bg-black/30"></div>
-        <div className="container relative z-10">
-          <div className="flex items-center space-x-3 mb-6">
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="relative transform transition-transform duration-300 hover:scale-110 hover:rotate-12">
-                <Shield className="h-10 w-10 text-red-400" />
-                <Flame className="h-4 w-4 text-amber-500 absolute -right-1 -bottom-1 animate-pulse" />
-              </div>
-            </Link>
-            <Badge variant="secondary" className="bg-red-700/50 text-white px-4 py-1">
-              Servicios
-            </Badge>
-          </div>
-          <h1 className="text-5xl font-bold mb-4">Servicios Profesionales</h1>
-          <p className="text-xl text-red-100 max-w-3xl">
-            Ofrecemos una amplia gama de servicios especializados para garantizar la seguridad y bienestar de nuestra
-            comunidad
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <MainNav />
+
+      {/* Hero Section */}
+      <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <Badge className="mb-6 bg-white/20 backdrop-blur-sm border-white/30 text-white text-sm">
+            Nuestros Servicios
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Servicios Profesionales
+          </h1>
+          <p className="text-lg md:text-xl text-red-100 max-w-3xl leading-relaxed">
+            Brindamos servicios especializados de emergencia y capacitación para garantizar la seguridad de nuestra comunidad
           </p>
         </div>
-      </header>
+      </section>
 
-      <main className="py-24">
-        <div className="container">
-          {/* Emergencias Section */}
-          <div className="mb-20">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge
-                variant="outline"
-                className="mb-4 text-red-600 border-red-200 px-4 py-2 transform hover:scale-110 transition-transform duration-300"
-              >
-                Emergencias
+      <main className="flex-1">
+        {/* Servicios de Emergencia */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
+                Respuesta a Emergencias
               </Badge>
-              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-red-700 to-red-900 bg-clip-text text-transparent">
-                Atención de Emergencias
-              </h2>
-              <p className="text-lg text-gray-600">
-                Respondemos rápidamente a situaciones de emergencia con personal altamente capacitado y equipamiento
-                especializado
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Tipos de Emergencias que Atendemos</h2>
+              <p className="text-lg text-muted-foreground">
+                Estamos preparados para responder a todo tipo de emergencias las 24 horas del día
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: Flame,
-                  title: "Incendios",
-                  description:
-                    "Respuesta rápida y profesional a incendios estructurales, forestales e industriales con equipos especializados y personal altamente capacitado.",
-                  gradient: "from-red-500 to-red-600",
-                  badge: { text: "Prioritario", color: "bg-red-50 text-red-600" },
-                  certifications: 4,
-                },
-                {
-                  icon: Car,
-                  title: "Accidentes Vehiculares",
-                  description:
-                    "Rescate y extricación de víctimas en accidentes de tránsito, utilizando herramientas hidráulicas y técnicas avanzadas de estabilización.",
-                  gradient: "from-amber-500 to-amber-600",
-                  badge: { text: "Especializado", color: "bg-amber-50 text-amber-600" },
-                  certifications: 3,
-                },
-                {
-                  icon: Anchor,
-                  title: "Rescates con Cuerda",
-                  description:
-                    "Operaciones de rescate en altura, espacios confinados y zonas de difícil acceso mediante técnicas avanzadas de cuerdas y sistemas de anclaje.",
-                  gradient: "from-blue-500 to-blue-600",
-                  badge: { text: "Técnico", color: "bg-blue-50 text-blue-600" },
-                  certifications: 3,
-                },
-                {
-                  icon: Paw,
-                  title: "Rescate Animal",
-                  description:
-                    "Asistencia especializada para el rescate de animales en situaciones de peligro, tanto domésticos como silvestres, con protocolos de manejo seguro.",
-                  gradient: "from-green-500 to-green-600",
-                  badge: { text: "Especializado", color: "bg-green-50 text-green-600" },
-                  certifications: 2,
-                },
-                {
-                  icon: Stethoscope,
-                  title: "Emergencias Médicas",
-                  description:
-                    "Atención prehospitalaria de emergencias médicas, incluyendo soporte vital básico y avanzado, en coordinación con servicios de ambulancia.",
-                  gradient: "from-purple-500 to-purple-600",
-                  badge: { text: "Certificado", color: "bg-purple-50 text-purple-600" },
-                  certifications: 3,
-                },
-                {
-                  icon: AlertTriangle,
-                  title: "Materiales Peligrosos",
-                  description:
-                    "Respuesta a incidentes con materiales peligrosos, incluyendo contención, control y descontaminación, con equipos de protección especializados.",
-                  gradient: "from-red-500 to-red-600",
-                  badge: { text: "Hazmat", color: "bg-red-50 text-red-600" },
-                  certifications: 4,
-                },
-              ].map((service, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {emergencias.map((servicio, index) => (
                 <Card
                   key={index}
-                  className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:rotate-1"
+                  className="bento-item glass border-primary/10 hover:border-primary/30 overflow-hidden group"
                 >
-                  <CardContent className="p-8 space-y-4">
-                    <div
-                      className={cn(
-                        "bg-gradient-to-br rounded-2xl w-16 h-16 flex items-center justify-center mb-6",
-                        "group-hover:scale-110 transition-transform duration-500 group-hover:rotate-12",
-                        "shadow-lg group-hover:shadow-xl",
-                        service.gradient,
-                      )}
-                    >
-                      <service.icon className="h-8 w-8 text-white" />
+                  <div className={`h-2 bg-gradient-to-r ${servicio.color}`}></div>
+                  <CardHeader>
+                    <div className={`w-16 h-16 bg-gradient-to-br ${servicio.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      {servicio.icon && <servicio.icon className="h-8 w-8 text-white" />}
                     </div>
-                    <div className="space-y-2">
-                      <Badge variant="secondary" className={service.badge.color}>
-                        {service.badge.text}
-                      </Badge>
-                      <h3 className="text-2xl font-bold text-gray-900">{service.title}</h3>
-                      <p className="text-gray-600 leading-relaxed">{service.description}</p>
-                    </div>
-                    <div className="flex items-center gap-4 pt-4">
-                      <div className="flex -space-x-2">
-                        {Array.from({ length: service.certifications }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-8 h-8 rounded-full border-2 border-white bg-red-100 flex items-center justify-center transform hover:scale-110 hover:rotate-12 transition-transform duration-300"
-                          >
-                            <Award className="h-4 w-4 text-red-600" />
-                          </div>
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-500">{service.certifications} Certificaciones</span>
-                    </div>
+                    <CardTitle className="text-xl leading-tight">{servicio.titulo}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{servicio.descripcion}</p>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </div>
 
-          {/* Capacitación Section */}
-          <div className="mt-32">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge
-                variant="outline"
-                className="mb-4 text-red-600 border-red-200 px-4 py-2 transform hover:scale-110 transition-transform duration-300"
-              >
-                Formación
+            {/* Llamada a la acción de emergencia */}
+            <div className="mt-16 text-center">
+              <Card className="max-w-2xl mx-auto glass-strong border-primary/20 bg-gradient-to-r from-primary/5 to-red-800/5">
+                <CardContent className="p-8 md:p-12">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">¿Tienes una Emergencia?</h3>
+                  <p className="text-lg text-muted-foreground mb-6">
+                    Nuestro equipo está listo para responder las 24 horas del día, los 365 días del año
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button size="lg" className="bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white text-lg">
+                      <Phone className="mr-2 h-5 w-5" />
+                      Emergencias: 911
+                    </Button>
+                    <Button size="lg" variant="outline" className="text-lg" asChild>
+                      <Link href="/contacto">Contacto General: 116</Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Capacitación */}
+        <section className="py-16 md:py-24 bg-muted/20">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
+                Formación y Capacitación
               </Badge>
-              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-red-700 to-red-900 bg-clip-text text-transparent">
-                Capacitación y Entrenamiento
-              </h2>
-              <p className="text-lg text-gray-600">
-                Programas especializados para empresas, instituciones y comunidades, diseñados para preparar ante
-                situaciones de emergencia
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Programas de Capacitación</h2>
+              <p className="text-lg text-muted-foreground">
+                Ofrecemos cursos especializados para bomberos y la comunidad en general
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-red-50 to-amber-50 rounded-2xl p-8 md:p-12">
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                  <Badge
-                    variant="outline"
-                    className="mb-4 text-red-600 border-red-200 px-4 py-2 transform hover:scale-110 transition-transform duration-300"
-                  >
-                    Capacitación
-                  </Badge>
-                  <h3 className="text-3xl font-bold mb-6 bg-gradient-to-r from-red-700 to-red-900 bg-clip-text text-transparent">
-                    Formación y Entrenamiento
-                  </h3>
-                  <div className="space-y-4 text-gray-700">
-                    <p>
-                      Ofrecemos programas de capacitación especializados para empresas, instituciones educativas y
-                      comunidades, diseñados para preparar a las personas ante situaciones de emergencia.
-                    </p>
-                    <ul className="space-y-2">
-                      <li className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Prevención y control de incendios</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Primeros auxilios básicos y avanzados</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Evacuación y planes de emergencia</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Manejo de materiales peligrosos</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Formación de brigadas de emergencia</span>
-                      </li>
-                    </ul>
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              {/* Lista de cursos */}
+              <Card className="glass border-primary/10">
+                <CardHeader>
+                  <div className="w-14 h-14 bg-gradient-to-br from-primary to-red-800 rounded-2xl flex items-center justify-center mb-4">
+                    <GraduationCap className="h-7 w-7 text-white" />
                   </div>
-                  <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                    <Button className="bg-red-600 hover:bg-red-700 text-white transform hover:scale-105 transition-all duration-300">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Agendar Reunión
-                    </Button>
-                    <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
-                      <Send className="mr-2 h-4 w-4" />
-                      Enviar Solicitud
-                    </Button>
+                  <CardTitle className="text-2xl">Cursos Disponibles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {capacitacion.map((curso, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <span>{curso}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Certificaciones */}
+              <Card className="glass border-primary/10">
+                <CardHeader>
+                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-red-700 rounded-2xl flex items-center justify-center mb-4">
+                    <Award className="h-7 w-7 text-white" />
                   </div>
-                </div>
-                <div className="relative">
-                  <div className="absolute -top-6 -left-6 w-32 h-32 bg-red-100 rounded-full opacity-50"></div>
-                  <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-amber-100 rounded-full opacity-50"></div>
-                  <div className="relative rounded-xl overflow-hidden shadow-2xl transform hover:scale-105 transition-all duration-500">
-                    <Image
-                      src="/placeholder.svg?height=400&width=600"
-                      alt="Capacitación de Bomberos"
-                      width={600}
-                      height={400}
-                      className="w-full h-auto"
-                    />
-                  </div>
-                </div>
-              </div>
+                  <CardTitle className="text-2xl">Certificaciones</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-6">
+                    Nuestros cursos están respaldados por organismos nacionales e internacionales:
+                  </p>
+                  <ul className="space-y-4">
+                    {certificaciones.map((cert, index) => (
+                      <li key={index} className="border-l-4 border-primary pl-4">
+                        <div className="font-bold text-primary">{cert.titulo}</div>
+                        <div className="text-sm text-muted-foreground">{cert.organismo}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* CTA Capacitación */}
+            <div className="mt-12 text-center">
+              <Link href="/admision">
+                <Button size="lg" className="bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white px-8">
+                  Inscríbete en Nuestros Cursos
+                  <GraduationCap className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* Compromiso de Calidad */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            <Card className="max-w-4xl mx-auto glass border-primary/10">
+              <CardContent className="p-8 md:p-12 text-center">
+                <h3 className="text-2xl md:text-3xl font-bold mb-6">Nuestro Compromiso de Calidad</h3>
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div>
+                    <div className="text-4xl font-bold text-primary mb-2">24/7</div>
+                    <p className="text-muted-foreground">Disponibilidad permanente</p>
+                  </div>
+                  <div>
+                    <div className="text-4xl font-bold text-primary mb-2">&lt;10min</div>
+                    <p className="text-muted-foreground">Tiempo de respuesta promedio</p>
+                  </div>
+                  <div>
+                    <div className="text-4xl font-bold text-primary mb-2">+70 años</div>
+                    <p className="text-muted-foreground">De servicio a la comunidad</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </main>
+
+      <MainFooter />
     </div>
   )
 }
-

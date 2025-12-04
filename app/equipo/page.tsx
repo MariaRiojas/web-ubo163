@@ -1,250 +1,359 @@
-"use client";
+"use client"
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useEffect, useRef } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Mail, Trophy, Star, Shield, Flame } from "lucide-react"
+import { MainNav } from "@/components/main-nav"
+import { MainFooter } from "@/components/main-footer"
+import { Shield, Mail, Phone, Award, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { getActiveMembers, getTotalMembers, getTotalMembersByArea } from "@/data/team-data"
+
+const ITEMS_PER_PAGE = 12 // Mostrar 12 efectivos por carga
 
 export default function EquipoPage() {
-  const [loadMore, setLoadMore] = useState(false)
+  // Obtener todos los efectivos activos desde la base de datos
+  const allEfectivos = getActiveMembers()
+  const totalEfectivos = getTotalMembers()
 
-  // Datos de los miembros del equipo
-  const teamMembers = [
-    {
-      name: "Cap. Juan Pérez",
-      role: "Capitán de Bomberos",
-      rank: "Elite",
-      achievements: 5,
-      specialties: ["Rescate", "Comando"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Capitán",
-      profession: "Ingeniero Civil",
-      years: 15,
-      description:
-        "Especialista en rescate en estructuras colapsadas y comando de incidentes. Ha liderado más de 200 operaciones de emergencia.",
-    },
-    {
-      name: "Tte. María García",
-      role: "Teniente de Bomberos",
-      rank: "Experto",
-      achievements: 4,
-      specialties: ["Prevención", "Capacitación"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Teniente",
-      profession: "Médico",
-      years: 10,
-      description:
-        "Especialista en atención prehospitalaria y capacitación en primeros auxilios. Coordina el programa de prevención comunitaria.",
-    },
-    {
-      name: "Sgto. Carlos López",
-      role: "Sargento de Bomberos",
-      rank: "Avanzado",
-      achievements: 3,
-      specialties: ["Emergencias", "Primeros Auxilios"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Sargento",
-      profession: "Técnico en Emergencias",
-      years: 8,
-      description:
-        "Experto en manejo de materiales peligrosos y rescate vehicular. Instructor certificado en primeros auxilios avanzados.",
-    },
-    {
-      name: "Ofl. Ana Martínez",
-      role: "Oficial de Bomberos",
-      rank: "Especialista",
-      achievements: 3,
-      specialties: ["Rescate", "Emergencias"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Oficial",
-      profession: "Arquitecta",
-      years: 7,
-      description:
-        "Especializada en evaluación estructural post-incendio y rescate en espacios confinados. Coordinadora de seguridad operativa.",
-    },
-    {
-      name: "Brig. Roberto Sánchez",
-      role: "Brigadier",
-      rank: "Avanzado",
-      achievements: 2,
-      specialties: ["Incendios Forestales", "Comunicaciones"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Brigadier",
-      profession: "Ingeniero Forestal",
-      years: 5,
-      description:
-        "Especialista en control de incendios forestales y sistemas de comunicación en emergencias. Coordinador de brigadas forestales.",
-    },
-    {
-      name: "Secc. Laura Díaz",
-      role: "Seccionario",
-      rank: "Intermedio",
-      achievements: 2,
-      specialties: ["Logística", "Administración"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Seccionario",
-      profession: "Administradora",
-      years: 4,
-      description:
-        "Encargada de logística y administración de recursos en emergencias. Coordinadora de voluntariado y reclutamiento.",
-    },
-    {
-      name: "Cap. Javier Morales",
-      role: "Capitán de Bomberos",
-      rank: "Elite",
-      achievements: 5,
-      specialties: ["Hazmat", "Instrucción"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Capitán",
-      profession: "Químico",
-      years: 12,
-      description:
-        "Especialista en materiales peligrosos (Hazmat) e instructor principal de la academia. Ha desarrollado protocolos de seguridad química.",
-    },
-    {
-      name: "Tte. Patricia Vega",
-      role: "Teniente de Bomberos",
-      rank: "Experto",
-      achievements: 4,
-      specialties: ["Rescate Acuático", "Buceo"],
-      image: "/placeholder.svg?height=400&width=400",
-      grade: "Teniente",
-      profession: "Bióloga Marina",
-      years: 9,
-      description:
-        "Especialista en rescate acuático y operaciones de buceo. Coordinadora del equipo de respuesta a emergencias acuáticas.",
-    },
-  ]
+  // Estado para la paginación
+  const [displayedCount, setDisplayedCount] = useState(ITEMS_PER_PAGE)
+  const [isLoading, setIsLoading] = useState(false)
+  const [scrollInfiniteEnabled, setScrollInfiniteEnabled] = useState(false) // Nuevo estado
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  // Mostrar solo los primeros 4 miembros inicialmente
-  const visibleMembers = loadMore ? teamMembers : teamMembers.slice(0, 4)
+  // Obtener totales por área
+  const totalOperaciones = getTotalMembersByArea("Operaciones")
+  const totalSanidad = getTotalMembersByArea("Sanidad")
+  const totalServicios = getTotalMembersByArea("Servicios")
+  const totalAdministracion = getTotalMembersByArea("Administración")
+
+  // Efectivos a mostrar actualmente
+  const efectivos = allEfectivos.slice(0, displayedCount)
+  const hasMore = displayedCount < allEfectivos.length
+
+  // Cargar más efectivos
+  const loadMore = () => {
+    setIsLoading(true)
+    // Activar scroll infinito al hacer clic por primera vez
+    if (!scrollInfiniteEnabled) {
+      setScrollInfiniteEnabled(true)
+    }
+    setTimeout(() => {
+      setDisplayedCount((prev) => Math.min(prev + ITEMS_PER_PAGE, allEfectivos.length))
+      setIsLoading(false)
+    }, 500) // Simular delay de carga
+  }
+
+  // Intersection Observer para scroll infinito automático (solo si está activado)
+  useEffect(() => {
+    if (!hasMore || isLoading || !scrollInfiniteEnabled) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentRef = loadMoreRef.current
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayedCount, hasMore, scrollInfiniteEnabled])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <header className="relative py-24 bg-gradient-to-r from-red-900 to-red-800 text-white">
-        <div className="absolute inset-0 bg-black/30"></div>
-        <div className="container relative z-10">
-          <div className="flex items-center space-x-3 mb-6">
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="relative transform transition-transform duration-300 hover:scale-110 hover:rotate-12">
-                <Shield className="h-10 w-10 text-red-400" />
-                <Flame className="h-4 w-4 text-amber-500 absolute -right-1 -bottom-1 animate-pulse" />
-              </div>
-            </Link>
-            <Badge variant="secondary" className="bg-red-700/50 text-white px-4 py-1">
-              Nuestro Equipo
-            </Badge>
-          </div>
-          <h1 className="text-5xl font-bold mb-4">Profesionales Elite</h1>
-          <p className="text-xl text-red-100 max-w-3xl">
-            Conoce a los hombres y mujeres que conforman nuestro cuerpo de bomberos, profesionales altamente capacitados
-            y comprometidos con la seguridad de la comunidad.
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <MainNav />
+
+      {/* Hero Section */}
+      <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <Badge className="mb-6 bg-white/20 backdrop-blur-sm border-white/30 text-white text-sm">
+            Nuestro Equipo
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Bomberos Profesionales
+          </h1>
+          <p className="text-lg md:text-xl text-red-100 max-w-3xl leading-relaxed">
+            Conoce a los hombres y mujeres que trabajan incansablemente para proteger nuestra comunidad
           </p>
         </div>
-      </header>
+      </section>
 
-      <main className="py-24">
-        <div className="container">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {visibleMembers.map((member, index) => (
-              <Card
-                key={index}
-                className="group bg-white hover:bg-gray-50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 hover:rotate-2 overflow-hidden shadow-lg hover:shadow-xl"
-              >
-                <CardContent className="p-0">
-                  <div className="relative overflow-hidden">
+      <main className="flex-1">
+        {/* Equipo Principal */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
+                Compañía de Bomberos 163
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestro Equipo Completo</h2>
+              <p className="text-lg text-muted-foreground">
+                Profesionales altamente capacitados dedicados a servir y proteger
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {efectivos.map((efectivo, index) => (
+                <Card
+                  key={index}
+                  className="bento-item glass border-primary/10 hover:border-primary/30 overflow-hidden group"
+                >
+                  <div className="relative h-64 overflow-hidden">
                     <Image
-                      src={member.image || "/placeholder.svg"}
-                      alt={member.name}
+                      src={efectivo.imagen || "/placeholder.svg"}
+                      alt={efectivo.nombre}
                       width={400}
                       height={400}
-                      className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    <Badge className="absolute top-4 right-4 bg-gradient-to-r from-red-400 to-red-600 text-white border-0 transform rotate-3">
-                      {member.grade}
-                    </Badge>
-
-                    {/* Overlay con información adicional */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6 transform translate-y-8 group-hover:translate-y-0 transition-transform duration-300">
-                      <div className="space-y-2">
-                        <p className="text-white font-medium">Profesión: {member.profession}</p>
-                        <p className="text-gray-300 text-sm">Experiencia: {member.years} años</p>
-                        <p className="text-gray-300 text-sm line-clamp-3">{member.description}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-white">
+                          <Mail className="h-3 w-3" />
+                          <span className="truncate">{efectivo.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-white">
+                          <Phone className="h-3 w-3" />
+                          <span>{efectivo.telefono}</span>
+                        </div>
                       </div>
+                    </div>
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-primary text-white border-0">{efectivo.area}</Badge>
                     </div>
                   </div>
+                  <CardHeader>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <Badge variant="outline" className="text-xs">
+                        {efectivo.años} años de servicio
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-lg leading-tight">{efectivo.nombre}</CardTitle>
+                    <p className="text-sm text-muted-foreground font-medium">{efectivo.cargo}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
+                          <Award className="h-3 w-3" />
+                          Especialidades:
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {efectivo.especialidades.map((esp, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {esp}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-                  <div className="p-6">
-                    <h3 className="font-bold text-xl text-gray-900 mb-1">{member.name}</h3>
-                    <p className="text-red-600 mb-4">{member.role}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {member.specialties.map((specialty, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="secondary"
-                          className="bg-red-100 text-red-700 transform hover:scale-110 hover:rotate-3 transition-transform duration-300"
-                        >
-                          {specialty}
-                        </Badge>
-                      ))}
+            {/* Indicador de carga y botón Ver Más */}
+            {hasMore && (
+              <div className="mt-12 text-center">
+                <div ref={loadMoreRef} className="py-8">
+                  {isLoading ? (
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <p className="text-muted-foreground">Cargando más efectivos...</p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex -space-x-2">
-                        {Array.from({ length: member.achievements }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-8 h-8 rounded-full border-2 border-white bg-red-100 flex items-center justify-center transform hover:scale-110 hover:rotate-12 transition-transform duration-300"
-                          >
-                            <Star className="h-4 w-4 text-amber-500" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex gap-3">
-                        <Link
-                          href="#"
-                          className="text-red-500 hover:text-red-700 transition-colors transform hover:scale-110 hover:rotate-12 transition-all duration-300"
-                        >
-                          <Mail className="h-5 w-5" />
-                        </Link>
-                        <Link
-                          href="#"
-                          className="text-red-500 hover:text-red-700 transition-colors transform hover:scale-110 hover:rotate-12 transition-all duration-300"
-                        >
-                          <Trophy className="h-5 w-5" />
-                        </Link>
-                      </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        Mostrando {efectivos.length} de {allEfectivos.length} efectivos
+                      </p>
+                      <Button
+                        onClick={loadMore}
+                        size="lg"
+                        className="bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white px-8"
+                      >
+                        {scrollInfiniteEnabled ? "Ver Más Efectivos" : "Ver Más (Carga Automática)"}
+                      </Button>
+                      {!scrollInfiniteEnabled && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Al hacer clic, se activará la carga automática al hacer scroll
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Mensaje cuando se muestran todos */}
+            {!hasMore && efectivos.length > ITEMS_PER_PAGE && (
+              <div className="mt-12 text-center">
+                <Card className="max-w-md mx-auto glass border-primary/10">
+                  <CardContent className="p-6">
+                    <Shield className="h-12 w-12 text-primary mx-auto mb-3" />
+                    <p className="font-semibold text-lg mb-2">¡Has visto todo el equipo!</p>
+                    <p className="text-sm text-muted-foreground">
+                      {allEfectivos.length} efectivos comprometidos con nuestra comunidad
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Valores del Equipo */}
+        <section className="py-16 md:py-24 bg-muted/20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Lo Que Nos Une</h2>
+                <p className="text-lg text-muted-foreground">
+                  Valores compartidos que fortalecen nuestro compromiso con la comunidad
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="glass border-primary/10">
+                  <CardContent className="p-8">
+                    <h3 className="text-xl font-bold mb-3 text-primary">Trabajo en Equipo</h3>
+                    <p className="text-muted-foreground">
+                      Cada miembro es esencial. Confiamos unos en otros y trabajamos coordinadamente para lograr
+                      nuestros objetivos de salvar vidas y proteger propiedades.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass border-primary/10">
+                  <CardContent className="p-8">
+                    <h3 className="text-xl font-bold mb-3 text-primary">Capacitación Continua</h3>
+                    <p className="text-muted-foreground">
+                      Nos mantenemos actualizados con las últimas técnicas y tecnologías en rescate, combate de
+                      incendios y atención de emergencias.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass border-primary/10">
+                  <CardContent className="p-8">
+                    <h3 className="text-xl font-bold mb-3 text-primary">Compromiso con la Comunidad</h3>
+                    <p className="text-muted-foreground">
+                      Servimos con orgullo y dedicación. Nuestra misión es proteger a cada ciudadano y responder con
+                      excelencia en cada emergencia.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass border-primary/10">
+                  <CardContent className="p-8">
+                    <h3 className="text-xl font-bold mb-3 text-primary">Disponibilidad 24/7</h3>
+                    <p className="text-muted-foreground">
+                      Estamos listos en todo momento. Nuestro equipo mantiene guardias rotativas para garantizar
+                      respuesta inmediata cualquier día del año.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Estadísticas del Equipo */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestro Equipo en Números</h2>
+              <p className="text-lg text-muted-foreground">
+                Una fuerza preparada y comprometida al servicio de la comunidad
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
+              <Card className="glass border-primary/10 text-center">
+                <CardContent className="p-6">
+                  <div className="text-4xl font-bold text-primary mb-2">{totalEfectivos}</div>
+                  <p className="text-sm text-muted-foreground">Total Efectivos</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
 
-          {/* Botón Cargar Más */}
-          <div className="flex justify-center mt-16">
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 text-lg transform hover:scale-105 transition-all duration-300"
-              onClick={() => setLoadMore(!loadMore)}
-            >
-              {loadMore ? (
-                <>
-                  <ChevronUp className="mr-2 h-5 w-5" />
-                  Mostrar Menos
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-5 w-5" />
-                  Cargar Más
-                </>
-              )}
-            </Button>
+              <Card className="glass border-primary/10 text-center">
+                <CardContent className="p-6">
+                  <div className="text-4xl font-bold text-primary mb-2">{totalOperaciones}</div>
+                  <p className="text-sm text-muted-foreground">Operaciones</p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass border-primary/10 text-center">
+                <CardContent className="p-6">
+                  <div className="text-4xl font-bold text-primary mb-2">{totalSanidad}</div>
+                  <p className="text-sm text-muted-foreground">Sanidad</p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass border-primary/10 text-center">
+                <CardContent className="p-6">
+                  <div className="text-4xl font-bold text-primary mb-2">{totalServicios}</div>
+                  <p className="text-sm text-muted-foreground">Servicios</p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass border-primary/10 text-center">
+                <CardContent className="p-6">
+                  <div className="text-4xl font-bold text-primary mb-2">{totalAdministracion}</div>
+                  <p className="text-sm text-muted-foreground">Administración</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Llamado a la acción */}
+        <section className="py-16 md:py-24 bg-muted/20">
+          <div className="container mx-auto px-4">
+            <Card className="max-w-4xl mx-auto glass-strong border-primary/20 bg-gradient-to-r from-primary/5 to-red-800/5">
+              <CardContent className="p-8 md:p-12 text-center">
+                <Shield className="h-16 w-16 mx-auto mb-6 text-primary" />
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">¿Quieres Formar Parte de Nuestro Equipo?</h3>
+                <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+                  Si tienes vocación de servicio, compromiso y deseas contribuir a la seguridad de nuestra comunidad,
+                  te invitamos a conocer nuestro proceso de admisión.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/admision"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-gradient-to-r from-primary to-red-800 text-white hover:from-red-700 hover:to-red-900 h-11 px-8 transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    Ver Proceso de Admisión
+                  </Link>
+                  <Link
+                    href="/contacto"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-primary/30 hover:bg-primary/10 h-11 px-8 transition-all"
+                  >
+                    Más Información
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </main>
+
+      <MainFooter />
     </div>
   )
 }
-

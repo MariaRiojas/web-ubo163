@@ -1,301 +1,678 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { IntranetNav } from "@/components/intranet-nav"
+import { ProtectRoute } from "@/components/protect-route"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  BarChart2,
+  Shield,
   Users,
-  Truck,
-  Bell,
-  Calendar,
-  Clock,
-  Flame,
+  Moon,
   AlertTriangle,
-  ArrowRight,
-  CheckCircle,
-  XCircle,
-  FileText,
+  GraduationCap,
+  Clock,
   Activity,
+  TrendingUp,
+  Calendar,
+  FileText,
+  Award,
+  Bell,
 } from "lucide-react"
-import SolicitudesPanel from "@/components/solicitudes-panel"
+import { User } from "@/lib/auth"
+import Link from "next/link"
 
-export default function Dashboard() {
+export default function DashboardPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+    const currentUser = localStorage.getItem("currentUser")
+    if (!currentUser) {
+      router.push("/intranet")
+      return
+    }
+    setUser(JSON.parse(currentUser))
+  }, [router])
+
+  if (!isClient || !user) return null
+
+  return (
+    <ProtectRoute allowedRoles={["comandante", "jefe_area", "jefe_guardia", "efectivo"]}>
+      <div className="flex min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <IntranetNav />
+
+        <main className="flex-1 lg:ml-64 pt-16 lg:pt-0">
+          <div className="p-6 md:p-8">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-2">
+                <Shield className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl md:text-4xl font-bold">Dashboard</h1>
+              </div>
+              <p className="text-muted-foreground">
+                Bienvenido, <span className="font-semibold text-foreground">{user.name}</span>
+              </p>
+              <Badge className="mt-2 bg-primary/20 text-primary border-primary/30">
+                {user.role === "comandante"
+                  ? "Comandante General"
+                  : user.role === "jefe_area"
+                  ? `Jefe de ${user.area.charAt(0).toUpperCase() + user.area.slice(1)}`
+                  : user.role === "jefe_guardia"
+                  ? "Jefe de Guardia"
+                  : "Efectivo"}
+              </Badge>
+            </div>
+
+            {/* Conditional Dashboard Based on Role */}
+            {user.role === "efectivo" && <EfectivoDashboard user={user} />}
+            {user.role === "jefe_guardia" && <JefeGuardiaDashboard user={user} />}
+            {user.role === "jefe_area" && <JefeAreaDashboard user={user} />}
+            {user.role === "comandante" && <ComandanteDashboard user={user} />}
+          </div>
+        </main>
+      </div>
+    </ProtectRoute>
+  )
+}
+
+// Dashboard for Efectivo
+function EfectivoDashboard({ user }: { user: User }) {
+  const horasTrabajadas = 152
+  const horasMes = 40
+  const proximaGuardia = "15 Dic 2024 - 19:00h"
+  const leccionesCompletadas = 12
+  const totalLecciones = 30
+  const incidenciasAbiertas = 2
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Dashboard</h1>
-          <p className="text-gray-400">Bienvenido al sistema de gestión interna</p>
-        </div>
-        <div className="flex gap-3">
-          <Button className="bg-red-600 hover:bg-red-700 text-white">
-            <Bell className="mr-2 h-4 w-4" />
-            Alertas
-          </Button>
-          <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
-            <Calendar className="mr-2 h-4 w-4" />
-            Calendario
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
+      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            title: "Personal Activo",
-            value: "42",
-            change: "+2",
-            icon: Users,
-            color: "bg-blue-500",
-          },
-          {
-            title: "Emergencias Hoy",
-            value: "3",
-            change: "-1",
-            icon: Flame,
-            color: "bg-red-500",
-          },
-          {
-            title: "Vehículos Operativos",
-            value: "8/10",
-            change: "80%",
-            icon: Truck,
-            color: "bg-green-500",
-          },
-          {
-            title: "Tiempo Respuesta",
-            value: "4.2 min",
-            change: "-0.3",
-            icon: Clock,
-            color: "bg-amber-500",
-          },
-        ].map((stat, index) => (
-          <Card key={index} className="bg-gray-800 border-gray-700 hover:bg-gray-750 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-400">{stat.title}</p>
-                  <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-sm">
-                <Badge variant="outline" className="text-green-400 border-green-800 bg-green-900/20">
-                  {stat.change}
-                </Badge>
-                <span className="ml-2 text-gray-400">vs. semana anterior</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Horas del Mes</CardTitle>
+            <Clock className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{horasMes}h</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total acumulado: {horasTrabajadas}h
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Próxima Guardia</CardTitle>
+            <Moon className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm font-bold">{proximaGuardia}</div>
+            <p className="text-xs text-muted-foreground mt-1">Turno nocturno</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">ESBAS</CardTitle>
+            <GraduationCap className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {leccionesCompletadas}/{totalLecciones}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.round((leccionesCompletadas / totalLecciones) * 100)}% completado
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Incidencias</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{incidenciasAbiertas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Solicitudes abiertas</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Actividad Reciente</CardTitle>
-                <Tabs defaultValue="emergencias">
-                  <TabsList className="bg-gray-700">
-                    <TabsTrigger value="emergencias" className="data-[state=active]:bg-red-600">
-                      Emergencias
-                    </TabsTrigger>
-                    <TabsTrigger value="guardias" className="data-[state=active]:bg-red-600">
-                      Guardias
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+      {/* Main Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Link href="/intranet/guardias">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-red-800 rounded-xl flex items-center justify-center mb-3">
+                <Moon className="h-6 w-6 text-white" />
               </div>
-              <CardDescription className="text-gray-400">Últimas actividades registradas en el sistema</CardDescription>
+              <CardTitle>Guardia Nocturna</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    title: "Incendio Estructural",
-                    description: "Av. Principal 123 - Edificio Comercial",
-                    time: "Hoy, 14:30",
-                    status: "Completado",
-                    statusColor: "text-green-400",
-                  },
-                  {
-                    title: "Rescate Vehicular",
-                    description: "Carretera Norte Km 5 - Colisión múltiple",
-                    time: "Hoy, 10:15",
-                    status: "Completado",
-                    statusColor: "text-green-400",
-                  },
-                  {
-                    title: "Emergencia Médica",
-                    description: "Plaza Central - Persona con paro cardíaco",
-                    time: "Ayer, 18:45",
-                    status: "Completado",
-                    statusColor: "text-green-400",
-                  },
-                  {
-                    title: "Fuga de Gas",
-                    description: "Calle Secundaria 45 - Edificio Residencial",
-                    time: "Ayer, 12:20",
-                    status: "Completado",
-                    statusColor: "text-green-400",
-                  },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-start p-3 rounded-lg hover:bg-gray-700 transition-colors">
-                    <div className="p-2 bg-red-900/50 rounded-lg mr-4">
-                      <Flame className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-medium text-white">{activity.title}</h4>
-                        <span className={`text-xs font-medium ${activity.statusColor}`}>{activity.status}</span>
-                      </div>
-                      <p className="text-sm text-gray-400 mt-1">{activity.description}</p>
-                      <div className="flex items-center mt-2 text-xs text-gray-500">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {activity.time}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Button variant="ghost" className="w-full mt-4 text-gray-400 hover:text-white hover:bg-gray-700">
-                Ver todas las actividades
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Ver horarios de guardia y solicitar cambios
+              </p>
+              <Button className="w-full bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white">
+                Ver Guardias
               </Button>
             </CardContent>
           </Card>
+        </Link>
 
-          <Card className="bg-gray-800 border-gray-700">
+        <Link href="/intranet/incidencias">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
             <CardHeader>
-              <CardTitle className="text-white">Guardia Nocturna</CardTitle>
-              <CardDescription className="text-gray-400">Reserva de camas para la guardia de hoy</CardDescription>
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-red-700 rounded-xl flex items-center justify-center mb-3">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Incidencias</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { number: 1, status: "ocupada", name: "Juan Pérez" },
-                  { number: 2, status: "ocupada", name: "María García" },
-                  { number: 3, status: "disponible", name: null },
-                  { number: 4, status: "disponible", name: null },
-                  { number: 5, status: "ocupada", name: "Carlos López" },
-                  { number: 6, status: "mantenimiento", name: null },
-                  { number: 7, status: "disponible", name: null },
-                  { number: 8, status: "ocupada", name: "Ana Martínez" },
-                ].map((cama) => (
-                  <div
-                    key={cama.number}
-                    className={`p-4 rounded-lg border ${
-                      cama.status === "ocupada"
-                        ? "bg-red-900/30 border-red-800"
-                        : cama.status === "disponible"
-                          ? "bg-green-900/30 border-green-800"
-                          : "bg-gray-700 border-gray-600"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-bold text-white">Cama {cama.number}</span>
-                      {cama.status === "ocupada" && <XCircle className="h-4 w-4 text-red-400" />}
-                      {cama.status === "disponible" && <CheckCircle className="h-4 w-4 text-green-400" />}
-                      {cama.status === "mantenimiento" && <AlertTriangle className="h-4 w-4 text-amber-400" />}
-                    </div>
-                    <p className="text-xs text-gray-300">
-                      {cama.status === "ocupada"
-                        ? cama.name
-                        : cama.status === "disponible"
-                          ? "Disponible"
-                          : "En mantenimiento"}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <Button className="w-full mt-6 bg-red-600 hover:bg-red-700">Reservar Cama</Button>
+              <p className="text-sm text-muted-foreground mb-4">
+                Reportar incidencias y hacer solicitudes
+              </p>
+              <Button className="w-full bg-gradient-to-r from-amber-500 to-red-700 hover:from-amber-600 hover:to-red-800 text-white">
+                Ir a Incidencias
+              </Button>
             </CardContent>
           </Card>
-        </div>
+        </Link>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          <Card className="bg-gray-800 border-gray-700">
+        <Link href="/intranet/esbas">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
             <CardHeader>
-              <CardTitle className="text-white">Alertas Pendientes</CardTitle>
-              <CardDescription className="text-gray-400">Notificaciones que requieren atención</CardDescription>
+              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-900 rounded-xl flex items-center justify-center mb-3">
+                <GraduationCap className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>ESBAS</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    title: "Mantenimiento Vehículo B2",
-                    description: "Programado para mañana 09:00",
-                    icon: Truck,
-                    color: "bg-amber-500",
-                  },
-                  {
-                    title: "Actualización Protocolo",
-                    description: "Nuevas directrices operativas",
-                    icon: FileText,
-                    color: "bg-blue-500",
-                  },
-                  {
-                    title: "Inspección Equipos",
-                    description: "Pendiente verificación ERA",
-                    icon: AlertTriangle,
-                    color: "bg-red-500",
-                  },
-                ].map((alerta, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start p-3 rounded-lg bg-gray-750 hover:bg-gray-700 transition-colors"
-                  >
-                    <div className={`p-2 rounded-lg mr-3 ${alerta.color}`}>
-                      <alerta.icon className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-white text-sm">{alerta.title}</h4>
-                      <p className="text-xs text-gray-400 mt-1">{alerta.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Continuar con tu capacitación (Lección {leccionesCompletadas + 1})
+              </p>
+              <Button className="w-full bg-gradient-to-r from-red-600 to-red-900 hover:from-red-700 hover:to-red-950 text-white">
+                Continuar Curso
+              </Button>
             </CardContent>
           </Card>
-
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Estadísticas Mensuales</CardTitle>
-              <CardDescription className="text-gray-400">Resumen de actividad del mes actual</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { label: "Emergencias Atendidas", value: 28, icon: Flame, color: "text-red-400" },
-                  { label: "Personal en Guardia", value: 45, icon: Users, color: "text-blue-400" },
-                  { label: "Capacitaciones", value: 12, icon: Activity, color: "text-green-400" },
-                ].map((stat, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <stat.icon className={`h-5 w-5 mr-3 ${stat.color}`} />
-                      <span className="text-gray-300">{stat.label}</span>
-                    </div>
-                    <span className="font-bold text-white">{stat.value}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="h-40 mt-6 flex items-center justify-center bg-gray-750 rounded-lg">
-                <BarChart2 className="h-24 w-24 text-gray-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        </Link>
       </div>
 
-      <SolicitudesPanel departamento="Dashboard" />
+      {/* Recent Activity */}
+      <Card className="glass border-primary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            Actividad Reciente
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 pb-3 border-b border-primary/10">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Guardia nocturna completada</p>
+                <p className="text-xs text-muted-foreground">Hace 2 días</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 pb-3 border-b border-primary/10">
+              <div className="w-2 h-2 bg-amber-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Lección 12 de ESBAS completada</p>
+                <p className="text-xs text-muted-foreground">Hace 3 días</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Solicitud de permiso aprobada</p>
+                <p className="text-xs text-muted-foreground">Hace 5 días</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
+// Dashboard for Jefe de Guardia
+function JefeGuardiaDashboard({ user }: { user: User }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Guardias Activas</CardTitle>
+            <Moon className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground mt-1">Efectivos en guardia</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Cambios Pendientes</CardTitle>
+            <Calendar className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground mt-1">Por aprobar</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Próximo Turno</CardTitle>
+            <Clock className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm font-bold">Hoy 19:00h</div>
+            <p className="text-xs text-muted-foreground mt-1">Turno nocturno</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Link href="/intranet/guardias">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-red-800 rounded-xl flex items-center justify-center mb-3">
+                <Moon className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Gestión de Guardias</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Administrar horarios y turnos de guardia nocturna
+              </p>
+              <Button className="w-full bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white">
+                Gestionar Guardias
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Card className="glass border-primary/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              Notificaciones
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="p-3 bg-primary/5 rounded-lg">
+                <p className="text-sm font-medium">3 solicitudes de cambio pendientes</p>
+                <p className="text-xs text-muted-foreground mt-1">Requieren tu aprobación</p>
+              </div>
+              <div className="p-3 bg-amber-500/5 rounded-lg">
+                <p className="text-sm font-medium">Guardia próxima en 2 horas</p>
+                <p className="text-xs text-muted-foreground mt-1">Turno del 14 Dic 2024</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Dashboard for Jefe de Área
+function JefeAreaDashboard({ user }: { user: User }) {
+  const areaName = user.area.charAt(0).toUpperCase() + user.area.slice(1)
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Personal en Área</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground mt-1">Efectivos activos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Incidencias</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5</div>
+            <p className="text-xs text-muted-foreground mt-1">Pendientes</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Eficiencia</CardTitle>
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">94%</div>
+            <p className="text-xs text-muted-foreground mt-1">Este mes</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Reportes</CardTitle>
+            <FileText className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">18</div>
+            <p className="text-xs text-muted-foreground mt-1">Este mes</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Link href={`/intranet/areas/${user.area}`}>
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-red-800 rounded-xl flex items-center justify-center mb-3">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Gestión de {areaName}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Administrar personal y recursos del área
+              </p>
+              <Button className="w-full bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white">
+                Ir a {areaName}
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/intranet/incidencias">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-red-700 rounded-xl flex items-center justify-center mb-3">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Incidencias del Área</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Revisar y gestionar incidencias del área
+              </p>
+              <Button className="w-full bg-gradient-to-r from-amber-500 to-red-700 hover:from-amber-600 hover:to-red-800 text-white">
+                Ver Incidencias
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      <Card className="glass border-primary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Personal de {areaName}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Personal Activo</p>
+                  <p className="text-xs text-muted-foreground">En servicio hoy</p>
+                </div>
+              </div>
+              <Badge className="bg-green-500/20 text-green-700 border-green-500/30">10/12</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-amber-500/5 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Permisos Pendientes</p>
+                  <p className="text-xs text-muted-foreground">Requieren aprobación</p>
+                </div>
+              </div>
+              <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/30">2</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Dashboard for Comandante
+function ComandanteDashboard({ user }: { user: User }) {
+  return (
+    <div className="space-y-6">
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Efectivos</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">50</div>
+            <p className="text-xs text-muted-foreground mt-1">48 activos, 2 permisos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Guardias Activas</CardTitle>
+            <Moon className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground mt-1">4M / 4F en turno</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Incidencias</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground mt-1">5 urgentes</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bento-item glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Eficiencia General</CardTitle>
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">96%</div>
+            <p className="text-xs text-muted-foreground mt-1">+3% vs mes anterior</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Areas Overview */}
+      <Card className="glass border-primary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            Estado por Área
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 bg-primary/5 rounded-lg">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                Operaciones
+              </h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-muted-foreground">Personal: 12</p>
+                <p className="text-muted-foreground">Incidencias: 3</p>
+                <Badge className="bg-green-500/20 text-green-700 border-green-500/30 text-xs">
+                  Óptimo
+                </Badge>
+              </div>
+            </div>
+
+            <div className="p-4 bg-primary/5 rounded-lg">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                Sanidad
+              </h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-muted-foreground">Personal: 10</p>
+                <p className="text-muted-foreground">Incidencias: 2</p>
+                <Badge className="bg-green-500/20 text-green-700 border-green-500/30 text-xs">
+                  Óptimo
+                </Badge>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-500/5 rounded-lg">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                Servicios
+              </h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-muted-foreground">Personal: 8</p>
+                <p className="text-muted-foreground">Incidencias: 5</p>
+                <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/30 text-xs">
+                  Atención
+                </Badge>
+              </div>
+            </div>
+
+            <div className="p-4 bg-primary/5 rounded-lg">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                Administración
+              </h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-muted-foreground">Personal: 6</p>
+                <p className="text-muted-foreground">Incidencias: 2</p>
+                <Badge className="bg-green-500/20 text-green-700 border-green-500/30 text-xs">
+                  Óptimo
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Link href="/intranet/equipo">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-red-800 rounded-xl flex items-center justify-center mb-3">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Gestión de Equipo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ver y administrar todo el personal
+              </p>
+              <Button className="w-full bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white">
+                Ver Equipo
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/intranet/reportes">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-red-700 rounded-xl flex items-center justify-center mb-3">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Reportes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Informes y estadísticas generales
+              </p>
+              <Button className="w-full bg-gradient-to-r from-amber-500 to-red-700 hover:from-amber-600 hover:to-red-800 text-white">
+                Ver Reportes
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/intranet/configuracion">
+          <Card className="bento-item glass border-primary/10 hover:border-primary/30 cursor-pointer h-full">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-900 rounded-xl flex items-center justify-center mb-3">
+                <Award className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Configuración</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ajustes y configuración del sistema
+              </p>
+              <Button className="w-full bg-gradient-to-r from-red-600 to-red-900 hover:from-red-700 hover:to-red-950 text-white">
+                Configurar
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Recent Activity */}
+      <Card className="glass border-primary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            Actividad Reciente del Sistema
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 pb-3 border-b border-primary/10">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Nueva incidencia reportada en Servicios</p>
+                <p className="text-xs text-muted-foreground">Hace 15 minutos</p>
+              </div>
+              <Badge variant="outline" className="text-xs">Urgente</Badge>
+            </div>
+            <div className="flex items-start gap-3 pb-3 border-b border-primary/10">
+              <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Guardia nocturna iniciada - 8 efectivos</p>
+                <p className="text-xs text-muted-foreground">Hace 1 hora</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-amber-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Solicitud de permiso aprobada - Efectivo Ramírez</p>
+                <p className="text-xs text-muted-foreground">Hace 2 horas</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

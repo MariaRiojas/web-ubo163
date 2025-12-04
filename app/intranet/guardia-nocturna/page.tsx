@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { IntranetNav } from "@/components/intranet-nav"
+import { ProtectRoute } from "@/components/protect-route"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -39,7 +41,12 @@ export default function GuardiaNocturna() {
   const [isAdmin, setIsAdmin] = useState(true) // Simulamos que el usuario es admin
 
   return (
-    <div className="space-y-6">
+    <ProtectRoute requiredModule="guardias">
+      <div className="flex min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <IntranetNav />
+
+        <main className="flex-1 lg:ml-64 pt-16 lg:pt-0">
+          <div className="p-6 md:p-8 space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-1">Guardia Nocturna</h1>
@@ -225,7 +232,10 @@ export default function GuardiaNocturna() {
         </TabsContent>
       </Tabs>
       <SolicitudesPanel departamento="Guardia Nocturna" />
-    </div>
+          </div>
+        </main>
+      </div>
+    </ProtectRoute>
   )
 }
 
