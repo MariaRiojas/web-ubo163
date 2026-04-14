@@ -7,6 +7,7 @@ export function MainFooter() {
     { name: "Nosotros", path: "/nosotros" },
     { name: "Servicios", path: "/servicios" },
     { name: "Equipo", path: "/equipo" },
+    { name: "Cronograma", path: "/cronograma" },
     { name: "Admisión", path: "/admision" },
     { name: "Contacto", path: "/contacto" },
   ]

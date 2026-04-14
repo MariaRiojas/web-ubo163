@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Guardia nocturna — todos */}
         <ActionCard
-          href="/intranet/guardia-nocturna"
+          href="/guardia-nocturna"
           icon={Moon}
           title="Guardia Nocturna"
           description="Ver calendario y gestionar reservas"
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
 
         {/* Incidencias — todos */}
         <ActionCard
-          href="/intranet/incidencias"
+          href="/incidencias"
           icon={AlertTriangle}
           title="Incidencias"
           description="Reportar problemas y hacer solicitudes"
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
 
         {/* ESBAS — todos */}
         <ActionCard
-          href="/intranet/esbas"
+          href="/esbas"
           icon={GraduationCap}
           title="ESBAS"
           description="Capacitación y malla curricular"
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
         {/* Personal — jefes */}
         {permissions.includes("personnel.view_section") && (
           <ActionCard
-            href="/intranet/personal"
+            href="/personal"
             icon={Users}
             title="Personal"
             description="Directorio y gestión de efectivos"
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
         {/* Secciones — jefes */}
         {permissions.includes("section.manage") && (
           <ActionCard
-            href="/intranet/secciones"
+            href="/secciones"
             icon={Building2}
             title="Secciones"
             description="Gestión de secciones (Art. 112 RIF)"
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
         {/* Reportes — jefes */}
         {permissions.includes("reports.view_section") && (
           <ActionCard
-            href="/intranet/reportes"
+            href="/reportes"
             icon={FileText}
             title="Reportes"
             description="Informes y estadísticas"
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
         {/* Contenido — imagen */}
         {permissions.includes("content.view") && (
           <ActionCard
-            href="/intranet/contenido"
+            href="/contenido"
             icon={Calendar}
             title="Contenido e Imagen"
             description="Calendario de publicaciones"
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
         {/* Configuración — primer jefe */}
         {permissions.includes("system.admin") && (
           <ActionCard
-            href="/intranet/configuracion"
+            href="/configuracion"
             icon={Award}
             title="Configuración"
             description="Ajustes del sistema"
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
                 { key: "administracion", label: "Administración", ref: "117a", status: "verde" },
                 { key: "imagen", label: "Imagen", ref: "117b", status: "verde" },
               ].map((s) => (
-                <Link key={s.key} href={`/intranet/secciones/${s.key}`}>
+                <Link key={s.key} href={`/secciones/${s.key}`}>
                   <div className="p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-primary/5 transition-colors cursor-pointer">
                     <div className="flex items-center gap-2 mb-1">
                       <div

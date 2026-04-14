@@ -17,6 +17,7 @@ export function MainNav() {
     { name: "Nosotros", path: "/nosotros" },
     { name: "Servicios", path: "/servicios" },
     { name: "Equipo", path: "/equipo" },
+    { name: "Cronograma", path: "/cronograma" },
     { name: "Admisión", path: "/admision" },
     { name: "Contacto", path: "/contacto" },
   ]
@@ -57,7 +58,7 @@ export function MainNav() {
           ))}
           <ThemeToggle />
           <Link
-            href="/intranet"
+            href="/login"
             className="flex items-center space-x-2 bg-gradient-to-r from-primary to-red-700 px-6 py-2.5 rounded-full text-sm font-medium text-white hover:shadow-lg transition-all duration-300 transform hover:scale-105"
           >
             <Lock className="h-4 w-4" />
@@ -99,7 +100,7 @@ export function MainNav() {
               </Link>
             ))}
             <Link
-              href="/intranet"
+              href="/login"
               className="flex items-center justify-center space-x-2 bg-gradient-to-r from-primary to-red-700 px-6 py-2.5 rounded-full text-sm font-medium text-white mt-2"
               onClick={() => setMobileMenuOpen(false)}
             >

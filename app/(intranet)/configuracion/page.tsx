@@ -1,433 +1,382 @@
 "use client"
 
 import { useState } from "react"
+import { signOut, useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { User, Lock, Bell, Shield, Eye, EyeOff, Save, Camera, LogOut, CheckCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useRouter } from "next/navigation"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { PageHeader } from "@/components/intranet/page-header"
+import {
+  Settings,
+  User,
+  Lock,
+  Bell,
+  Shield,
+  Eye,
+  EyeOff,
+  Save,
+  LogOut,
+  CheckCircle2,
+  Building2,
+  Key,
+  Database,
+  Globe,
+} from "lucide-react"
+import { companyConfig } from "@/company.config"
 
-export default function ConfiguracionPerfil() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [passwordChanged, setPasswordChanged] = useState(false)
+export default function ConfiguracionPage() {
+  const { data: session } = useSession()
+
+  const [showCurrentPw, setShowCurrentPw] = useState(false)
+  const [showNewPw, setShowNewPw] = useState(false)
+  const [pwSaved, setPwSaved] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
 
-  // Estados para formularios
-  const [perfil, setPerfil] = useState({
-    nombre: "Administrador",
-    email: "admin@bomberos.com",
-    telefono: "+1234567890",
-    rango: "Administrador",
-    departamento: "Jefatura",
-  })
-
-  const [password, setPassword] = useState({
-    current: "",
-    new: "",
-    confirm: "",
-  })
-
-  const [notificaciones, setNotificaciones] = useState({
-    email: true,
-    sistema: true,
+  const [password, setPassword] = useState({ current: "", nuevo: "", confirm: "" })
+  const [notif, setNotif] = useState({
     emergencias: true,
     guardias: true,
+    comunicados: true,
     reuniones: false,
+    esbas: true,
   })
 
-  // Función para guardar cambios de perfil
-  const handleSavePerfil = () => {
+  const initials = session?.user?.name
+    ?.split(" ")
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("") ?? "?"
+
+  const gradeLabels: Record<string, string> = {
+    aspirante: "Aspirante",
+    seccionario: "Seccionario",
+    subteniente: "Subteniente",
+    teniente: "Teniente",
+    capitan: "Capitán",
+    teniente_brigadier: "Ten. Brigadier",
+    brigadier: "Brigadier",
+    brigadier_mayor: "Brig. Mayor",
+    brigadier_general: "Brig. General",
+  }
+
+  const handleSaveProfile = () => {
     setProfileSaved(true)
     setTimeout(() => setProfileSaved(false), 3000)
   }
 
-  // Función para cambiar contraseña
   const handleChangePassword = () => {
-    if (password.new === password.confirm && password.current) {
-      setPasswordChanged(true)
-      setTimeout(() => setPasswordChanged(false), 3000)
-      setPassword({
-        current: "",
-        new: "",
-        confirm: "",
-      })
-    }
+    if (!password.current || !password.nuevo || password.nuevo !== password.confirm) return
+    setPwSaved(true)
+    setPassword({ current: "", nuevo: "", confirm: "" })
+    setTimeout(() => setPwSaved(false), 3000)
   }
 
-  // Función para cerrar sesión
-  const handleLogout = () => {
-    router.push("/intranet")
-  }
+  const pwValid = password.current && password.nuevo && password.nuevo === password.confirm && password.nuevo.length >= 8
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Configuración de Perfil</h1>
-          <p className="text-gray-400">Gestiona tu información personal y preferencias</p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="destructive" className="text-white" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Cerrar Sesión
-          </Button>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        icon={Settings}
+        title="Configuración"
+        description="Ajustes de cuenta, seguridad y preferencias del sistema"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="relative mb-4">
-                <Avatar className="h-32 w-32 border-4 border-red-600">
-                  <AvatarImage src="/placeholder.svg?height=128&width=128" alt="Admin" />
-                  <AvatarFallback className="bg-red-700 text-white text-4xl">AD</AvatarFallback>
-                </Avatar>
-                <Button
-                  size="icon"
-                  className="absolute bottom-0 right-0 rounded-full bg-red-600 hover:bg-red-700 h-8 w-8"
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
-              </div>
-              <h2 className="text-xl font-bold text-white mt-2">Administrador</h2>
-              <p className="text-gray-400 mb-4">admin@bomberos.com</p>
-              <Badge className="bg-red-600 mb-6">Administrador</Badge>
+        {/* Tarjeta lateral de perfil */}
+        <Card className="glass border-primary/10 h-fit">
+          <CardContent className="pt-6 flex flex-col items-center text-center space-y-3">
+            <Avatar className="h-20 w-20">
+              <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-bold text-lg">{session?.user?.name ?? "—"}</p>
+              <p className="text-sm text-muted-foreground">{session?.user?.email ?? "—"}</p>
+            </div>
+            <Badge className="bg-primary/10 text-primary border-primary/20">
+              {gradeLabels[session?.user?.grade ?? ""] ?? session?.user?.grade ?? "—"}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-destructive border-destructive/30 hover:bg-destructive hover:text-white mt-2"
+              onClick={() => signOut({ callbackUrl: "/" })}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </Button>
+          </CardContent>
+        </Card>
 
-              <div className="w-full space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full border-gray-700 text-gray-300 hover:text-white justify-start"
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Ver Perfil Público
-                </Button>
-                <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar Sesión
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* Tabs principales */}
         <div className="lg:col-span-3">
-          <Tabs defaultValue="perfil" className="w-full">
-            <TabsList className="bg-gray-800 border-gray-700 w-full justify-start overflow-x-auto">
-              <TabsTrigger value="perfil" className="data-[state=active]:bg-red-600">
-                <User className="mr-2 h-4 w-4" />
-                Perfil
+          <Tabs defaultValue="cuenta">
+            <TabsList className="w-full justify-start mb-6 flex-wrap h-auto">
+              <TabsTrigger value="cuenta" className="gap-2">
+                <User className="h-4 w-4" />
+                Cuenta
               </TabsTrigger>
-              <TabsTrigger value="seguridad" className="data-[state=active]:bg-red-600">
-                <Lock className="mr-2 h-4 w-4" />
+              <TabsTrigger value="seguridad" className="gap-2">
+                <Lock className="h-4 w-4" />
                 Seguridad
               </TabsTrigger>
-              <TabsTrigger value="notificaciones" className="data-[state=active]:bg-red-600">
-                <Bell className="mr-2 h-4 w-4" />
+              <TabsTrigger value="notificaciones" className="gap-2">
+                <Bell className="h-4 w-4" />
                 Notificaciones
+              </TabsTrigger>
+              <TabsTrigger value="sistema" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Sistema
               </TabsTrigger>
             </TabsList>
 
-            {/* Pestaña de Perfil */}
-            <TabsContent value="perfil" className="mt-6">
-              <Card className="bg-gray-800 border-gray-700">
+            {/* ── Cuenta ── */}
+            <TabsContent value="cuenta" className="space-y-4">
+              <Card className="glass border-primary/10">
                 <CardHeader>
-                  <CardTitle className="text-white">Información Personal</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Actualiza tu información personal y de contacto
-                  </CardDescription>
+                  <CardTitle className="text-base">Información Personal</CardTitle>
+                  <CardDescription>Los cambios requieren validación del primer jefe.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {profileSaved && (
-                    <Alert className="bg-green-900/30 border-green-800 text-white mb-4">
-                      <CheckCircle className="h-4 w-4 text-green-400" />
-                      <AlertTitle>Perfil actualizado</AlertTitle>
-                      <AlertDescription>Los cambios en tu perfil han sido guardados correctamente.</AlertDescription>
+                    <Alert className="border-green-500/30 bg-green-500/10">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <AlertDescription className="text-green-700 dark:text-green-400">
+                        Solicitud de cambio enviada correctamente.
+                      </AlertDescription>
                     </Alert>
                   )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="nombre">Nombre Completo</Label>
-                      <Input
-                        id="nombre"
-                        className="bg-gray-750 border-gray-700 text-white"
-                        value={perfil.nombre}
-                        onChange={(e) => setPerfil({ ...perfil, nombre: e.target.value })}
-                      />
+                      <Label>Nombre completo</Label>
+                      <Input defaultValue={session?.user?.name ?? ""} className="glass" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Correo Electrónico</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        className="bg-gray-750 border-gray-700 text-white"
-                        value={perfil.email}
-                        onChange={(e) => setPerfil({ ...perfil, email: e.target.value })}
-                      />
+                      <Label>Correo electrónico</Label>
+                      <Input type="email" defaultValue={session?.user?.email ?? ""} className="glass" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="telefono">Teléfono</Label>
+                      <Label>Grado</Label>
                       <Input
-                        id="telefono"
-                        className="bg-gray-750 border-gray-700 text-white"
-                        value={perfil.telefono}
-                        onChange={(e) => setPerfil({ ...perfil, telefono: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="rango">Rango</Label>
-                      <Input
-                        id="rango"
-                        className="bg-gray-750 border-gray-700 text-white"
-                        value={perfil.rango}
+                        value={gradeLabels[session?.user?.grade ?? ""] ?? session?.user?.grade ?? ""}
                         disabled
+                        className="glass opacity-60"
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="departamento">Departamento</Label>
-                      <Select
-                        value={perfil.departamento}
-                        onValueChange={(value) => setPerfil({ ...perfil, departamento: value })}
-                        disabled
-                      >
-                        <SelectTrigger id="departamento" className="bg-gray-750 border-gray-700 text-white">
-                          <SelectValue placeholder="Seleccionar departamento" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                          <SelectItem value="Jefatura">Jefatura</SelectItem>
-                          <SelectItem value="Operaciones">Operaciones</SelectItem>
-                          <SelectItem value="Administración">Administración</SelectItem>
-                          <SelectItem value="Instrucción">Instrucción</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-2">
+                      <Label>DNI</Label>
+                      <Input placeholder="No registrado" disabled className="glass opacity-60" />
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-end border-t border-gray-700 pt-4">
-                  <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleSavePerfil}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Guardar Cambios
+                <CardFooter className="border-t border-border pt-4">
+                  <Button onClick={handleSaveProfile} className="ml-auto bg-primary text-white">
+                    <Save className="h-4 w-4 mr-2" />
+                    Solicitar Cambio
                   </Button>
                 </CardFooter>
               </Card>
             </TabsContent>
 
-            {/* Pestaña de Seguridad */}
-            <TabsContent value="seguridad" className="mt-6">
-              <Card className="bg-gray-800 border-gray-700">
+            {/* ── Seguridad ── */}
+            <TabsContent value="seguridad" className="space-y-4">
+              <Card className="glass border-primary/10">
                 <CardHeader>
-                  <CardTitle className="text-white">Cambiar Contraseña</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Actualiza tu contraseña para mantener tu cuenta segura
-                  </CardDescription>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Key className="h-4 w-4 text-primary" />
+                    Cambiar Contraseña
+                  </CardTitle>
+                  <CardDescription>Mínimo 8 caracteres. Se recomienda usar letras, números y símbolos.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {passwordChanged && (
-                    <Alert className="bg-green-900/30 border-green-800 text-white mb-4">
-                      <Shield className="h-4 w-4 text-green-400" />
-                      <AlertTitle>Contraseña actualizada</AlertTitle>
-                      <AlertDescription>Tu contraseña ha sido cambiada correctamente.</AlertDescription>
+                  {pwSaved && (
+                    <Alert className="border-green-500/30 bg-green-500/10">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <AlertDescription className="text-green-700 dark:text-green-400">
+                        Contraseña actualizada correctamente.
+                      </AlertDescription>
                     </Alert>
                   )}
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="current-password">Contraseña Actual</Label>
-                      <div className="relative">
-                        <Input
-                          id="current-password"
-                          type={showPassword ? "text" : "password"}
-                          className="bg-gray-750 border-gray-700 text-white pr-10"
-                          value={password.current}
-                          onChange={(e) => setPassword({ ...password, current: e.target.value })}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">Nueva Contraseña</Label>
-                      <div className="relative">
-                        <Input
-                          id="new-password"
-                          type={showNewPassword ? "text" : "password"}
-                          className="bg-gray-750 border-gray-700 text-white pr-10"
-                          value={password.new}
-                          onChange={(e) => setPassword({ ...password, new: e.target.value })}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirmar Nueva Contraseña</Label>
+                  <div className="space-y-2">
+                    <Label>Contraseña actual</Label>
+                    <div className="relative">
                       <Input
-                        id="confirm-password"
-                        type="password"
-                        className="bg-gray-750 border-gray-700 text-white"
-                        value={password.confirm}
-                        onChange={(e) => setPassword({ ...password, confirm: e.target.value })}
+                        type={showCurrentPw ? "text" : "password"}
+                        value={password.current}
+                        onChange={(e) => setPassword({ ...password, current: e.target.value })}
+                        className="glass pr-10"
                       />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowCurrentPw(!showCurrentPw)}
+                      >
+                        {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Nueva contraseña</Label>
+                    <div className="relative">
+                      <Input
+                        type={showNewPw ? "text" : "password"}
+                        value={password.nuevo}
+                        onChange={(e) => setPassword({ ...password, nuevo: e.target.value })}
+                        className="glass pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowNewPw(!showNewPw)}
+                      >
+                        {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {password.nuevo && password.nuevo.length < 8 && (
+                      <p className="text-xs text-destructive">Mínimo 8 caracteres</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Confirmar nueva contraseña</Label>
+                    <Input
+                      type="password"
+                      value={password.confirm}
+                      onChange={(e) => setPassword({ ...password, confirm: e.target.value })}
+                      className="glass"
+                    />
+                    {password.confirm && password.nuevo !== password.confirm && (
+                      <p className="text-xs text-destructive">Las contraseñas no coinciden</p>
+                    )}
+                  </div>
                 </CardContent>
-                <CardFooter className="flex justify-end border-t border-gray-700 pt-4">
+                <CardFooter className="border-t border-border pt-4">
                   <Button
-                    className="bg-red-600 hover:bg-red-700 text-white"
                     onClick={handleChangePassword}
-                    disabled={!password.current || !password.new || password.new !== password.confirm}
+                    disabled={!pwValid}
+                    className="ml-auto bg-primary text-white"
                   >
-                    <Lock className="mr-2 h-4 w-4" />
-                    Cambiar Contraseña
+                    <Lock className="h-4 w-4 mr-2" />
+                    Actualizar Contraseña
                   </Button>
                 </CardFooter>
               </Card>
 
-              <Card className="bg-gray-800 border-gray-700 mt-6">
+              <Card className="glass border-primary/10">
                 <CardHeader>
-                  <CardTitle className="text-white">Sesiones Activas</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Gestiona tus sesiones activas en diferentes dispositivos
-                  </CardDescription>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    Permisos Activos
+                  </CardTitle>
+                  <CardDescription>Permisos asignados según cargo y grado.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { device: "Windows PC", location: "Santiago, Chile", lastActive: "Ahora", current: true },
-                      { device: "iPhone 13", location: "Santiago, Chile", lastActive: "Hace 2 horas" },
-                      { device: "MacBook Pro", location: "Valparaíso, Chile", lastActive: "Hace 2 días" },
-                    ].map((session, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                        <div>
-                          <div className="flex items-center">
-                            <p className="font-medium text-white">{session.device}</p>
-                            {session.current && <Badge className="ml-2 bg-green-900/30 text-green-400">Actual</Badge>}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-400 mt-1">
-                            <p>{session.location}</p>
-                            <span className="mx-2">•</span>
-                            <p>{session.lastActive}</p>
-                          </div>
-                        </div>
-                        {!session.current && (
-                          <Button variant="destructive" size="sm">
-                            <LogOut className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                  <div className="flex flex-wrap gap-2">
+                    {((session?.user?.permissions as string[]) ?? []).map((p) => (
+                      <Badge key={p} variant="secondary" className="text-xs font-mono">
+                        {p}
+                      </Badge>
                     ))}
+                    {!session?.user?.permissions && (
+                      <p className="text-sm text-muted-foreground">Cargando permisos…</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Pestaña de Notificaciones */}
-            <TabsContent value="notificaciones" className="mt-6">
-              <Card className="bg-gray-800 border-gray-700">
+            {/* ── Notificaciones ── */}
+            <TabsContent value="notificaciones">
+              <Card className="glass border-primary/10">
                 <CardHeader>
-                  <CardTitle className="text-white">Preferencias de Notificaciones</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Configura cómo y cuándo quieres recibir notificaciones
-                  </CardDescription>
+                  <CardTitle className="text-base">Preferencias de Notificaciones</CardTitle>
+                  <CardDescription>Controla qué alertas recibirás dentro del sistema.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-medium text-white">Canales de Notificación</h3>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                        <div>
-                          <p className="font-medium text-white">Correo Electrónico</p>
-                          <p className="text-sm text-gray-400">Recibir notificaciones por email</p>
-                        </div>
-                        <Switch
-                          checked={notificaciones.email}
-                          onCheckedChange={(checked) => setNotificaciones({ ...notificaciones, email: checked })}
-                        />
+                <CardContent className="space-y-3">
+                  {(
+                    [
+                      { key: "emergencias", label: "Emergencias", desc: "Alertas de despliegue y emergencias activas" },
+                      { key: "guardias", label: "Guardias Nocturnas", desc: "Recordatorios de guardia asignada" },
+                      { key: "comunicados", label: "Comunicados", desc: "Nuevos comunicados de jefatura" },
+                      { key: "esbas", label: "ESBAS", desc: "Disponibilidad de nuevas lecciones" },
+                      { key: "reuniones", label: "Reuniones", desc: "Recordatorios de reuniones mensuales" },
+                    ] as const
+                  ).map(({ key, label, desc }) => (
+                    <div key={key} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                      <div>
+                        <p className="text-sm font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground">{desc}</p>
                       </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                        <div>
-                          <p className="font-medium text-white">Notificaciones del Sistema</p>
-                          <p className="text-sm text-gray-400">Recibir notificaciones en la plataforma</p>
-                        </div>
-                        <Switch
-                          checked={notificaciones.sistema}
-                          onCheckedChange={(checked) => setNotificaciones({ ...notificaciones, sistema: checked })}
-                        />
-                      </div>
+                      <Switch
+                        checked={notif[key]}
+                        onCheckedChange={(v) => setNotif({ ...notif, [key]: v })}
+                      />
                     </div>
-
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-medium text-white">Tipos de Notificaciones</h3>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                        <div>
-                          <p className="font-medium text-white">Emergencias</p>
-                          <p className="text-sm text-gray-400">Alertas de emergencias y despliegues</p>
-                        </div>
-                        <Switch
-                          checked={notificaciones.emergencias}
-                          onCheckedChange={(checked) => setNotificaciones({ ...notificaciones, emergencias: checked })}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                        <div>
-                          <p className="font-medium text-white">Guardias</p>
-                          <p className="text-sm text-gray-400">Recordatorios de guardias programadas</p>
-                        </div>
-                        <Switch
-                          checked={notificaciones.guardias}
-                          onCheckedChange={(checked) => setNotificaciones({ ...notificaciones, guardias: checked })}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                        <div>
-                          <p className="font-medium text-white">Reuniones</p>
-                          <p className="text-sm text-gray-400">Recordatorios de reuniones y capacitaciones</p>
-                        </div>
-                        <Switch
-                          checked={notificaciones.reuniones}
-                          onCheckedChange={(checked) => setNotificaciones({ ...notificaciones, reuniones: checked })}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </CardContent>
-                <CardFooter className="flex justify-end border-t border-gray-700 pt-4">
-                  <Button className="bg-red-600 hover:bg-red-700 text-white">
-                    <Save className="mr-2 h-4 w-4" />
+                <CardFooter className="border-t border-border pt-4">
+                  <Button className="ml-auto bg-primary text-white">
+                    <Save className="h-4 w-4 mr-2" />
                     Guardar Preferencias
                   </Button>
                 </CardFooter>
+              </Card>
+            </TabsContent>
+
+            {/* ── Sistema ── */}
+            <TabsContent value="sistema" className="space-y-4">
+              <Card className="glass border-primary/10">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-primary" />
+                    Información de la Compañía
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-0">
+                  {[
+                    { label: "Nombre", value: companyConfig.name },
+                    { label: "ID / UBO", value: companyConfig.id },
+                    { label: "Distrito", value: companyConfig.location.district },
+                    { label: "Provincia", value: companyConfig.location.province },
+                    { label: "Departamento", value: companyConfig.location.department },
+                    { label: "Fundación", value: String(companyConfig.foundedYear) },
+                    { label: "Comandancia", value: companyConfig.departmental.name },
+                    { label: "Email", value: companyConfig.contact.email },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between py-2.5 border-b border-border last:border-0 text-sm">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="font-medium">{value}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="glass border-primary/10">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" />
+                    Estado del Sistema
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-0">
+                  {[
+                    { label: "Versión", value: "1.0.0-beta" },
+                    { label: "Framework", value: "Next.js 15" },
+                    { label: "Base de datos", value: "PostgreSQL (pendiente conexión)" },
+                    { label: "Auth", value: "NextAuth v5" },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between py-2.5 border-b border-border last:border-0 text-sm">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="font-medium font-mono text-xs">{value}</span>
+                    </div>
+                  ))}
+                </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
@@ -436,4 +385,3 @@ export default function ConfiguracionPerfil() {
     </div>
   )
 }
-
