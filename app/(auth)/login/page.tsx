@@ -35,7 +35,7 @@ export default function LoginPage() {
       setError("Usuario o contraseña incorrectos")
       setIsLoading(false)
     } else {
-      router.push("/intranet/dashboard")
+      router.push("/dashboard")
       router.refresh()
     }
   }

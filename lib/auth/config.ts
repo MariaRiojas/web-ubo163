@@ -85,7 +85,7 @@ export const authConfig: NextAuthConfig = {
         session.user.profileId = token.profileId as string
         session.user.grade = token.grade as string
         session.user.status = token.status as string
-        session.user.permissions = token.permissions as string[]
+        session.user.permissions = token.permissions as import('./permissions').Permission[]
       }
       return session
     },

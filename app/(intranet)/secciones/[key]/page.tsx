@@ -16,10 +16,12 @@ import type { Permission } from "@/lib/auth/permissions"
 const VALID_KEYS = ['jefatura', 'maquinas', 'servicios_generales', 'instruccion', 'prehospitalaria', 'administracion', 'imagen'] as const
 type SectionKey = typeof VALID_KEYS[number]
 
+import type { LucideIcon } from "lucide-react"
+
 const SECTION_META: Record<SectionKey, {
   name: string
   type: string
-  icon: React.ElementType
+  icon: LucideIcon
   normativeRef: string
   description: string
   color: string
@@ -74,11 +76,12 @@ const MOCK_PERSONNEL: Record<SectionKey, Array<{ name: string; grade: string; ro
   ],
 }
 
-export default async function SectionPage({ params }: { params: { key: string } }) {
+export default async function SectionPage({ params }: { params: Promise<{ key: string }> }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const key = params.key as SectionKey
+  const { key: rawKey } = await params
+  const key = rawKey as SectionKey
   if (!VALID_KEYS.includes(key)) notFound()
 
   const meta = SECTION_META[key]

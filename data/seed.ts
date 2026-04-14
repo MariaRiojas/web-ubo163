@@ -303,7 +303,6 @@ async function seed() {
         birthDate: '2002-05-14',
         specialties: [],
         esbasPromotion: 'ESBAS-2023-I',
-        esbasProgress: undefined,
       },
       // ASPIRANTES EN CURSO
       {

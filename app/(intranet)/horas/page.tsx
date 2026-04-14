@@ -6,7 +6,7 @@ import { Clock } from "lucide-react"
 import type { Permission } from "@/lib/auth/permissions"
 
 // NDR Ascensos — requisitos mínimos por grado (Norma de Ascensos CGBVP)
-export const NDR_REQUISITOS: Record<string, { horasTrimestrales: number; guardiasTrimestrales: number; label: string }> = {
+const NDR_REQUISITOS: Record<string, { horasTrimestrales: number; guardiasTrimestrales: number; label: string }> = {
   aspirante:          { horasTrimestrales: 150, guardiasTrimestrales: 9, label: 'Aspirante → Seccionario' },
   seccionario:        { horasTrimestrales: 120, guardiasTrimestrales: 6, label: 'Seccionario → Subteniente' },
   subteniente:        { horasTrimestrales: 100, guardiasTrimestrales: 4, label: 'Subteniente → Teniente' },

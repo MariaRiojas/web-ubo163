@@ -51,36 +51,36 @@ function buildNavGroups(permissions: Permission[]): NavGroup[] {
     {
       label: "Principal",
       items: [
-        { href: "/intranet/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/intranet/comunicados", label: "Comunicados", icon: Megaphone },
-        { href: "/intranet/perfil", label: "Mi Perfil", icon: User },
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/comunicados", label: "Comunicados", icon: Megaphone },
+        { href: "/perfil", label: "Mi Perfil", icon: User },
       ],
     },
   ]
 
   // Módulos operativos (todos los efectivos)
   const operativos: NavItem[] = [
-    { href: "/intranet/guardia-nocturna", label: "Guardia Nocturna", icon: Moon },
-    { href: "/intranet/horas", label: "Jornada Voluntaria", icon: Clock },
-    { href: "/intranet/incidencias", label: "Incidencias", icon: AlertCircle },
-    { href: "/intranet/esbas", label: "ESBAS", icon: BookOpen, normativeRef: "NDR Malla Curricular" },
+    { href: "/guardia-nocturna", label: "Guardia Nocturna", icon: Moon },
+    { href: "/horas", label: "Jornada Voluntaria", icon: Clock },
+    { href: "/incidencias", label: "Incidencias", icon: AlertCircle },
+    { href: "/esbas", label: "ESBAS", icon: BookOpen, normativeRef: "NDR Malla Curricular" },
   ]
   groups.push({ label: "Operativo", items: operativos })
 
   // Gestión (jefes de sección y superiores)
   const gestion: NavItem[] = []
   if (has("personnel.view_section") || has("personnel.view_all")) {
-    gestion.push({ href: "/intranet/personal", label: "Personal", icon: Users })
+    gestion.push({ href: "/personal", label: "Personal", icon: Users })
   }
   if (has("inventory.view")) {
-    gestion.push({ href: "/intranet/inventario", label: "Inventario", icon: Package })
+    gestion.push({ href: "/inventario", label: "Inventario", icon: Package })
   }
   if (has("content.view")) {
-    gestion.push({ href: "/intranet/contenido", label: "Contenido e Imagen", icon: Calendar })
+    gestion.push({ href: "/contenido", label: "Contenido e Imagen", icon: Calendar })
   }
   if (has("company.view_all") || has("section.manage")) {
     gestion.push({
-      href: "/intranet/secciones",
+      href: "/secciones",
       label: "Secciones",
       icon: Building2,
       normativeRef: "Art. 112 RIF",
@@ -93,10 +93,10 @@ function buildNavGroups(permissions: Permission[]): NavGroup[] {
   // Administración (jefatura y admins)
   const admin: NavItem[] = []
   if (has("reports.view_section") || has("reports.view_all")) {
-    admin.push({ href: "/intranet/reportes", label: "Reportes", icon: BarChart3 })
+    admin.push({ href: "/reportes", label: "Reportes", icon: BarChart3 })
   }
   if (has("system.admin")) {
-    admin.push({ href: "/intranet/configuracion", label: "Configuración", icon: Settings })
+    admin.push({ href: "/configuracion", label: "Configuración", icon: Settings })
   }
   if (admin.length > 0) {
     groups.push({ label: "Administración", items: admin })

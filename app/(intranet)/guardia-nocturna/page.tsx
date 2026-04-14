@@ -7,11 +7,12 @@ import type { Permission } from "@/lib/auth/permissions"
 import { companyConfig } from "@/company.config"
 
 // Datos de ejemplo — en producción: await getAllBeds() + getShiftsByDateRange()
+type BedStatus = 'disponible' | 'ocupada' | 'mantenimiento'
 const MOCK_BEDS = Array.from({ length: companyConfig.guardia.totalCamas }, (_, i) => ({
   id: `bed-${i + 1}`,
   number: i + 1,
   sector: i < 4 ? 'Sector A' : i < 8 ? 'Sector B' : 'Sector C',
-  status: i === 5 ? 'mantenimiento' : 'disponible' as const,
+  status: (i === 5 ? 'mantenimiento' : 'disponible') as BedStatus,
   notes: i === 5 ? 'En revisión por humedad' : null,
 }))
 

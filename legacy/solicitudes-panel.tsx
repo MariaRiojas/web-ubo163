@@ -419,10 +419,10 @@ export default function SolicitudesPanel({ departamento }: SolicitudesPanelProps
   })
 
   // Obtener el icono correspondiente al departamento
-  const DepartmentIcon = iconosPorDepartamento[departamento] || MessageSquare
+  const DepartmentIcon = (iconosPorDepartamento as Record<string, typeof MessageSquare>)[departamento] || MessageSquare
 
   // Obtener las solicitudes específicas para este departamento
-  const solicitudesPendientes = solicitudesPorDepartamento[departamento] || []
+  const solicitudesPendientes: any[] = (solicitudesPorDepartamento as Record<string, any[]>)[departamento] || []
 
   const verDetalles = (solicitud: any) => {
     setSolicitudSeleccionada(solicitud)

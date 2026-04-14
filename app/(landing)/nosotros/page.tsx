@@ -190,7 +190,7 @@ export default function NosotrosPage() {
                 {timeline.map((event, index) => (
                   <div
                     key={index}
-                    ref={(el) => (timelineRefs.current[index] = el)}
+                    ref={(el) => { timelineRefs.current[index] = el }}
                     className={`relative flex flex-col md:flex-row items-start md:items-center transition-all duration-700 ${
                       index % 2 === 0 ? "md:flex-row-reverse" : ""
                     } ${

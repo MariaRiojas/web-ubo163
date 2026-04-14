@@ -1,288 +1,266 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { IntranetNav } from "@/components/intranet-nav"
-import { ProtectRoute } from "@/components/protect-route"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { PageHeader } from "@/components/intranet/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import {
-  UserCircle,
-  Shield,
-  Mail,
-  Phone,
-  Calendar,
-  MapPin,
-  Edit,
-  Save,
-  X,
-  Award,
-  Clock,
+  UserCircle, Clock, Shield, GraduationCap, Star,
+  TrendingUp, Calendar, Phone, Mail, Edit,
 } from "lucide-react"
-import { User } from "@/lib/auth"
+import type { Permission } from "@/lib/auth/permissions"
 
-export default function PerfilPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isClient, setIsClient] = useState(false)
+const GRADE_LABELS: Record<string, string> = {
+  aspirante: 'Aspirante', seccionario: 'Seccionario', subteniente: 'Subteniente',
+  teniente: 'Teniente', capitan: 'Capitán', teniente_brigadier: 'Ten. Brigadier',
+  brigadier: 'Brigadier', brigadier_mayor: 'Brig. Mayor', brigadier_general: 'Brig. General',
+}
 
-  useEffect(() => {
-    setIsClient(true)
-    const currentUser = localStorage.getItem("currentUser")
-    if (!currentUser) {
-      router.push("/intranet")
-      return
-    }
-    setUser(JSON.parse(currentUser))
-  }, [router])
+// NDR Ascensos — requisitos mínimos por grado (h/trimestre + guardias)
+const NDR_REQUISITOS: Record<string, { horasTrimestrales: number; guardiasTrimestrales: number }> = {
+  aspirante:          { horasTrimestrales: 150, guardiasTrimestrales: 9 },
+  seccionario:        { horasTrimestrales: 120, guardiasTrimestrales: 6 },
+  subteniente:        { horasTrimestrales: 100, guardiasTrimestrales: 4 },
+  teniente:           { horasTrimestrales: 80,  guardiasTrimestrales: 3 },
+  capitan:            { horasTrimestrales: 60,  guardiasTrimestrales: 2 },
+  teniente_brigadier: { horasTrimestrales: 60,  guardiasTrimestrales: 2 },
+  brigadier:          { horasTrimestrales: 40,  guardiasTrimestrales: 1 },
+  brigadier_mayor:    { horasTrimestrales: 40,  guardiasTrimestrales: 1 },
+}
 
-  if (!isClient || !user) return null
+// Mock stats — en producción: await getProfileStats(profileId)
+const MOCK_STATS = {
+  horasTrimestrales: 87.5,
+  guardiasTrimestrales: 4,
+  horasTotales: 1240,
+  guardiasTotales: 87,
+  incidenciasCreadas: 12,
+  esbas: { completadas: 5, total: 30, percentage: 17 },
+  especialidades: ['Bombero Básico'],
+  joinDate: '2020-03-15',
+  section: 'Sección de Máquinas',
+  sectionRole: 'miembro',
+  phone: '+51 999 001 005',
+  email: 'efectivo@cia163.pe',
+  bloodType: 'O+',
+  birthDate: '1995-08-22',
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  primer_jefe: 'Primer Jefe', segundo_jefe: 'Segundo Jefe',
+  jefe_seccion: 'Jefe de Sección', adjunto: 'Adjunto', miembro: 'Miembro',
+}
+
+// TODO Phase 4: editable fields with form + server action
+export default async function PerfilPage() {
+  const session = await auth()
+  if (!session?.user) redirect("/login")
+
+  const { name, email, grade, status, permissions } = session.user as {
+    name?: string | null
+    email?: string | null
+    grade?: string
+    status?: string
+    permissions?: Permission[]
+  }
+
+  const gradeKey = grade ?? 'seccionario'
+  const requisitos = NDR_REQUISITOS[gradeKey] ?? NDR_REQUISITOS.seccionario
+  const horasPct = Math.min(100, (MOCK_STATS.horasTrimestrales / requisitos.horasTrimestrales) * 100)
+  const guardiasPct = Math.min(100, (MOCK_STATS.guardiasTrimestrales / requisitos.guardiasTrimestrales) * 100)
+
+  const initials = (name ?? 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+
+  // Años de servicio
+  const yearsOfService = Math.floor(
+    (new Date().getTime() - new Date(MOCK_STATS.joinDate).getTime()) / (1000 * 60 * 60 * 24 * 365)
+  )
 
   return (
-    <ProtectRoute requiredModule="perfil">
-      <div className="flex min-h-screen bg-gradient-to-b from-background to-muted/20">
-        <IntranetNav />
+    <div>
+      <PageHeader
+        icon={UserCircle}
+        title="Mi Perfil"
+        description="Información personal, estadísticas de servicio y progreso"
+      >
+        <Button variant="outline" size="sm" disabled>
+          <Edit className="h-4 w-4 mr-2" />
+          Editar perfil
+        </Button>
+      </PageHeader>
 
-        <main className="flex-1 lg:ml-64 pt-16 lg:pt-0">
-          <div className="p-6 md:p-8">
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <UserCircle className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl md:text-4xl font-bold">Mi Perfil</h1>
+      <div className="grid gap-5 lg:grid-cols-3">
+        {/* ── Columna izquierda: datos personales ───────────────── */}
+        <div className="space-y-4">
+          {/* Tarjeta de identidad */}
+          <Card className="glass border-primary/10">
+            <CardContent className="pt-6 flex flex-col items-center text-center gap-3">
+              <Avatar className="h-20 w-20">
+                <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-bold text-lg leading-tight">{name ?? '—'}</p>
+                <p className="text-sm text-muted-foreground">{MOCK_STATS.section}</p>
+                <p className="text-xs text-muted-foreground">{ROLE_LABELS[MOCK_STATS.sectionRole]}</p>
               </div>
-              <p className="text-muted-foreground">
-                Información personal y configuración de cuenta
-              </p>
-            </div>
+              <div className="flex gap-2 flex-wrap justify-center">
+                {grade && (
+                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                    {GRADE_LABELS[gradeKey] ?? gradeKey}
+                  </Badge>
+                )}
+                {status && (
+                  <Badge variant="outline" className={`text-xs ${
+                    status === 'activo' ? 'bg-green-500/10 text-green-700 border-green-500/20' : ''
+                  }`}>
+                    {status}
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Profile Card */}
-              <Card className="lg:col-span-2 glass border-primary/10">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCircle className="h-5 w-5 text-primary" />
-                    Información Personal
-                  </CardTitle>
-                  {!isEditing ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(false)}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Cancelar
-                      </Button>
-                      <Button size="sm">
-                        <Save className="h-4 w-4 mr-2" />
-                        Guardar
-                      </Button>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Avatar Section */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 h-24 bg-gradient-to-br from-primary to-red-800 rounded-full flex items-center justify-center">
-                      <span className="text-3xl font-bold text-white">
-                        {user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{user.name}</h3>
-                      <Badge className="mt-1 bg-primary/20 text-primary border-primary/30">
-                        {user.role === "comandante"
-                          ? "Comandante General"
-                          : user.role === "jefe_area"
-                          ? `Jefe de ${user.area.charAt(0).toUpperCase() + user.area.slice(1)}`
-                          : user.role === "jefe_guardia"
-                          ? "Jefe de Guardia"
-                          : "Efectivo"}
-                      </Badge>
-                    </div>
-                  </div>
+          {/* Datos de contacto */}
+          <Card className="glass border-primary/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Datos de contacto</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {[
+                { icon: Phone, label: MOCK_STATS.phone },
+                { icon: Mail, label: MOCK_STATS.email ?? email ?? '—' },
+                { icon: Calendar, label: `Incorporación: ${new Date(MOCK_STATS.joinDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}` },
+                { icon: Shield, label: `Grupo sanguíneo: ${MOCK_STATS.bloodType}` },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="flex items-center gap-2 text-muted-foreground">
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-xs">{label}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
-                  {/* Personal Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="username">Usuario</Label>
-                      <Input
-                        id="username"
-                        value={user.username}
-                        disabled
-                        className="mt-1"
-                      />
-                    </div>
+          {/* Especialidades */}
+          {MOCK_STATS.especialidades.length > 0 && (
+            <Card className="glass border-primary/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Star className="h-4 w-4 text-amber-500" />
+                  Especialidades
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {MOCK_STATS.especialidades.map(spec => (
+                  <Badge key={spec} variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20">
+                    {spec}
+                  </Badge>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
-                    <div>
-                      <Label htmlFor="name">Nombre Completo</Label>
-                      <Input
-                        id="name"
-                        value={user.name}
-                        disabled={!isEditing}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">Correo Electrónico</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="correo@bomberos163.com"
-                        disabled={!isEditing}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">Teléfono</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+591 XXXXXXXX"
-                        disabled={!isEditing}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="area">Área</Label>
-                      <Input
-                        id="area"
-                        value={user.area.charAt(0).toUpperCase() + user.area.slice(1)}
-                        disabled
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="gender">Género</Label>
-                      <Input
-                        id="gender"
-                        value={user.gender === "masculino" ? "Masculino" : "Femenino"}
-                        disabled
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
+        {/* ── Columna derecha: estadísticas ─────────────────────── */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* KPIs totales */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Años de servicio', value: yearsOfService, icon: Calendar, color: 'text-primary' },
+              { label: 'Horas totales', value: MOCK_STATS.horasTotales, icon: Clock, color: 'text-blue-600' },
+              { label: 'Guardias realizadas', value: MOCK_STATS.guardiasTotales, icon: Shield, color: 'text-indigo-600' },
+              { label: 'Incidencias reportadas', value: MOCK_STATS.incidenciasCreadas, icon: TrendingUp, color: 'text-amber-600' },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <Card key={label} className="glass border-primary/10">
+                <CardContent className="pt-4">
+                  <Icon className={`h-5 w-5 mb-1 ${color}`} />
+                  <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
                 </CardContent>
               </Card>
-
-              {/* Stats Card */}
-              <div className="space-y-6">
-                {user.role === "efectivo" && (
-                  <>
-                    <Card className="glass border-primary/10">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Award className="h-5 w-5 text-primary" />
-                          Progreso ESBAS
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Lecciones completadas</span>
-                              <span className="font-bold">12/30</span>
-                            </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-primary to-red-800"
-                                style={{ width: "40%" }}
-                              />
-                            </div>
-                          </div>
-                          <div className="pt-2 border-t border-primary/10">
-                            <p className="text-xs text-muted-foreground mb-2">
-                              Especialidades desbloqueadas
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                Básico
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                Rescate
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="glass border-primary/10">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Clock className="h-5 w-5 text-primary" />
-                          Estadísticas
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">
-                              Horas este mes
-                            </span>
-                            <span className="font-bold">40h</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">
-                              Total acumulado
-                            </span>
-                            <span className="font-bold">152h</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">
-                              Guardias completadas
-                            </span>
-                            <span className="font-bold">8</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </>
-                )}
-
-                <Card className="glass border-primary/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      Información del Sistema
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Último acceso</span>
-                        <span className="font-medium">Hoy</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Miembro desde</span>
-                        <span className="font-medium">Ene 2024</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            ))}
           </div>
-        </main>
+
+          {/* Cumplimiento NDR Ascensos (trimestre actual) */}
+          <Card className="glass border-primary/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Cumplimiento NDR Ascensos — trimestre actual
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />Horas de servicio
+                    </span>
+                    <span className={`font-medium ${horasPct >= 100 ? 'text-green-600' : horasPct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {MOCK_STATS.horasTrimestrales}/{requisitos.horasTrimestrales}h
+                    </span>
+                  </div>
+                  <Progress value={horasPct} className="h-2" />
+                  <p className="text-xs text-muted-foreground">{horasPct.toFixed(0)}% del requisito</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Shield className="h-3.5 w-3.5" />Guardias nocturnas
+                    </span>
+                    <span className={`font-medium ${guardiasPct >= 100 ? 'text-green-600' : guardiasPct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {MOCK_STATS.guardiasTrimestrales}/{requisitos.guardiasTrimestrales}
+                    </span>
+                  </div>
+                  <Progress value={guardiasPct} className="h-2" />
+                  <p className="text-xs text-muted-foreground">{guardiasPct.toFixed(0)}% del requisito</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Progreso ESBAS */}
+          <Card className="glass border-primary/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                Progreso ESBAS
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-end justify-between">
+                <p className="text-3xl font-bold text-primary">{MOCK_STATS.esbas.percentage}%</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {MOCK_STATS.esbas.completadas} de {MOCK_STATS.esbas.total} lecciones
+                </p>
+              </div>
+              <Progress value={MOCK_STATS.esbas.percentage} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                Promoción activa: ESBAS 2026-I
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Permisos activos */}
+          {(permissions ?? []).length > 0 && (
+            <Card className="glass border-primary/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Permisos activos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-1">
+                  {(permissions ?? []).map(p => (
+                    <Badge key={p} variant="secondary" className="text-xs font-mono">{p}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
-    </ProtectRoute>
+    </div>
   )
 }

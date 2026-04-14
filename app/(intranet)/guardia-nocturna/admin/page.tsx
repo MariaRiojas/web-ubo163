@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import SolicitudesPanel from "@/components/solicitudes-panel"
+// SolicitudesPanel removed — replaced by new incidencias module
 
 // Datos estáticos para las camas
 const camasData = [
@@ -778,7 +778,7 @@ export default function AdminGuardiaNocturna() {
         </TabsContent>
       </Tabs>
 
-      <SolicitudesPanel departamento="Guardia Nocturna" />
+      {/* SolicitudesPanel removed — use /intranet/incidencias instead */}
     </div>
   )
 }

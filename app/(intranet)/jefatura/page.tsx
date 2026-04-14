@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Shield, FileText, ClipboardCheck, Calendar, MessageSquare, Award, Star, ChevronRight } from "lucide-react"
 import Image from "next/image"
-import SolicitudesPanel from "@/components/solicitudes-panel"
+
 
 export default function Jefatura() {
   return (
@@ -297,7 +297,7 @@ export default function Jefatura() {
           </Card>
         </TabsContent>
       </Tabs>
-      <SolicitudesPanel departamento="Jefatura" />
+      {/* Incidencias — ver /intranet/incidencias */}
     </div>
   )
 }
