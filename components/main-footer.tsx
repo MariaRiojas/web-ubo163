@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Shield, Flame, PhoneCall, Mail, Facebook, Twitter, Instagram } from "lucide-react"
+import { companyConfig } from "@/company.config"
 
 export function MainFooter() {
   const navItems = [
@@ -22,7 +23,7 @@ export function MainFooter() {
                 <Shield className="h-10 w-10 text-white" />
                 <Flame className="h-4 w-4 text-amber-400 absolute -right-1 -bottom-1 animate-pulse" />
               </div>
-              <span className="text-xl font-bold">Bomberos Ancón 163</span>
+              <span className="text-xl font-bold">{companyConfig.shortName}</span>
             </div>
             <p className="text-white/80 text-sm md:text-base">
               Comprometidos con la excelencia y el servicio a nuestra comunidad las 24 horas del día.
@@ -72,21 +73,21 @@ export function MainFooter() {
             <div className="space-y-3 text-sm md:text-base">
               <div className="flex items-center gap-3">
                 <PhoneCall className="h-5 w-5 text-amber-400" />
-                <span>Emergencias: 911</span>
+                <span>Emergencias: {companyConfig.contact.emergency}</span>
               </div>
               <div className="flex items-center gap-3">
                 <PhoneCall className="h-5 w-5 text-amber-400" />
-                <span>Central: 116</span>
+                <span>Central: {companyConfig.contact.phone}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-amber-400" />
-                <span>contacto@bomberos163.pe</span>
+                <span>{companyConfig.contact.email}</span>
               </div>
             </div>
           </div>
         </div>
         <div className="mt-12 md:mt-20 pt-8 border-t border-white/20 text-center text-white/80 text-sm">
-          <p>&copy; {new Date().getFullYear()} Compañía de Bomberos Voluntarios Ancón N° 163. Todos los derechos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} {companyConfig.name}. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

@@ -1,6 +1,7 @@
 // Re-exporta todos los schemas para que drizzle-kit los encuentre
 // y para imports limpios en el resto del proyecto
 
+export * from './users'
 export * from './profiles'
 export * from './sections'
 export * from './section-roles'

@@ -1,8 +1,9 @@
 import type { NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { eq } from 'drizzle-orm'
+import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
-import { profiles, sectionRoles } from '@/lib/db/schema'
+import { users, profiles, sectionRoles } from '@/lib/db/schema'
 import { resolvePermissions } from './permissions'
 import { loginSchema } from '@/lib/validations/auth'
 
@@ -39,11 +40,13 @@ export const authConfig: NextAuthConfig = {
 
         if (!profile?.userId) return null
 
-        // En producción: verificar hash de password con bcrypt
-        // Por ahora buscamos el usuario directamente por userId + validación
-        // TODO: agregar campo password_hash a profiles o tabla users separada
-        // Para el seed inicial usamos un check simple que se reemplazará
-        const isValid = await verifyPassword(password, profile.userId)
+        // Verificar contraseña con bcrypt
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, profile.userId),
+        })
+        if (!user) return null
+
+        const isValid = await bcrypt.compare(password, user.passwordHash)
         if (!isValid) return null
 
         // Cargar roles para calcular permisos
@@ -92,14 +95,10 @@ export const authConfig: NextAuthConfig = {
   },
 }
 
-// Verificación de contraseña (stub — reemplazar con bcrypt en producción)
-async function verifyPassword(
-  password: string,
-  userId: string
-): Promise<boolean> {
-  // TODO: implementar con bcrypt.compare()
-  // import bcrypt from 'bcryptjs'
-  // const hash = await getUserPasswordHash(userId)
-  // return bcrypt.compare(password, hash)
-  return password.length >= 6 // Temporal para desarrollo
+/**
+ * Genera un hash bcrypt para una contraseña.
+ * Usar en el seed o en el endpoint de cambio de contraseña.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12)
 }

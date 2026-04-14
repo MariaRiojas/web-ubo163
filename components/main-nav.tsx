@@ -7,6 +7,7 @@ import { Shield, Flame, Lock, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
+import { companyConfig } from "@/company.config"
 
 export function MainNav() {
   const pathname = usePathname()
@@ -34,9 +35,9 @@ export function MainNav() {
           </div>
           <div>
             <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-red-700 bg-clip-text text-transparent">
-              Bomberos Ancón 163
+              {companyConfig.shortName}
             </span>
-            <span className="text-xs text-muted-foreground block hidden md:block">Excelencia en Servicio</span>
+            <span className="text-xs text-muted-foreground block hidden md:block">{companyConfig.motto}</span>
           </div>
         </Link>
 
