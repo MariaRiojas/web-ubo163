@@ -16,8 +16,10 @@
  */
 
 import 'dotenv/config'
+import bcrypt from 'bcryptjs'
 import { db } from '../lib/db'
 import {
+  users,
   sections,
   profiles,
   sectionRoles,
@@ -115,7 +117,43 @@ async function seed() {
 
   console.log(`  ✓ ${7} secciones creadas`)
 
-  // ── 2. PERFILES ─────────────────────────────────────────────────────────
+  // ── 2. USUARIOS (credenciales de acceso) ────────────────────────────────
+  console.log('🔐 Creando usuarios con contraseñas...')
+  // Contraseña de desarrollo: "bombero2024" — CAMBIAR en producción
+  const DEV_PASSWORD = 'bombero2024'
+  const passwordHash = await bcrypt.hash(DEV_PASSWORD, 12)
+
+  const USER_IDS = [
+    'seed-primer-jefe', 'seed-segundo-jefe', 'seed-jefe-maquinas',
+    'seed-jefe-servicios', 'seed-jefe-instruccion', 'seed-jefe-prehos',
+    'seed-jefe-admin', 'seed-jefe-imagen',
+    'seed-ef-01', 'seed-ef-02', 'seed-ef-03', 'seed-ef-04',
+    'seed-asp-01', 'seed-asp-02',
+  ]
+
+  const EMAILS: Record<string, string> = {
+    'seed-primer-jefe':      'torres@cia999.pe',
+    'seed-segundo-jefe':     'ramirez@cia999.pe',
+    'seed-jefe-maquinas':    'herrera@cia999.pe',
+    'seed-jefe-servicios':   'cordova@cia999.pe',
+    'seed-jefe-instruccion': 'soto@cia999.pe',
+    'seed-jefe-prehos':      'flores@cia999.pe',
+    'seed-jefe-admin':       'vega@cia999.pe',
+    'seed-jefe-imagen':      'ruiz@cia999.pe',
+    'seed-ef-01':            'cardenas@cia999.pe',
+    'seed-ef-02':            'diaz@cia999.pe',
+    'seed-ef-03':            'mendoza2@cia999.pe',
+    'seed-ef-04':            'quispe@cia999.pe',
+    'seed-asp-01':           'gonzalez@cia999.pe',
+    'seed-asp-02':           'mamani@cia999.pe',
+  }
+
+  await db.insert(users).values(
+    USER_IDS.map((id) => ({ id, email: EMAILS[id], passwordHash }))
+  )
+  console.log(`  ✓ ${USER_IDS.length} usuarios creados (contraseña: ${DEV_PASSWORD})`)
+
+  // ── 3. PERFILES ─────────────────────────────────────────────────────────
   console.log('👤 Creando perfiles...')
 
   const profilesData = await db
@@ -343,7 +381,7 @@ async function seed() {
   const [primerJefe, segundoJefe, jefeMaquinas, jefeServicios, jefeInstruccion,
     jefePrehos, jefeAdmin, jefeImagen, ef01, ef02, ef03, ef04, asp01, asp02] = profilesData
 
-  // ── 3. ROLES EN SECCIONES ───────────────────────────────────────────────
+  // ── 4. ROLES EN SECCIONES ───────────────────────────────────────────────
   console.log('🎖️  Asignando roles...')
   await db.insert(sectionRoles).values([
     { profileId: primerJefe.id, sectionId: secJefatura.id, role: 'primer_jefe', assignedBy: primerJefe.id },
@@ -362,7 +400,7 @@ async function seed() {
   ])
   console.log('  ✓ Roles asignados')
 
-  // ── 4. CAMAS DE GUARDIA ─────────────────────────────────────────────────
+  // ── 5. CAMAS DE GUARDIA ─────────────────────────────────────────────────
   console.log('🛏️  Creando camas de guardia...')
   const beds = await db
     .insert(guardBeds)
@@ -377,7 +415,7 @@ async function seed() {
     .returning()
   console.log(`  ✓ ${beds.length} camas creadas`)
 
-  // ── 5. LECCIONES ESBAS ──────────────────────────────────────────────────
+  // ── 6. LECCIONES ESBAS ──────────────────────────────────────────────────
   console.log('📚 Creando lecciones ESBAS...')
   const lessons = await db
     .insert(esbasLessons)
@@ -463,7 +501,7 @@ async function seed() {
   ])
   console.log('  ✓ Progreso ESBAS registrado')
 
-  // ── 6. HORAS DE SERVICIO ─────────────────────────────────────────────────
+  // ── 7. HORAS DE SERVICIO ─────────────────────────────────────────────────
   console.log('⏰ Registrando horas de servicio...')
   await db.insert(serviceHours).values([
     { profileId: ef01.id, date: '2026-04-01', hours: '12.00', type: 'guardia_nocturna', autoRegistered: true, verifiedBy: primerJefe.id, verifiedAt: new Date('2026-04-02') },
@@ -476,7 +514,7 @@ async function seed() {
   ])
   console.log('  ✓ Horas de servicio registradas')
 
-  // ── 7. INVENTARIO BÁSICO ─────────────────────────────────────────────────
+  // ── 8. INVENTARIO BÁSICO ─────────────────────────────────────────────────
   console.log('📦 Creando inventario básico...')
   await db.insert(inventory).values([
     // Máquinas
@@ -495,7 +533,7 @@ async function seed() {
   ])
   console.log('  ✓ Inventario creado')
 
-  // ── 8. INCIDENCIAS DE EJEMPLO ────────────────────────────────────────────
+  // ── 9. INCIDENCIAS DE EJEMPLO ────────────────────────────────────────────
   console.log('⚠️  Creando incidencias...')
   await db.insert(incidents).values([
     {
@@ -532,7 +570,7 @@ async function seed() {
   ])
   console.log('  ✓ Incidencias creadas')
 
-  // ── 9. COMUNICADOS ───────────────────────────────────────────────────────
+  // ── 10. COMUNICADOS ──────────────────────────────────────────────────────
   console.log('📢 Creando comunicados...')
   await db.insert(announcements).values([
     {
@@ -564,13 +602,13 @@ async function seed() {
   console.log('  ✓ Comunicados creados')
 
   console.log('\n✅ Seed completado exitosamente.')
-  console.log('\n📋 Credenciales de acceso (usar DNI como usuario):')
-  console.log('  Primer Jefe:   10000001 / (password a definir con bcrypt)')
-  console.log('  Segundo Jefe:  10000002')
-  console.log('  Jefe Máquinas: 10000003')
-  console.log('  Efectivo:      10000009')
-  console.log('  Aspirante:     10000013')
-  console.log('\n💡 Recuerda configurar los password_hash en la tabla profiles.')
+  console.log('\n📋 Credenciales de acceso (usuario = DNI o email):')
+  console.log(`  Primer Jefe:   10000001  /  ${DEV_PASSWORD}`)
+  console.log(`  Segundo Jefe:  10000002  /  ${DEV_PASSWORD}`)
+  console.log(`  Jefe Máquinas: 10000003  /  ${DEV_PASSWORD}`)
+  console.log(`  Efectivo:      10000009  /  ${DEV_PASSWORD}`)
+  console.log(`  Aspirante:     10000013  /  ${DEV_PASSWORD}`)
+  console.log('\n⚠️  Cambiar contraseñas antes de poner en producción.')
 
   process.exit(0)
 }
