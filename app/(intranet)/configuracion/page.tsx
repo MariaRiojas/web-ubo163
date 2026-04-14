@@ -36,6 +36,8 @@ export default function ConfiguracionPage() {
   const [showCurrentPw, setShowCurrentPw] = useState(false)
   const [showNewPw, setShowNewPw] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
+  const [pwError, setPwError] = useState<string | null>(null)
+  const [pwLoading, setPwLoading] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
 
   const [password, setPassword] = useState({ current: "", nuevo: "", confirm: "" })
@@ -70,11 +72,32 @@ export default function ConfiguracionPage() {
     setTimeout(() => setProfileSaved(false), 3000)
   }
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!password.current || !password.nuevo || password.nuevo !== password.confirm) return
-    setPwSaved(true)
-    setPassword({ current: "", nuevo: "", confirm: "" })
-    setTimeout(() => setPwSaved(false), 3000)
+    setPwError(null)
+    setPwLoading(true)
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: password.current,
+          newPassword: password.nuevo,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setPwError(data.error ?? "Error al cambiar contraseña")
+      } else {
+        setPwSaved(true)
+        setPassword({ current: "", nuevo: "", confirm: "" })
+        setTimeout(() => setPwSaved(false), 4000)
+      }
+    } catch {
+      setPwError("Error de conexión. Intente nuevamente.")
+    } finally {
+      setPwLoading(false)
+    }
   }
 
   const pwValid = password.current && password.nuevo && password.nuevo === password.confirm && password.nuevo.length >= 8
@@ -204,6 +227,11 @@ export default function ConfiguracionPage() {
                       </AlertDescription>
                     </Alert>
                   )}
+                  {pwError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{pwError}</AlertDescription>
+                    </Alert>
+                  )}
                   <div className="space-y-2">
                     <Label>Contraseña actual</Label>
                     <div className="relative">
@@ -259,11 +287,11 @@ export default function ConfiguracionPage() {
                 <CardFooter className="border-t border-border pt-4">
                   <Button
                     onClick={handleChangePassword}
-                    disabled={!pwValid}
+                    disabled={!pwValid || pwLoading}
                     className="ml-auto bg-primary text-white"
                   >
                     <Lock className="h-4 w-4 mr-2" />
-                    Actualizar Contraseña
+                    {pwLoading ? "Actualizando..." : "Actualizar Contraseña"}
                   </Button>
                 </CardFooter>
               </Card>
