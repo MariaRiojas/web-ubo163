@@ -52,8 +52,10 @@ Editar `.env.local` y completar al menos:
 
 ```env
 DATABASE_URL=postgresql://admin:dev_password@localhost:5432/cuartel_crm
-NEXTAUTH_SECRET=genera-uno-con-openssl-rand-base64-32
-NEXTAUTH_URL=http://localhost:3000
+
+# NextAuth v5 usa AUTH_SECRET (no NEXTAUTH_SECRET)
+AUTH_SECRET=genera-uno-con-node-e-require-crypto-randomBytes-32-toString-hex
+AUTH_URL=http://localhost:3000
 ```
 
 ### 3. Levantar servicios de desarrollo
