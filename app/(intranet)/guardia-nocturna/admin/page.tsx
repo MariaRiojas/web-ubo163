@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, XCircle, Settings, Plus, Trash2, Edit, Save, FileText, BarChart2, Users, Bed } from "lucide-react"
+import { CheckCircle2, XCircle, Settings, Plus, Trash2, Edit, Save, FileText, BarChart2, Users, Bed } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -20,349 +20,228 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-// SolicitudesPanel removed — replaced by new incidencias module
+import { Progress } from "@/components/ui/progress"
+import { PageHeader } from "@/components/intranet/page-header"
+import { Moon } from "lucide-react"
 
-// Datos estáticos para las camas
-const camasData = [
-  { id: 1, number: 1, status: "ocupada", name: "Juan Pérez", rank: "Capitán", location: "Sector A" },
-  { id: 2, number: 2, status: "ocupada", name: "María García", rank: "Teniente", location: "Sector A" },
-  { id: 3, number: 3, status: "disponible", name: null, rank: null, location: "Sector A" },
-  { id: 4, number: 4, status: "disponible", name: null, rank: null, location: "Sector A" },
-  { id: 5, number: 5, status: "ocupada", name: "Carlos López", rank: "Sargento", location: "Sector B" },
-  { id: 6, number: 6, status: "mantenimiento", name: null, rank: null, location: "Sector B" },
-  { id: 7, number: 7, status: "disponible", name: null, rank: null, location: "Sector B" },
-  { id: 8, number: 8, status: "ocupada", name: "Ana Martínez", rank: "Oficial", location: "Sector B" },
-  { id: 9, number: 9, status: "disponible", name: null, rank: null, location: "Sector C" },
-  { id: 10, number: 10, status: "disponible", name: null, rank: null, location: "Sector C" },
-  { id: 11, number: 11, status: "ocupada", name: "Roberto Sánchez", rank: "Bombero", location: "Sector C" },
-  { id: 12, number: 12, status: "disponible", name: null, rank: null, location: "Sector C" },
+// ── Datos mock ────────────────────────────────────────────────────
+
+type BedStatus = "disponible" | "ocupada" | "mantenimiento"
+
+interface Cama {
+  id: number
+  number: number
+  status: BedStatus
+  name: string | null
+  rank: string | null
+  location: string
+}
+
+const camasData: Cama[] = [
+  { id: 1,  number: 1,  status: "ocupada",       name: "Cárdenas López",  rank: "Seccionario", location: "Sector A" },
+  { id: 2,  number: 2,  status: "ocupada",       name: "Quispe Huanca",   rank: "Seccionaria", location: "Sector A" },
+  { id: 3,  number: 3,  status: "disponible",    name: null, rank: null,  location: "Sector A" },
+  { id: 4,  number: 4,  status: "disponible",    name: null, rank: null,  location: "Sector A" },
+  { id: 5,  number: 5,  status: "ocupada",       name: "Ruiz Palomino",   rank: "Subteniente", location: "Sector B" },
+  { id: 6,  number: 6,  status: "mantenimiento", name: null, rank: null,  location: "Sector B" },
+  { id: 7,  number: 7,  status: "disponible",    name: null, rank: null,  location: "Sector B" },
+  { id: 8,  number: 8,  status: "ocupada",       name: "Soto Palacios",   rank: "Teniente",    location: "Sector B" },
+  { id: 9,  number: 9,  status: "disponible",    name: null, rank: null,  location: "Sector C" },
+  { id: 10, number: 10, status: "disponible",    name: null, rank: null,  location: "Sector C" },
+  { id: 11, number: 11, status: "ocupada",       name: "Herrera Vargas",  rank: "Capitán",     location: "Sector C" },
+  { id: 12, number: 12, status: "disponible",    name: null, rank: null,  location: "Sector C" },
 ]
 
-// Datos estáticos para las reservas
 const reservasData = [
-  {
-    id: 1,
-    usuario: "Juan Pérez",
-    rango: "Capitán",
-    cama: 1,
-    fechas: ["2024-03-25", "2024-03-26", "2024-03-27"],
-    estado: "Activa",
-  },
-  {
-    id: 2,
-    usuario: "María García",
-    rango: "Teniente",
-    cama: 2,
-    fechas: ["2024-03-25", "2024-03-26"],
-    estado: "Activa",
-  },
-  {
-    id: 3,
-    usuario: "Carlos López",
-    rango: "Sargento",
-    cama: 5,
-    fechas: ["2024-03-28", "2024-03-29", "2024-03-30"],
-    estado: "Pendiente",
-  },
-  {
-    id: 4,
-    usuario: "Ana Martínez",
-    rango: "Oficial",
-    cama: 8,
-    fechas: ["2024-04-01", "2024-04-02"],
-    estado: "Activa",
-  },
-  {
-    id: 5,
-    usuario: "Roberto Sánchez",
-    rango: "Bombero",
-    cama: 11,
-    fechas: ["2024-04-05", "2024-04-06", "2024-04-07"],
-    estado: "Pendiente",
-  },
+  { id: 1, usuario: "Cárdenas López",  rango: "Seccionario", cama: 1,  fechas: ["2026-04-15", "2026-04-16", "2026-04-17"], estado: "Activa" },
+  { id: 2, usuario: "Quispe Huanca",   rango: "Seccionaria", cama: 2,  fechas: ["2026-04-15", "2026-04-16"],               estado: "Activa" },
+  { id: 3, usuario: "Mendoza Quiroz",  rango: "Seccionario", cama: 7,  fechas: ["2026-04-20", "2026-04-21", "2026-04-22"], estado: "Pendiente" },
+  { id: 4, usuario: "Soto Palacios",   rango: "Teniente",    cama: 8,  fechas: ["2026-04-15", "2026-04-16"],               estado: "Activa" },
+  { id: 5, usuario: "Flores Medina",   rango: "Teniente",    cama: 9,  fechas: ["2026-04-25", "2026-04-26", "2026-04-27"], estado: "Pendiente" },
 ]
+
+// ── Status styles ─────────────────────────────────────────────────
+
+const STATUS_STYLE: Record<BedStatus, { badge: string; border: string }> = {
+  ocupada:       { badge: "bg-destructive/10 text-destructive border-destructive/20", border: "border-l-4 border-l-destructive" },
+  disponible:    { badge: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", border: "border-l-4 border-l-green-500" },
+  mantenimiento: { badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", border: "border-l-4 border-l-amber-500" },
+}
+
+const STATUS_LABEL: Record<BedStatus, string> = {
+  ocupada: "Ocupada", disponible: "Disponible", mantenimiento: "Mantenimiento",
+}
+
+const RESERVA_STYLE: Record<string, string> = {
+  Activa:    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  Pendiente: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  Cancelada: "bg-destructive/10 text-destructive",
+}
+
+// ── Component ─────────────────────────────────────────────────────
 
 export default function AdminGuardiaNocturna() {
   const [camas, setCamas] = useState(camasData)
   const [reservas, setReservas] = useState(reservasData)
-  const [editingCama, setEditingCama] = useState<any>(null)
-  const [newCama, setNewCama] = useState({
-    number: "",
-    location: "Sector A",
-    status: "disponible",
-  })
-  const [isAddCamaDialogOpen, setIsAddCamaDialogOpen] = useState(false)
-  const [isEditCamaDialogOpen, setIsEditCamaDialogOpen] = useState(false)
-  const [isDeleteCamaDialogOpen, setIsDeleteCamaDialogOpen] = useState(false)
+  const [editingCama, setEditingCama] = useState<Cama | null>(null)
+  const [newCama, setNewCama] = useState({ number: "", location: "Sector A", status: "disponible" })
+  const [isAddOpen, setIsAddOpen] = useState(false)
   const [camaToDelete, setCamaToDelete] = useState<number | null>(null)
 
-  // Función para añadir una nueva cama
   const handleAddCama = () => {
-    if (newCama.number) {
-      const newId = Math.max(...camas.map((c) => c.id)) + 1
-      setCamas([
-        ...camas,
-        {
-          id: newId,
-          number: Number.parseInt(newCama.number),
-          status: newCama.status,
-          name: null,
-          rank: null,
-          location: newCama.location,
-        },
-      ])
-      setNewCama({
-        number: "",
-        location: "Sector A",
-        status: "disponible",
-      })
-      setIsAddCamaDialogOpen(false)
-    }
+    if (!newCama.number) return
+    const newId = Math.max(...camas.map((c) => c.id)) + 1
+    setCamas([...camas, {
+      id: newId,
+      number: parseInt(newCama.number),
+      status: newCama.status as BedStatus,
+      name: null, rank: null,
+      location: newCama.location,
+    }])
+    setNewCama({ number: "", location: "Sector A", status: "disponible" })
+    setIsAddOpen(false)
   }
 
-  // Función para editar una cama
   const handleEditCama = () => {
-    if (editingCama) {
-      setCamas(camas.map((cama) => (cama.id === editingCama.id ? editingCama : cama)))
-      setIsEditCamaDialogOpen(false)
-      setEditingCama(null)
-    }
+    if (!editingCama) return
+    setCamas(camas.map((c) => (c.id === editingCama.id ? editingCama : c)))
+    setEditingCama(null)
   }
 
-  // Función para eliminar una cama
   const handleDeleteCama = () => {
-    if (camaToDelete) {
-      setCamas(camas.filter((cama) => cama.id !== camaToDelete))
-      setIsDeleteCamaDialogOpen(false)
-      setCamaToDelete(null)
-    }
+    if (!camaToDelete) return
+    setCamas(camas.filter((c) => c.id !== camaToDelete))
+    setCamaToDelete(null)
   }
 
-  // Función para cambiar el estado de una cama
-  const toggleCamaStatus = (id: number, newStatus: string) => {
-    setCamas(camas.map((cama) => (cama.id === id ? { ...cama, status: newStatus } : cama)))
-  }
+  const approveReservation = (id: number) =>
+    setReservas(reservas.map((r) => (r.id === id ? { ...r, estado: "Activa" } : r)))
 
-  // Función para aprobar una reserva
-  const approveReservation = (id: number) => {
-    setReservas(reservas.map((reserva) => (reserva.id === id ? { ...reserva, estado: "Activa" } : reserva)))
-  }
+  const cancelReservation = (id: number) =>
+    setReservas(reservas.map((r) => (r.id === id ? { ...r, estado: "Cancelada" } : r)))
 
-  // Función para cancelar una reserva
-  const cancelReservation = (id: number) => {
-    setReservas(reservas.map((reserva) => (reserva.id === id ? { ...reserva, estado: "Cancelada" } : reserva)))
-  }
+  const ocupadas = camas.filter((c) => c.status === "ocupada").length
+  const disponibles = camas.filter((c) => c.status === "disponible").length
+  const ocupacionPct = Math.round((ocupadas / camas.length) * 100)
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Administración de Guardia Nocturna</h1>
-          <p className="text-gray-400">Panel de control para gestión de guardias y camas</p>
-        </div>
-        <div className="flex gap-3">
-          <Button className="bg-red-600 hover:bg-red-700 text-white">
-            <FileText className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Generar Informe</span>
-            <span className="sm:hidden">Informe</span>
-          </Button>
-          <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
-            <Settings className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Configuración</span>
-            <span className="sm:hidden">Config</span>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={Moon}
+        title="Administración — Guardia Nocturna"
+        description="Panel de control para gestión de camas y reservas"
+      />
 
-      {/* Resumen de estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-400">Total Camas</p>
-                <p className="text-3xl font-bold text-white mt-1">{camas.length}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-500">
-                <Bed className="h-5 w-5 text-white" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-              <Badge className="bg-green-900/30 text-green-400">
-                {camas.filter((c) => c.status === "disponible").length} disponibles
-              </Badge>
-              <Badge className="bg-red-900/30 text-red-400">
-                {camas.filter((c) => c.status === "ocupada").length} ocupadas
-              </Badge>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <span className="text-xs font-medium text-muted-foreground">Total Camas</span>
+            <Bed className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{camas.length}</div>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">{disponibles} libres</Badge>
+              <Badge className="bg-destructive/10 text-destructive text-xs">{ocupadas} ocupadas</Badge>
             </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-400">Reservas Activas</p>
-                <p className="text-3xl font-bold text-white mt-1">
-                  {reservas.filter((r) => r.estado === "Activa").length}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-500">
-                <CheckCircle className="h-5 w-5 text-white" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-              <Badge className="bg-amber-900/30 text-amber-400">
-                {reservas.filter((r) => r.estado === "Pendiente").length} pendientes
-              </Badge>
-              <Badge className="bg-gray-700 text-gray-300">Este mes</Badge>
-            </div>
+        <Card className="glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <span className="text-xs font-medium text-muted-foreground">Reservas activas</span>
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{reservas.filter((r) => r.estado === "Activa").length}</div>
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs mt-2">
+              {reservas.filter((r) => r.estado === "Pendiente").length} pendientes
+            </Badge>
           </CardContent>
         </Card>
-
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-400">Personal en Guardia</p>
-                <p className="text-3xl font-bold text-white mt-1">
-                  {
-                    reservas.filter(
-                      (r) => r.estado === "Activa" && r.fechas.includes(new Date().toISOString().split("T")[0]),
-                    ).length
-                  }
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-500">
-                <Users className="h-5 w-5 text-white" />
-              </div>
+        <Card className="glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <span className="text-xs font-medium text-muted-foreground">Personal hoy</span>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {reservas.filter((r) => r.estado === "Activa" && r.fechas.includes(new Date().toISOString().split("T")[0])).length}
             </div>
-            <div className="mt-4 flex items-center gap-2">
-              <Badge className="bg-blue-900/30 text-blue-400">Hoy</Badge>
-              <Badge className="bg-gray-700 text-gray-300">
-                {new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" })}
-              </Badge>
-            </div>
+            <p className="text-xs text-muted-foreground mt-1">En guardia activa</p>
           </CardContent>
         </Card>
-
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-400">Ocupación</p>
-                <p className="text-3xl font-bold text-white mt-1">
-                  {Math.round((camas.filter((c) => c.status === "ocupada").length / camas.length) * 100)}%
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-red-500">
-                <BarChart2 className="h-5 w-5 text-white" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="w-full bg-gray-700 rounded-full h-2.5">
-                <div
-                  className="h-2.5 rounded-full bg-red-600"
-                  style={{ width: `${(camas.filter((c) => c.status === "ocupada").length / camas.length) * 100}%` }}
-                ></div>
-              </div>
-            </div>
+        <Card className="glass border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <span className="text-xs font-medium text-muted-foreground">Ocupación</span>
+            <BarChart2 className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{ocupacionPct}%</div>
+            <Progress value={ocupacionPct} className="h-1.5 mt-2" />
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="reservas" className="w-full">
-        <TabsList className="bg-gray-800 border-gray-700 w-full justify-start overflow-x-auto">
-          <TabsTrigger value="reservas" className="data-[state=active]:bg-red-600">
-            Reservas
-          </TabsTrigger>
-          <TabsTrigger value="camas" className="data-[state=active]:bg-red-600">
-            Gestión de Camas
-          </TabsTrigger>
-          <TabsTrigger value="calendario" className="data-[state=active]:bg-red-600">
-            Calendario
-          </TabsTrigger>
-          <TabsTrigger value="configuracion" className="data-[state=active]:bg-red-600">
-            Configuración
-          </TabsTrigger>
+      <Tabs defaultValue="reservas">
+        <TabsList className="w-full justify-start flex-wrap h-auto">
+          <TabsTrigger value="reservas">Reservas</TabsTrigger>
+          <TabsTrigger value="camas">Gestión de Camas</TabsTrigger>
+          <TabsTrigger value="configuracion">Configuración</TabsTrigger>
         </TabsList>
 
-        {/* Pestaña de Reservas */}
+        {/* ── Reservas ── */}
         <TabsContent value="reservas" className="mt-6">
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="glass border-primary/10">
             <CardHeader>
-              <CardTitle className="text-white">Gestión de Reservas</CardTitle>
-              <CardDescription className="text-gray-400">
-                Administración de reservas de guardia nocturna
-              </CardDescription>
+              <CardTitle className="text-base">Gestión de Reservas</CardTitle>
+              <CardDescription>Administración de reservas de guardia nocturna</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border border-gray-700">
+              <div className="rounded-md border border-border overflow-x-auto">
                 <Table>
-                  <TableHeader className="bg-gray-750">
-                    <TableRow className="hover:bg-gray-700 border-gray-700">
-                      <TableHead className="text-gray-400">ID</TableHead>
-                      <TableHead className="text-gray-400">Usuario</TableHead>
-                      <TableHead className="text-gray-400">Rango</TableHead>
-                      <TableHead className="text-gray-400">Cama</TableHead>
-                      <TableHead className="text-gray-400">Fechas</TableHead>
-                      <TableHead className="text-gray-400">Estado</TableHead>
-                      <TableHead className="text-gray-400">Acciones</TableHead>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Efectivo</TableHead>
+                      <TableHead>Grado</TableHead>
+                      <TableHead>Cama</TableHead>
+                      <TableHead>Fechas</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reservas.map((reserva) => (
-                      <TableRow key={reserva.id} className="hover:bg-gray-750 border-gray-700">
-                        <TableCell className="font-medium text-white">{reserva.id}</TableCell>
-                        <TableCell className="text-gray-300">{reserva.usuario}</TableCell>
-                        <TableCell className="text-gray-300">{reserva.rango}</TableCell>
-                        <TableCell className="text-gray-300">{reserva.cama}</TableCell>
-                        <TableCell className="text-gray-300">
+                    {reservas.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.id}</TableCell>
+                        <TableCell>{r.usuario}</TableCell>
+                        <TableCell className="text-muted-foreground">{r.rango}</TableCell>
+                        <TableCell>{r.cama}</TableCell>
+                        <TableCell>
                           <div className="flex flex-col gap-1">
-                            {reserva.fechas.map((fecha, idx) => (
-                              <Badge key={idx} variant="outline" className="justify-start border-gray-600">
-                                {new Date(fecha).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" })}
+                            {r.fechas.map((f, i) => (
+                              <Badge key={i} variant="outline" className="text-xs justify-start">
+                                {new Date(f).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit" })}
                               </Badge>
                             ))}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            className={
-                              reserva.estado === "Activa"
-                                ? "bg-green-900/30 text-green-400"
-                                : reserva.estado === "Pendiente"
-                                  ? "bg-amber-900/30 text-amber-400"
-                                  : "bg-red-900/30 text-red-400"
-                            }
-                          >
-                            {reserva.estado}
-                          </Badge>
+                          <Badge className={`${RESERVA_STYLE[r.estado]} text-xs`}>{r.estado}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            {reserva.estado === "Pendiente" && (
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 h-8 px-2"
-                                onClick={() => approveReservation(reserva.id)}
-                              >
-                                <CheckCircle className="h-4 w-4" />
+                          <div className="flex gap-1">
+                            {r.estado === "Pendiente" && (
+                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => approveReservation(r.id)}>
+                                <CheckCircle2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
-                            {reserva.estado !== "Cancelada" && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-8 px-2"
-                                onClick={() => cancelReservation(reserva.id)}
-                              >
-                                <XCircle className="h-4 w-4" />
+                            {r.estado !== "Cancelada" && (
+                              <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => cancelReservation(r.id)}>
+                                <XCircle className="h-3.5 w-3.5" />
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className="h-8 px-2 border-gray-600">
-                              <Edit className="h-4 w-4" />
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -371,63 +250,49 @@ export default function AdminGuardiaNocturna() {
                 </Table>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between border-t border-gray-700 pt-4">
-              <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white">
-                Exportar Reservas
+            <CardFooter className="border-t border-border pt-4 flex justify-between">
+              <Button variant="outline" size="sm" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Exportar
               </Button>
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button size="sm" className="bg-primary text-white gap-2">
+                <Plus className="h-4 w-4" />
                 Nueva Reserva
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
 
-        {/* Pestaña de Gestión de Camas */}
+        {/* ── Camas ── */}
         <TabsContent value="camas" className="mt-6">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="space-y-1">
-                <CardTitle className="text-white">Gestión de Camas</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Administración de camas para guardia nocturna
-                </CardDescription>
+          <Card className="glass border-primary/10">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Gestión de Camas</CardTitle>
+                <CardDescription>Administración de camas para guardia nocturna</CardDescription>
               </div>
-              <Dialog open={isAddCamaDialogOpen} onOpenChange={setIsAddCamaDialogOpen}>
+              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-red-600 hover:bg-red-700 text-white">
-                    <Plus className="mr-2 h-4 w-4" />
+                  <Button size="sm" className="bg-primary text-white gap-2">
+                    <Plus className="h-4 w-4" />
                     Añadir Cama
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-gray-800 text-white border-gray-700">
+                <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Añadir Nueva Cama</DialogTitle>
-                    <DialogDescription className="text-gray-400">
-                      Complete los detalles para añadir una nueva cama.
-                    </DialogDescription>
+                    <DialogDescription>Complete los detalles para añadir una nueva cama.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="number">Número de Cama</Label>
-                      <Input
-                        id="number"
-                        placeholder="Ej: 13"
-                        className="bg-gray-750 border-gray-700 text-white"
-                        value={newCama.number}
-                        onChange={(e) => setNewCama({ ...newCama, number: e.target.value })}
-                      />
+                      <Label>Número de Cama</Label>
+                      <Input placeholder="Ej: 13" className="glass" value={newCama.number} onChange={(e) => setNewCama({ ...newCama, number: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="location">Ubicación</Label>
-                      <Select
-                        value={newCama.location}
-                        onValueChange={(value) => setNewCama({ ...newCama, location: value })}
-                      >
-                        <SelectTrigger className="bg-gray-750 border-gray-700 text-white">
-                          <SelectValue placeholder="Seleccione ubicación" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                      <Label>Ubicación</Label>
+                      <Select value={newCama.location} onValueChange={(v) => setNewCama({ ...newCama, location: v })}>
+                        <SelectTrigger className="glass"><SelectValue /></SelectTrigger>
+                        <SelectContent>
                           <SelectItem value="Sector A">Sector A</SelectItem>
                           <SelectItem value="Sector B">Sector B</SelectItem>
                           <SelectItem value="Sector C">Sector C</SelectItem>
@@ -435,15 +300,10 @@ export default function AdminGuardiaNocturna() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="status">Estado Inicial</Label>
-                      <Select
-                        value={newCama.status}
-                        onValueChange={(value) => setNewCama({ ...newCama, status: value })}
-                      >
-                        <SelectTrigger className="bg-gray-750 border-gray-700 text-white">
-                          <SelectValue placeholder="Seleccione estado" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                      <Label>Estado Inicial</Label>
+                      <Select value={newCama.status} onValueChange={(v) => setNewCama({ ...newCama, status: v })}>
+                        <SelectTrigger className="glass"><SelectValue /></SelectTrigger>
+                        <SelectContent>
                           <SelectItem value="disponible">Disponible</SelectItem>
                           <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
                         </SelectContent>
@@ -451,99 +311,56 @@ export default function AdminGuardiaNocturna() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleAddCama}>
-                      Añadir Cama
-                    </Button>
+                    <Button className="bg-primary text-white" onClick={handleAddCama}>Añadir Cama</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {camas.map((cama) => (
-                  <Card
-                    key={cama.id}
-                    className={`bg-gray-750 border-gray-700 hover:bg-gray-700 transition-all ${
-                      cama.status === "ocupada"
-                        ? "border-l-4 border-l-red-600"
-                        : cama.status === "disponible"
-                          ? "border-l-4 border-l-green-600"
-                          : "border-l-4 border-l-amber-600"
-                    }`}
-                  >
+                  <Card key={cama.id} className={`glass ${STATUS_STYLE[cama.status].border}`}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h3 className="text-xl font-bold text-white">Cama {cama.number}</h3>
-                          <p className="text-sm text-gray-400">{cama.location}</p>
+                          <p className="text-lg font-bold">Cama {cama.number}</p>
+                          <p className="text-xs text-muted-foreground">{cama.location}</p>
                         </div>
-                        <Badge
-                          className={`${
-                            cama.status === "ocupada"
-                              ? "bg-red-900/30 text-red-400"
-                              : cama.status === "disponible"
-                                ? "bg-green-900/30 text-green-400"
-                                : "bg-amber-900/30 text-amber-400"
-                          }`}
-                        >
-                          {cama.status === "ocupada"
-                            ? "Ocupada"
-                            : cama.status === "disponible"
-                              ? "Disponible"
-                              : "Mantenimiento"}
+                        <Badge className={`${STATUS_STYLE[cama.status].badge} text-xs`}>
+                          {STATUS_LABEL[cama.status]}
                         </Badge>
                       </div>
-
-                      {cama.status === "ocupada" && (
-                        <div className="mb-3 p-2 bg-gray-800 rounded-md">
-                          <p className="text-sm font-medium text-white">{cama.name}</p>
-                          <p className="text-xs text-gray-400">{cama.rank}</p>
+                      {cama.status === "ocupada" && cama.name && (
+                        <div className="mb-3 p-2 rounded-md bg-muted/50">
+                          <p className="text-sm font-medium">{cama.name}</p>
+                          <p className="text-xs text-muted-foreground">{cama.rank}</p>
                         </div>
                       )}
-
-                      <div className="flex gap-2 mt-4">
+                      <div className="flex gap-2 mt-3">
+                        {/* Editar */}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-gray-600 text-gray-300 hover:text-white"
-                              onClick={() => setEditingCama(cama)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
+                            <Button size="sm" variant="outline" className="gap-1.5 h-8" onClick={() => setEditingCama(cama)}>
+                              <Edit className="h-3.5 w-3.5" />
                               Editar
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="bg-gray-800 text-white border-gray-700">
+                          <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Editar Cama {cama.number}</DialogTitle>
-                              <DialogDescription className="text-gray-400">
-                                Modifique los detalles de la cama.
-                              </DialogDescription>
                             </DialogHeader>
                             {editingCama && (
                               <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit-number">Número de Cama</Label>
-                                  <Input
-                                    id="edit-number"
-                                    className="bg-gray-750 border-gray-700 text-white"
-                                    value={editingCama.number}
-                                    onChange={(e) =>
-                                      setEditingCama({ ...editingCama, number: Number.parseInt(e.target.value) })
-                                    }
-                                  />
+                                  <Label>Número</Label>
+                                  <Input className="glass" type="number" value={editingCama.number}
+                                    onChange={(e) => setEditingCama({ ...editingCama, number: parseInt(e.target.value) })} />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit-location">Ubicación</Label>
-                                  <Select
-                                    value={editingCama.location}
-                                    onValueChange={(value) => setEditingCama({ ...editingCama, location: value })}
-                                  >
-                                    <SelectTrigger className="bg-gray-750 border-gray-700 text-white">
-                                      <SelectValue placeholder="Seleccione ubicación" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                  <Label>Ubicación</Label>
+                                  <Select value={editingCama.location} onValueChange={(v) => setEditingCama({ ...editingCama, location: v })}>
+                                    <SelectTrigger className="glass"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
                                       <SelectItem value="Sector A">Sector A</SelectItem>
                                       <SelectItem value="Sector B">Sector B</SelectItem>
                                       <SelectItem value="Sector C">Sector C</SelectItem>
@@ -551,15 +368,10 @@ export default function AdminGuardiaNocturna() {
                                   </Select>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit-status">Estado</Label>
-                                  <Select
-                                    value={editingCama.status}
-                                    onValueChange={(value) => setEditingCama({ ...editingCama, status: value })}
-                                  >
-                                    <SelectTrigger className="bg-gray-750 border-gray-700 text-white">
-                                      <SelectValue placeholder="Seleccione estado" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                  <Label>Estado</Label>
+                                  <Select value={editingCama.status} onValueChange={(v) => setEditingCama({ ...editingCama, status: v as BedStatus })}>
+                                    <SelectTrigger className="glass"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
                                       <SelectItem value="disponible">Disponible</SelectItem>
                                       <SelectItem value="ocupada">Ocupada</SelectItem>
                                       <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
@@ -569,39 +381,29 @@ export default function AdminGuardiaNocturna() {
                               </div>
                             )}
                             <DialogFooter>
-                              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleEditCama}>
-                                <Save className="mr-2 h-4 w-4" />
-                                Guardar Cambios
+                              <Button className="bg-primary text-white" onClick={handleEditCama}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Guardar
                               </Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
-
+                        {/* Eliminar */}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" variant="destructive" onClick={() => setCamaToDelete(cama.id)}>
-                              <Trash2 className="mr-2 h-4 w-4" />
+                            <Button size="sm" variant="destructive" className="gap-1.5 h-8" onClick={() => setCamaToDelete(cama.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
                               Eliminar
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="bg-gray-800 text-white border-gray-700">
+                          <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Eliminar Cama</DialogTitle>
-                              <DialogDescription className="text-gray-400">
-                                ¿Está seguro que desea eliminar la cama {cama.number}?
-                              </DialogDescription>
+                              <DialogTitle>Eliminar Cama {cama.number}</DialogTitle>
+                              <DialogDescription>¿Confirmas la eliminación de la cama {cama.number}? Esta acción no se puede deshacer.</DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
-                              <Button
-                                variant="outline"
-                                className="border-gray-600 text-gray-300 hover:text-white"
-                                onClick={() => setCamaToDelete(null)}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button variant="destructive" onClick={handleDeleteCama}>
-                                Eliminar Cama
-                              </Button>
+                              <Button variant="outline" onClick={() => setCamaToDelete(null)}>Cancelar</Button>
+                              <Button variant="destructive" onClick={handleDeleteCama}>Eliminar</Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
@@ -614,172 +416,87 @@ export default function AdminGuardiaNocturna() {
           </Card>
         </TabsContent>
 
-        {/* Pestaña de Calendario */}
-        <TabsContent value="calendario" className="mt-6">
-          <Card className="bg-gray-800 border-gray-700">
+        {/* ── Configuración ── */}
+        <TabsContent value="configuracion" className="mt-6">
+          <Card className="glass border-primary/10">
             <CardHeader>
-              <CardTitle className="text-white">Calendario de Guardias</CardTitle>
-              <CardDescription className="text-gray-400">
-                Vista general de todas las guardias programadas
-              </CardDescription>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Settings className="h-4 w-4 text-primary" />
+                Configuración del Sistema
+              </CardTitle>
+              <CardDescription>Ajustes generales del módulo de guardia nocturna</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
-                {/* Cabecera de días de la semana */}
-                {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((day, index) => (
-                  <div key={index} className="text-center p-2 font-medium text-gray-400">
-                    {day}
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">General</h3>
+                {[
+                  { label: "Aprobación automática", desc: "Aprobar automáticamente las reservas de guardia", defaultChecked: false },
+                  { label: "Notificaciones por email", desc: "Enviar email de confirmación al reservar",       defaultChecked: true },
+                ].map(({ label, desc, defaultChecked }) => (
+                  <div key={label} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                    <div>
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                    </div>
+                    <Switch defaultChecked={defaultChecked} />
                   </div>
                 ))}
-
-                {/* Días del mes (ejemplo para marzo 2024) */}
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-                  // Determinar si el día tiene guardias asignadas (datos estáticos)
-                  const guardias = reservas.filter(
-                    (r) => r.fechas.includes(`2024-03-${day.toString().padStart(2, "0")}`) && r.estado === "Activa",
-                  )
-
-                  const isWeekend = (day + 4) % 7 === 0 || (day + 4) % 7 === 1 // Sábado o domingo
-
-                  return (
-                    <div
-                      key={day}
-                      className={`p-2 rounded-lg border text-center min-h-[100px] flex flex-col ${
-                        guardias.length > 0
-                          ? "bg-red-900/20 border-red-800/50"
-                          : isWeekend
-                            ? "bg-gray-750 border-gray-700"
-                            : "bg-gray-800 border-gray-700"
-                      }`}
-                    >
-                      <span className={`text-sm font-medium ${isWeekend ? "text-gray-500" : "text-white"}`}>{day}</span>
-                      {guardias.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {guardias.map((guardia, idx) => (
-                            <Badge
-                              key={idx}
-                              className="bg-red-800/50 text-red-300 text-xs w-full"
-                              title={guardia.usuario}
-                            >
-                              Cama {guardia.cama}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+                  <div>
+                    <p className="text-sm font-medium">Límite de reserva anticipada</p>
+                    <p className="text-xs text-muted-foreground">Días máximos de antelación para reservar</p>
+                  </div>
+                  <Select defaultValue="7">
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 días</SelectItem>
+                      <SelectItem value="5">5 días</SelectItem>
+                      <SelectItem value="7">7 días</SelectItem>
+                      <SelectItem value="14">14 días</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="flex justify-center mt-6 gap-4">
-                <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white">
-                  Mes Anterior
-                </Button>
-                <Button className="bg-red-600 hover:bg-red-700 text-white">Hoy</Button>
-                <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white">
-                  Mes Siguiente
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Pestaña de Configuración */}
-        <TabsContent value="configuracion" className="mt-6">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Configuración del Sistema</CardTitle>
-              <CardDescription className="text-gray-400">
-                Ajustes generales del sistema de guardia nocturna
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium text-white">Configuración General</h3>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                    <div>
-                      <p className="font-medium text-white">Aprobación Automática</p>
-                      <p className="text-sm text-gray-400">Aprobar automáticamente las reservas de guardia</p>
-                    </div>
-                    <Switch />
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Horarios</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hora-inicio">Hora de inicio</Label>
+                    <Select defaultValue="20:00">
+                      <SelectTrigger id="hora-inicio" className="glass"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="19:00">19:00</SelectItem>
+                        <SelectItem value="20:00">20:00</SelectItem>
+                        <SelectItem value="21:00">21:00</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                    <div>
-                      <p className="font-medium text-white">Notificaciones por Email</p>
-                      <p className="text-sm text-gray-400">Enviar notificaciones por email al reservar</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-750 rounded-lg">
-                    <div>
-                      <p className="font-medium text-white">Límite de Reservas</p>
-                      <p className="text-sm text-gray-400">Número máximo de días que se pueden reservar</p>
-                    </div>
-                    <Select defaultValue="7">
-                      <SelectTrigger className="w-24 bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                        <SelectItem value="3">3 días</SelectItem>
-                        <SelectItem value="5">5 días</SelectItem>
-                        <SelectItem value="7">7 días</SelectItem>
-                        <SelectItem value="14">14 días</SelectItem>
+                  <div className="space-y-2">
+                    <Label htmlFor="hora-fin">Hora de fin</Label>
+                    <Select defaultValue="08:00">
+                      <SelectTrigger id="hora-fin" className="glass"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="07:00">07:00</SelectItem>
+                        <SelectItem value="08:00">08:00</SelectItem>
+                        <SelectItem value="09:00">09:00</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium text-white">Horarios</h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="hora-inicio">Hora de Inicio</Label>
-                      <Select defaultValue="20:00">
-                        <SelectTrigger id="hora-inicio" className="bg-gray-750 border-gray-700 text-white">
-                          <SelectValue placeholder="Seleccionar hora" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                          <SelectItem value="19:00">19:00</SelectItem>
-                          <SelectItem value="20:00">20:00</SelectItem>
-                          <SelectItem value="21:00">21:00</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="hora-fin">Hora de Fin</Label>
-                      <Select defaultValue="08:00">
-                        <SelectTrigger id="hora-fin" className="bg-gray-750 border-gray-700 text-white">
-                          <SelectValue placeholder="Seleccionar hora" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                          <SelectItem value="07:00">07:00</SelectItem>
-                          <SelectItem value="08:00">08:00</SelectItem>
-                          <SelectItem value="09:00">09:00</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end border-t border-gray-700 pt-4">
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                <Save className="mr-2 h-4 w-4" />
+            <CardFooter className="border-t border-border pt-4">
+              <Button className="ml-auto bg-primary text-white gap-2">
+                <Save className="h-4 w-4" />
                 Guardar Configuración
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* SolicitudesPanel removed — use /intranet/incidencias instead */}
     </div>
   )
 }
-
