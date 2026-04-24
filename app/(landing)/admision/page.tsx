@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { MainNav } from "@/components/main-nav"
-import { MainFooter } from "@/components/main-footer"
+
 import {
   CheckCircle2,
   Clock,
@@ -143,9 +142,7 @@ export default function AdmisionPage() {
   ]
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <MainNav />
-
+    <>
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
@@ -469,7 +466,6 @@ export default function AdmisionPage() {
         </section>
       </main>
 
-      <MainFooter />
-    </div>
+    </>
   )
 }

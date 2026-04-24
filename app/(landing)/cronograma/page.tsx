@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MainNav } from "@/components/main-nav"
-import { MainFooter } from "@/components/main-footer"
+
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -352,9 +351,7 @@ export default function CronogramaPage() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <MainNav />
-
+    <>
       {/* Hero */}
       <section className="relative py-20 md:py-28 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
@@ -624,7 +621,6 @@ export default function CronogramaPage() {
         </div>
       </main>
 
-      <MainFooter />
-    </div>
+    </>
   )
 }

@@ -12,3 +12,6 @@ export * from './inventory'
 export * from './esbas'
 export * from './content-calendar'
 export * from './announcements'
+// --- Integración scrapper CGBVP ---
+export * from './emergencies'
+export * from './cgbvp'

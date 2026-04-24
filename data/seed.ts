@@ -15,7 +15,7 @@
  * - 3 comunicados de ejemplo
  */
 
-import 'dotenv/config'
+// env cargado por --env-file=.env.local (ver package.json)
 import bcrypt from 'bcryptjs'
 import { db } from '../lib/db'
 import {

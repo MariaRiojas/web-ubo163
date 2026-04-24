@@ -26,7 +26,7 @@ export function MainNav() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full bg-white dark:bg-gray-900 shadow-md border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4 flex h-20 items-center justify-between">
         <Link href="/" className="flex items-center space-x-3 group">
           <div className="relative transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
@@ -83,7 +83,7 @@ export function MainNav() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-background/95 backdrop-blur-xl border-t border-border">
+        <div className="lg:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-md">
           <nav className="container mx-auto px-4 py-4 flex flex-col space-y-3">
             {navItems.map((item) => (
               <Link

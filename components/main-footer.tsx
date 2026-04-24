@@ -14,7 +14,7 @@ export function MainFooter() {
   ]
 
   return (
-    <footer className="bg-gradient-to-b from-primary/95 to-red-800 text-white py-12 md:py-20">
+    <footer className="bg-gradient-to-b from-red-600 to-red-900 text-white py-12 md:py-20">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           <div className="space-y-4">

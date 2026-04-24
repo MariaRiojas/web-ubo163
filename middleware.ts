@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server'
 
 // Rutas que requieren autenticación (intranet)
 const PROTECTED_PREFIXES = [
-  '/dashboard', '/secciones', '/guardia-nocturna', '/horas',
+  '/dashboard', '/mi-compania', '/secciones', '/guardia-nocturna', '/horas',
   '/incidencias', '/personal', '/inventario', '/contenido',
   '/comunicados', '/esbas', '/perfil', '/reportes',
   '/configuracion', '/jefatura',
+  '/operatividad', '/estadisticas', '/partes-emergencia',
+  '/bomberos', '/asistencias', '/analisis',
 ]
 
 function isProtectedRoute(pathname: string): boolean {

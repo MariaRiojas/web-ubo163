@@ -64,7 +64,7 @@ export default async function SeccionesPage() {
         {SECTIONS.filter(s => s.type === 'jefatura').map(section => {
           const Icon = SECTION_ICONS[section.key] ?? Building2
           return (
-            <Link key={section.key} href={`/intranet/secciones/${section.key}`}>
+            <Link key={section.key} href={`/secciones/${section.key}`}>
               <Card className="glass border-primary/20 hover:border-primary/40 transition-all cursor-pointer">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -102,7 +102,7 @@ export default async function SeccionesPage() {
             {SECTIONS.filter(s => s.type === 'linea').map(section => {
               const Icon = SECTION_ICONS[section.key] ?? Building2
               return (
-                <Link key={section.key} href={`/intranet/secciones/${section.key}`}>
+                <Link key={section.key} href={`/secciones/${section.key}`}>
                   <Card className="glass border-border hover:border-primary/30 transition-all cursor-pointer h-full">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
@@ -139,7 +139,7 @@ export default async function SeccionesPage() {
             {SECTIONS.filter(s => s.type === 'asesoramiento').map(section => {
               const Icon = SECTION_ICONS[section.key] ?? Building2
               return (
-                <Link key={section.key} href={`/intranet/secciones/${section.key}`}>
+                <Link key={section.key} href={`/secciones/${section.key}`}>
                   <Card className="glass border-border hover:border-amber-500/30 transition-all cursor-pointer h-full">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">

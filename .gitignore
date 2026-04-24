@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 
@@ -16,8 +14,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*
+# env (sensible) — .env.example SÍ se sube
+.env
+.env.local
+.env.*.local
 
 # credentials
 credentials.txt
@@ -28,3 +28,22 @@ credentials.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# scraper cache / puppeteer
+scripts/scraper/__pycache__/
+
+# docker volumes (no se suben, se recrean)
+pgdata/
+miniodata/
+mailpitdata/

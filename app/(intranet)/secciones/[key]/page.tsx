@@ -162,7 +162,7 @@ export default async function SectionPage({ params }: { params: Promise<{ key: s
                   Administrar el proceso de capacitación, lecciones y progreso de aspirantes.
                 </p>
                 <Button asChild size="sm">
-                  <Link href="/intranet/esbas">Ir a ESBAS</Link>
+                  <Link href="/esbas">Ir a ESBAS</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -180,7 +180,7 @@ export default async function SectionPage({ params }: { params: Promise<{ key: s
                   Planificar publicaciones en redes sociales y fechas institucionales.
                 </p>
                 <Button asChild size="sm" variant="outline">
-                  <Link href="/intranet/contenido">Ver Calendario</Link>
+                  <Link href="/contenido">Ver Calendario</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -239,7 +239,7 @@ export default async function SectionPage({ params }: { params: Promise<{ key: s
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">Incidencias relacionadas con esta sección.</p>
               <Button size="sm" asChild>
-                <Link href="/intranet/incidencias">
+                <Link href="/incidencias">
                   <Plus className="h-4 w-4 mr-1" />
                   Nueva incidencia
                 </Link>

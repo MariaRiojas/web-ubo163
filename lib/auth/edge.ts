@@ -11,6 +11,7 @@ import NextAuth from 'next-auth'
 import type { Permission } from './permissions'
 
 export const { auth } = NextAuth({
+  trustHost: true,
   pages: {
     signIn: '/login',
     error:  '/login',

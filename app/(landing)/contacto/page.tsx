@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { MainNav } from "@/components/main-nav"
-import { MainFooter } from "@/components/main-footer"
+
 import { PhoneCall, Clock, MapPin, Mail, Facebook, Twitter, Instagram, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
@@ -117,9 +116,7 @@ export default function ContactoPage() {
   ]
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <MainNav />
-
+    <>
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
@@ -372,7 +369,6 @@ export default function ContactoPage() {
         </section>
       </main>
 
-      <MainFooter />
-    </div>
+    </>
   )
 }

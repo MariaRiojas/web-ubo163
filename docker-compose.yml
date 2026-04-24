@@ -48,6 +48,23 @@ services:
     volumes:
       - mailpitdata:/data
 
+  scraper:
+    build:
+      context: .
+      dockerfile: scripts/scraper/Dockerfile
+    container_name: cuartel_scraper
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://admin:dev_password@postgres:5432/cuartel_crm
+      USUARIO_INTRANET: ${USUARIO_INTRANET}
+      CONTRASENA_INTRANET: ${CONTRASENA_INTRANET}
+      HEADLESS: "1"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
 volumes:
   pgdata:
   miniodata:

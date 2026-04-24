@@ -8,6 +8,7 @@ import { resolvePermissions } from './permissions'
 import { loginSchema } from '@/lib/validations/auth'
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   // Páginas personalizadas
   pages: {
     signIn: '/login',

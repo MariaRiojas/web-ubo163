@@ -13,6 +13,8 @@ import { guardShifts } from './guard-shifts'
 import { serviceHours } from './service-hours'
 import { incidents } from './incidents'
 import { esbasProgress } from './esbas'
+import { cgbvpAttendance, cgbvpStatusHistory } from './cgbvp'
+import { emergencyCrewMembers } from './emergencies'
 
 // Jerarquía de grados CGBVP (NDR Ascensos)
 export const GRADES = [
@@ -42,6 +44,8 @@ export const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
   /** FK a NextAuth users.id */
+  /** Código CGBVP del bombero (viene del scrapper) */
+  codigoCgbvp: varchar('codigo_cgbvp', { length: 20 }).unique(),
   userId: text('user_id').unique(),
   fullName: text('full_name').notNull(),
   dni: varchar('dni', { length: 8 }).unique(),
@@ -69,6 +73,9 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   reportedIncidents: many(incidents, { relationName: 'reportedBy' }),
   assignedIncidents: many(incidents, { relationName: 'assignedTo' }),
   esbasProgress: many(esbasProgress),
+  cgbvpAttendance: many(cgbvpAttendance),
+  cgbvpStatusHistory: many(cgbvpStatusHistory),
+  emergencyCrewMembers: many(emergencyCrewMembers),
 }))
 
 export type Profile = typeof profiles.$inferSelect

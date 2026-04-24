@@ -3,8 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MainNav } from "@/components/main-nav"
-import { MainFooter } from "@/components/main-footer"
+
 import { Shield, Award, Heart, Users, Target, Mail, Phone } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -149,9 +148,7 @@ export default function NosotrosPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <MainNav />
-
+    <>
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
@@ -388,7 +385,6 @@ export default function NosotrosPage() {
         </section>
       </main>
 
-      <MainFooter />
-    </div>
+    </>
   )
 }
