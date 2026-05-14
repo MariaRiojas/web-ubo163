@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import type { InventoryItem, InventoryCategory, InventoryCondition } from "./page"
+import { ImportToolbar } from "@/components/inventario/import-toolbar"
 
 // ── Etiquetas ──────────────────────────────────────────────────────
 const CATEGORY_LABELS: Record<InventoryCategory, string> = {
@@ -280,10 +281,16 @@ export function InventarioClient({
               </SelectContent>
             </Select>
             {canManage && (
-              <Button onClick={() => setShowAddDialog(true)} className="bg-primary hover:bg-primary/90 text-white ml-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar item
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <ImportToolbar
+                  canManage={canManage}
+                  onImported={(n) => toast.success(`Se importaron ${n} ítems. Recargá la página para ver los cambios.`)}
+                />
+                <Button onClick={() => setShowAddDialog(true)} className="bg-primary hover:bg-primary/90 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar item
+                </Button>
+              </div>
             )}
           </div>
 

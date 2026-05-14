@@ -106,6 +106,8 @@ export const hiredDrivers = pgTable('hired_drivers', {
   id: serial('id').primaryKey(),
   apellidos: text('apellidos').notNull(),
   nombres: text('nombres').notNull(),
+  /** Código CGBVP asignado al piloto rentado (formato R#####, p.ej. R09570) */
+  codigoCgbvp: text('codigo_cgbvp').unique(),
   dni: text('dni'),
   telefono: text('telefono'),
   activo: text('activo').default('si'),

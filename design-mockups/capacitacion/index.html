@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capacitación · UBO 163</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../inventario/style.css">
+<link rel="stylesheet" href="../sidebar-responsive/sidebar.css">
+<link rel="stylesheet" href="capacitacion.css">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+
+<button class="hamburger" id="hamburger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="shell">
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Colapsar menú lateral">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebarClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+
+    <div class="brand">
+      <div class="brand-shield"><img src="../inventario/escudo-163.svg" alt="" width="56" height="56"></div>
+      <div class="brand-text">
+        <div class="brand-name">Bomberos Ancón</div>
+        <div class="brand-meta"><span class="brand-number">CÍA. N.° 163</span><span class="brand-dot">·</span><span class="brand-subtitle">CGBVP</span></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-label">Personal</div>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 L12 3 L21 12 M5 10 V20 H19 V10"/></svg><span>Inicio</span></a>
+        <a href="../mi-perfil/index.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Mi Perfil</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Mi Guardia Nocturna</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg><span>Anuncios</span><span class="nav-badge">3</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Faena y Servicio</div>
+        <a href="../faena-servicio/index.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span>Inspecciones</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/></svg><span>Reportar incidencia</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span>Solicitudes</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Capacitación</div>
+        <a href="#" class="nav-item nav-item--active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Mis cursos</span><span class="nav-indicator"></span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Biblioteca</span></a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="user-text">
+        <div class="user-name">RIOJAS MENDOZA, María</div>
+        <div class="user-role">Seccionario · A23118</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <header class="page-header">
+      <div class="doc-meta">
+        <div class="doc-reg">
+          <span class="doc-label">MÓDULO</span>
+          <span class="doc-value">CAPACITACIÓN</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">MI FIGURA</span>
+          <span class="doc-value">BOMBERO EN ACTIVIDAD</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">ACCESO</span>
+          <span class="doc-value">ESCUELA TÉCNICA HABILITADA</span>
+        </div>
+      </div>
+
+      <div class="page-title-wrap">
+        <h1 class="page-title">
+          <span class="page-title-main">Capacitación y Formación</span>
+          <span class="page-title-sub">Biblioteca institucional, curso ESBAS y Escuela Técnica del CGBVP. Continúe su formación a lo largo de toda la carrera bomberil.</span>
+        </h1>
+      </div>
+    </header>
+
+    <!-- ═══════════════ PROGRESO PERSONAL (summary) ═══════════════ -->
+    <section class="capacitacion-summary">
+      <div class="capacitacion-summary-card capacitacion-summary-card--featured">
+        <div class="config-card-bracket config-card-bracket--tl"></div>
+        <div class="config-card-bracket config-card-bracket--tr"></div>
+        <div class="config-card-bracket config-card-bracket--bl"></div>
+        <div class="config-card-bracket config-card-bracket--br"></div>
+
+        <div class="summary-featured-head">
+          <div>
+            <div class="summary-featured-label">MI PROGRESO FORMATIVO</div>
+            <div class="summary-featured-value">848 <span class="summary-featured-unit">horas acumuladas</span></div>
+          </div>
+          <div class="summary-featured-chart">
+            <div class="ring-progress">
+              <svg viewBox="0 0 60 60" width="80" height="80">
+                <circle cx="30" cy="30" r="26" stroke="var(--ink-line)" stroke-width="4" fill="none"/>
+                <circle cx="30" cy="30" r="26" stroke="var(--brass)" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="32" transform="rotate(-90 30 30)"/>
+              </svg>
+              <div class="ring-progress-value mono">80%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="capacitacion-summary-card">
+        <div class="cap-metric-label">COMPLETADOS</div>
+        <div class="cap-metric-value">12</div>
+        <div class="cap-metric-sub">cursos finalizados</div>
+      </div>
+
+      <div class="capacitacion-summary-card">
+        <div class="cap-metric-label cap-metric-label--flame">EN CURSO</div>
+        <div class="cap-metric-value cap-metric-value--flame">2</div>
+        <div class="cap-metric-sub">BREC + MATPEL II</div>
+      </div>
+
+      <div class="capacitacion-summary-card">
+        <div class="cap-metric-label">CERTIFICACIONES</div>
+        <div class="cap-metric-value">8</div>
+        <div class="cap-metric-sub">válidas al día</div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ CURSOS EN PROGRESO ═══════════════ -->
+    <section class="cap-section">
+      <div class="cap-section-header">
+        <h2 class="cap-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" style="color: var(--flame)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Continúe donde lo dejó
+        </h2>
+        <a href="#" class="cap-section-link">Ver todo →</a>
+      </div>
+
+      <div class="cap-in-progress-grid">
+        <article class="cap-course-card cap-course-card--progress">
+          <div class="cap-course-card-banner cap-course-card-banner--brec">
+            <div class="cap-course-banner-category mono">ESCUELA TÉCNICA · BREC</div>
+            <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="cap-course-banner-decoration">
+              <path d="M 0 80 L 40 60 L 80 85 L 120 55 L 160 75 L 200 50" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+              <path d="M 0 90 L 50 70 L 100 85 L 150 65 L 200 80" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="cap-course-card-body">
+            <h3 class="cap-course-card-title">BREC</h3>
+            <p class="cap-course-card-subtitle">Búsqueda y Rescate en Estructuras Colapsadas</p>
+
+            <div class="cap-course-progress">
+              <div class="cap-course-progress-header">
+                <span class="mono cap-course-progress-percent">62 %</span>
+                <span class="cap-course-progress-detail">74 / 120 horas</span>
+              </div>
+              <div class="cap-course-progress-bar">
+                <div class="cap-course-progress-fill" style="width: 62%"></div>
+              </div>
+            </div>
+
+            <div class="cap-course-next">
+              <div class="cap-course-next-label">PRÓXIMA LECCIÓN</div>
+              <div class="cap-course-next-title">Lección 9 · Estabilización de estructuras</div>
+            </div>
+
+            <button class="btn btn--primary btn--full">Continuar curso</button>
+          </div>
+        </article>
+
+        <article class="cap-course-card cap-course-card--progress">
+          <div class="cap-course-card-banner cap-course-card-banner--matpel">
+            <div class="cap-course-banner-category mono">ESCUELA TÉCNICA · MATPEL</div>
+            <svg viewBox="0 0 200 100" preserveAspectRatio="none" class="cap-course-banner-decoration">
+              <circle cx="50" cy="50" r="16" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+              <circle cx="130" cy="40" r="12" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/>
+              <circle cx="170" cy="70" r="10" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.3"/>
+            </svg>
+          </div>
+          <div class="cap-course-card-body">
+            <h3 class="cap-course-card-title">MATPEL II</h3>
+            <p class="cap-course-card-subtitle">Materiales Peligrosos · Nivel Operaciones</p>
+
+            <div class="cap-course-progress">
+              <div class="cap-course-progress-header">
+                <span class="mono cap-course-progress-percent">28 %</span>
+                <span class="cap-course-progress-detail">11 / 40 horas</span>
+              </div>
+              <div class="cap-course-progress-bar">
+                <div class="cap-course-progress-fill" style="width: 28%"></div>
+              </div>
+            </div>
+
+            <div class="cap-course-next">
+              <div class="cap-course-next-label">PRÓXIMA LECCIÓN</div>
+              <div class="cap-course-next-title">Lección 4 · Sistemas de contención</div>
+            </div>
+
+            <button class="btn btn--primary btn--full">Continuar curso</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══════════════ ESCUELA TÉCNICA ═══════════════ -->
+    <section class="cap-section">
+      <div class="cap-section-header">
+        <h2 class="cap-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" style="color: var(--red-glow)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          Escuela Técnica
+        </h2>
+        <div class="cap-section-filter">
+          <button class="cap-filter-chip cap-filter-chip--active">Todos</button>
+          <button class="cap-filter-chip">Rescate</button>
+          <button class="cap-filter-chip">HazMat</button>
+          <button class="cap-filter-chip">Normas</button>
+        </div>
+      </div>
+
+      <div class="cap-courses-grid">
+
+        <article class="cap-catalog-card cap-catalog-card--completed">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><circle cx="12" cy="8" r="5"/><path d="m8.21 13.89-1.21 7.11 5-3 5 3-1.21-7.12"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">MATPEL · NIVEL 1</div>
+            <h3 class="cap-catalog-card-title">Materiales Peligrosos I</h3>
+            <p class="cap-catalog-card-desc">Identificación y respuesta inicial a incidentes con materiales peligrosos.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                24 h
+              </span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M20 6 9 17l-5-5"/></svg>
+            Completado
+          </div>
+        </article>
+
+        <article class="cap-catalog-card cap-catalog-card--progress">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">MATPEL · NIVEL 2</div>
+            <h3 class="cap-catalog-card-title">Materiales Peligrosos II</h3>
+            <p class="cap-catalog-card-desc">Respuesta operativa defensiva a incidentes con materiales peligrosos.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">40 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--progress">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            En curso · 28 %
+          </div>
+        </article>
+
+        <article class="cap-catalog-card">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">MATPEL · NIVEL 3</div>
+            <h3 class="cap-catalog-card-title">Materiales Peligrosos III</h3>
+            <p class="cap-catalog-card-desc">Intervención técnica y control ofensivo de incidentes HAZMAT.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">80 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Subteniente +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--locked">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Requiere grado
+          </div>
+        </article>
+
+        <article class="cap-catalog-card cap-catalog-card--progress">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">RESCATE TÉCNICO</div>
+            <h3 class="cap-catalog-card-title">BREC</h3>
+            <p class="cap-catalog-card-desc">Búsqueda y Rescate en Estructuras Colapsadas. Técnicas de búsqueda, rescate y estabilización.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">120 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--progress">
+            En curso · 62 %
+          </div>
+        </article>
+
+        <article class="cap-catalog-card">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 10v4M12 12h0M16 10v4"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">RESCATE TÉCNICO</div>
+            <h3 class="cap-catalog-card-title">BREI</h3>
+            <p class="cap-catalog-card-desc">Búsqueda y Rescate en Espacios Intermedios. Nivel intermedio de rescate en confinados.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">60 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--available">
+            Disponible
+          </div>
+        </article>
+
+        <article class="cap-catalog-card">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">RESCATE TÉCNICO</div>
+            <h3 class="cap-catalog-card-title">REC</h3>
+            <p class="cap-catalog-card-desc">Rescate en Espacios Confinados. Rescate vertical y horizontal.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">48 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--available">
+            Disponible
+          </div>
+        </article>
+
+        <article class="cap-catalog-card cap-catalog-card--completed">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M12 2 L22 20 L2 20 Z"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">CUERDAS</div>
+            <h3 class="cap-catalog-card-title">Lote de Cuerdas de Rescate</h3>
+            <p class="cap-catalog-card-desc">Sistemas de anclaje, descenso controlado y rescate vertical con cuerdas.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">40 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M20 6 9 17l-5-5"/></svg>
+            Completado
+          </div>
+        </article>
+
+        <article class="cap-catalog-card">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">AUTOPROTECCIÓN</div>
+            <h3 class="cap-catalog-card-title">Supervivencia del Bombero</h3>
+            <p class="cap-catalog-card-desc">Técnicas de autorrescate ante desorientación, caída, atrapamiento, baja de aire.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">30 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--available">
+            Disponible
+          </div>
+        </article>
+
+        <article class="cap-catalog-card">
+          <div class="cap-catalog-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          </div>
+          <div class="cap-catalog-card-body">
+            <div class="cap-catalog-card-category mono">NORMAS</div>
+            <h3 class="cap-catalog-card-title">Normas NFPA · Introducción</h3>
+            <p class="cap-catalog-card-desc">Fundamentos de las normas internacionales NFPA para la operación bomberil.</p>
+            <div class="cap-catalog-card-meta">
+              <span class="cap-catalog-meta-item">16 h</span>
+              <span class="cap-catalog-meta-sep">·</span>
+              <span class="cap-catalog-meta-item">Seccionario +</span>
+            </div>
+          </div>
+          <div class="cap-catalog-card-status cap-catalog-card-status--available">
+            Disponible
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════ ESBAS ═══════════════ -->
+    <section class="cap-section">
+      <div class="cap-section-header">
+        <h2 class="cap-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" style="color: var(--brass)"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Curso ESBAS
+        </h2>
+      </div>
+
+      <article class="cap-esbas-card">
+        <div class="cap-esbas-shield">
+          <img src="../inventario/escudo-163.svg" alt="">
+        </div>
+        <div class="cap-esbas-body">
+          <div class="cap-esbas-meta mono">CURSO FUNDACIONAL DEL CGBVP</div>
+          <h3 class="cap-esbas-title">Escuela Básica de Bomberos (ESBAS)</h3>
+          <p class="cap-esbas-desc">Obligatorio para postulantes y aspirantes. Disponible de forma libre para bomberos que deseen repasar los fundamentos del servicio voluntario.</p>
+
+          <div class="cap-esbas-stats">
+            <div class="cap-esbas-stat">
+              <div class="cap-esbas-stat-label">ESTADO</div>
+              <div class="cap-esbas-stat-value cap-esbas-stat-value--ok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+                Completado
+              </div>
+            </div>
+            <div class="cap-esbas-stat">
+              <div class="cap-esbas-stat-label">PROMOCIÓN</div>
+              <div class="cap-esbas-stat-value mono">2022-I</div>
+            </div>
+            <div class="cap-esbas-stat">
+              <div class="cap-esbas-stat-label">CALIFICACIÓN</div>
+              <div class="cap-esbas-stat-value cap-esbas-stat-value--brass">20 / 20</div>
+            </div>
+            <div class="cap-esbas-stat">
+              <div class="cap-esbas-stat-label">HORAS</div>
+              <div class="cap-esbas-stat-value mono">400 h</div>
+            </div>
+          </div>
+
+          <div class="cap-esbas-actions">
+            <button class="btn btn--ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Descargar certificado
+            </button>
+            <button class="btn btn--ghost">Repasar lecciones</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═══════════════ BIBLIOTECA ═══════════════ -->
+    <section class="cap-section">
+      <div class="cap-section-header">
+        <h2 class="cap-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" stroke-linecap="round" stroke-linejoin="round" style="color: var(--brass)"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Biblioteca institucional
+        </h2>
+        <a href="#" class="cap-section-link">Ver biblioteca completa →</a>
+      </div>
+
+      <div class="cap-library-grid">
+        <a href="#" class="cap-library-item">
+          <div class="cap-library-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <div class="cap-library-body">
+            <div class="cap-library-category mono">REGLAMENTOS</div>
+            <div class="cap-library-title">RIF 2024 — Reglamento Interno de Funcionamiento</div>
+            <div class="cap-library-meta">PDF · 2.6 MB · Octubre 2023</div>
+          </div>
+        </a>
+
+        <a href="#" class="cap-library-item">
+          <div class="cap-library-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <div class="cap-library-body">
+            <div class="cap-library-category mono">NDR · ASCENSOS</div>
+            <div class="cap-library-title">Norma sobre Ascensos del CGBVP</div>
+            <div class="cap-library-meta">PDF · 1.2 MB · Agosto 2023</div>
+          </div>
+        </a>
+
+        <a href="#" class="cap-library-item">
+          <div class="cap-library-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          </div>
+          <div class="cap-library-body">
+            <div class="cap-library-category mono">NDR · UNIFORMES</div>
+            <div class="cap-library-title">Uniformes, Insignias, Reconocimientos y Condecoraciones</div>
+            <div class="cap-library-meta">PDF · 540 KB · Agosto 2023</div>
+          </div>
+        </a>
+
+        <a href="#" class="cap-library-item">
+          <div class="cap-library-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          </div>
+          <div class="cap-library-body">
+            <div class="cap-library-category mono">NDR · ESBAS</div>
+            <div class="cap-library-title">Malla Curricular oficial de la Escuela Básica de Bomberos</div>
+            <div class="cap-library-meta">PDF · 580 KB · 2023</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <footer class="footer-motto">
+      <div class="motto-line"></div>
+      <div class="motto-text">Dios · Patria · Humanidad</div>
+      <div class="motto-line"></div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Filtros de categoría (visuales solo)
+  document.querySelectorAll('.cap-filter-chip').forEach((c) => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.cap-filter-chip').forEach((b) => b.classList.remove('cap-filter-chip--active'));
+      c.classList.add('cap-filter-chip--active');
+    });
+  });
+
+  // Mobile drawer + toggle
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const closeBtn = document.getElementById('sidebarClose');
+  const open = () => { sidebar.classList.add('sidebar--open'); backdrop.classList.add('sidebar-backdrop--visible'); };
+  const close = () => { sidebar.classList.remove('sidebar--open'); backdrop.classList.remove('sidebar-backdrop--visible'); };
+  hamburger?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+
+  const shell = document.querySelector('.shell');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const COLLAPSED_KEY = 'ubo163:sidebar:collapsed';
+  if (localStorage.getItem(COLLAPSED_KEY) === 'true') shell.classList.add('shell--sidebar-collapsed');
+  toggleBtn?.addEventListener('click', () => {
+    const collapsed = shell.classList.toggle('shell--sidebar-collapsed');
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? 'true' : 'false');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,888 @@
+/* ═══════════════════════════════════════════════════════════════════
+   GUARDIA NOCTURNA
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Switcher de vista ─── */
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-5);
+  background: linear-gradient(135deg, rgba(196, 160, 98, 0.05), transparent 60%);
+  border: 1px dashed rgba(196, 160, 98, 0.25);
+  border-radius: 2px;
+  animation: fadeUp 600ms var(--ease-mech) both 150ms;
+  flex-wrap: wrap;
+}
+
+.view-switcher-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.view-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--steel);
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 140ms var(--ease-swift);
+}
+
+.view-switch-btn:hover {
+  color: var(--bone);
+  border-color: var(--graphite);
+}
+
+.view-switch-btn--active {
+  color: var(--bone);
+  background: var(--red-163);
+  border-color: var(--red-163);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATS DEL EFECTIVO
+   ═══════════════════════════════════════════════════════════════════ */
+
+.guardia-stats {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+  animation: fadeUp 700ms var(--ease-mech) both 200ms;
+}
+
+.guardia-stat-card {
+  background: var(--ink-deep);
+  border: 1px solid var(--ink-line);
+  padding: var(--sp-5);
+}
+
+.guardia-stat-card--next {
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.08), transparent 60%),
+    var(--ink-deep);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.guardia-stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+  text-transform: uppercase;
+  margin-bottom: var(--sp-3);
+}
+
+.guardia-stat-card--next .guardia-stat-label {
+  color: var(--red-glow);
+}
+
+.guardia-stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.guardia-stat-value-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--bone);
+  line-height: 1;
+}
+
+.guardia-stat-value-date {
+  font-size: 16px;
+  color: var(--brass);
+  font-weight: 600;
+}
+
+.guardia-stat-value-unit {
+  font-size: 12px;
+  color: var(--steel);
+}
+
+.guardia-stat-detail {
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--ink-line);
+}
+
+.guardia-detail-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--graphite);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.guardia-detail-value {
+  font-size: 12px;
+  color: var(--bone);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN: CALENDARIO + PANEL CAMAS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.guardia-main {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: var(--sp-5);
+  animation: fadeUp 800ms var(--ease-mech) both 300ms;
+}
+
+.guardia-calendar-card,
+.guardia-beds-panel {
+  background: var(--ink-deep);
+  border: 1px solid var(--ink-line);
+  padding: var(--sp-5) var(--sp-6);
+  position: relative;
+}
+
+.guardia-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--ink-line);
+  flex-wrap: wrap;
+}
+
+.guardia-card-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--bone);
+  letter-spacing: -0.005em;
+  margin-bottom: 4px;
+}
+
+.guardia-card-sub {
+  font-size: 11px;
+  color: var(--steel);
+}
+
+/* ─── Calendario navegación ─── */
+.guardia-calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.guardia-nav-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  color: var(--steel);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 140ms var(--ease-swift);
+}
+
+.guardia-nav-btn:hover {
+  color: var(--red-glow);
+  border-color: var(--red-163);
+}
+
+.guardia-nav-month {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--brass);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* ─── Grid del calendario ─── */
+.guardia-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: var(--sp-4);
+}
+
+.guardia-calendar-dow {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--graphite);
+  padding: 6px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--steel);
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 140ms var(--ease-swift);
+}
+
+.cal-day:hover:not(.cal-day--pad):not(.cal-day--past):not(.cal-day--full) {
+  border-color: var(--red-163);
+  color: var(--bone);
+}
+
+.cal-day--pad {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.cal-day--past {
+  color: var(--graphite);
+  background: transparent;
+  border-color: var(--ink-line-soft);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.cal-day--today {
+  border-color: var(--brass);
+  color: var(--brass);
+  font-weight: 700;
+  background: rgba(196, 160, 98, 0.06);
+}
+
+.cal-day--available {
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--bone);
+}
+
+.cal-day--full {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: var(--graphite);
+  cursor: not-allowed;
+}
+
+.cal-day--selected {
+  background: var(--red-163);
+  border-color: var(--red-163);
+  color: var(--bone);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+}
+
+.cal-day--mine .cal-day-dot {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--brass);
+  border-radius: 50%;
+}
+
+.cal-day--selected.cal-day--mine .cal-day-dot {
+  background: var(--bone);
+}
+
+/* ─── Leyenda ─── */
+.guardia-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--ink-line);
+  font-size: 10px;
+  color: var(--steel);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-box {
+  width: 14px;
+  height: 14px;
+  border: 1px solid;
+  border-radius: 2px;
+}
+
+.legend-box--selected {
+  background: var(--red-163);
+  border-color: var(--red-163);
+}
+
+.legend-box--mine {
+  background: transparent;
+  border-color: var(--brass);
+  position: relative;
+}
+
+.legend-box--mine::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--brass);
+  border-radius: 50%;
+}
+
+.legend-box--available {
+  background: transparent;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.legend-box--full {
+  background: rgba(220, 38, 38, 0.2);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.legend-box--past {
+  background: transparent;
+  border-color: var(--ink-line-soft);
+  opacity: 0.5;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot--available { background: var(--emerald); }
+.legend-dot--reserved { background: var(--red-163); }
+.legend-dot--unavailable { background: var(--graphite); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PANEL DE CAMAS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.beds-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+
+.bunk {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+}
+
+.bunk-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--brass);
+  text-transform: uppercase;
+  margin-bottom: var(--sp-3);
+}
+
+.bunk-beds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+.bed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--ink-deep);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 160ms var(--ease-swift);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.bed:disabled {
+  cursor: not-allowed;
+}
+
+.bed-number {
+  font-size: 22px;
+  color: var(--bone);
+  font-weight: 600;
+}
+
+.bed-position {
+  font-size: 11px;
+  color: var(--steel);
+}
+
+.bed-status-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--graphite);
+  margin-top: 2px;
+}
+
+.bed-reserved-by {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--red-glow);
+  margin-top: 2px;
+}
+
+.bed--available {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.bed--available:hover {
+  border-color: var(--emerald);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(16, 185, 129, 0.25);
+}
+
+.bed--available .bed-number {
+  color: var(--emerald-glow);
+}
+
+.bed--reserved {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.06), transparent);
+  opacity: 0.75;
+}
+
+.bed--reserved .bed-number {
+  color: var(--red-glow);
+}
+
+.bed--unavailable {
+  border-color: var(--ink-line);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ink-deep),
+    var(--ink-deep) 6px,
+    var(--ink-black) 6px,
+    var(--ink-black) 12px
+  );
+  opacity: 0.5;
+}
+
+.bed--unavailable .bed-number {
+  color: var(--graphite);
+}
+
+.bed--selected {
+  border-color: var(--brass);
+  background: linear-gradient(135deg, rgba(196, 160, 98, 0.15), transparent 60%),
+              var(--ink-deep);
+  box-shadow: 0 0 0 2px rgba(196, 160, 98, 0.3);
+}
+
+.bed--selected .bed-number {
+  color: var(--brass);
+}
+
+.bed-selected-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  background: var(--brass);
+  color: var(--ink-black);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 2px;
+}
+
+/* ─── Footer del panel ─── */
+.guardia-beds-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--ink-line);
+  flex-wrap: wrap;
+}
+
+.guardia-legend-inline {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: 10px;
+  color: var(--steel);
+}
+
+.guardia-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VISTA JEFE DE GUARDIA
+   ═══════════════════════════════════════════════════════════════════ */
+
+.jefe-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-5);
+  align-items: center;
+  padding: var(--sp-5) var(--sp-6);
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.08), transparent 60%),
+    var(--ink-deep);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  margin-bottom: var(--sp-6);
+  animation: fadeUp 600ms var(--ease-mech) both 150ms;
+}
+
+.jefe-banner-seal {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--red-glow);
+  border: 1.5px solid var(--red-163);
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 2px;
+}
+
+.jefe-banner-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--red-glow);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.jefe-banner-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--bone);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.jefe-banner-sub {
+  font-size: 12px;
+  color: var(--steel);
+  max-width: 600px;
+}
+
+.jefe-banner-stats {
+  display: flex;
+  gap: var(--sp-6);
+  text-align: right;
+}
+
+.jefe-banner-stat-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--brass);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.jefe-banner-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--graphite);
+  text-transform: uppercase;
+}
+
+/* ─── Paneles ─── */
+.jefe-panel {
+  background: var(--ink-deep);
+  border: 1px solid var(--ink-line);
+  padding: var(--sp-5) var(--sp-6);
+  margin-bottom: var(--sp-5);
+  animation: fadeUp 700ms var(--ease-mech) both 250ms;
+}
+
+.jefe-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--ink-line);
+  flex-wrap: wrap;
+}
+
+.jefe-panel-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--bone);
+  margin-bottom: 4px;
+}
+
+.jefe-panel-sub {
+  font-size: 11px;
+  color: var(--steel);
+}
+
+.jefe-panel-filter {
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--brass);
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+}
+
+/* ─── Tabla de camarotes ─── */
+.jefe-bunks-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.jefe-bunk-row {
+  display: grid;
+  grid-template-columns: 80px 80px 100px 150px 1fr 40px;
+  gap: var(--sp-3);
+  align-items: center;
+  padding: var(--sp-3) var(--sp-2);
+  font-size: 12px;
+  color: var(--bone);
+  border-bottom: 1px solid var(--ink-line-soft);
+}
+
+.jefe-bunk-row--header {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--graphite);
+  text-transform: uppercase;
+  border-bottom-color: var(--ink-line);
+  padding-bottom: var(--sp-2);
+}
+
+.jefe-bunk-row--unavailable {
+  background: rgba(220, 38, 38, 0.03);
+}
+
+.jefe-bunk-label {
+  font-size: 14px;
+  color: var(--brass);
+  font-weight: 600;
+}
+
+.jefe-bed-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 1px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.jefe-bed-status--ok {
+  color: var(--emerald-glow);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.jefe-bed-status--out {
+  color: var(--red-glow);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.jefe-bunk-reason {
+  font-size: 11px;
+  color: var(--steel);
+}
+
+.jefe-bunk-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jefe-action-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--steel);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 140ms var(--ease-swift);
+}
+
+.jefe-action-btn:hover {
+  color: var(--red-glow);
+  border-color: var(--red-163);
+}
+
+.jefe-action-btn--restore {
+  color: var(--emerald-glow);
+  border-color: var(--emerald);
+}
+
+/* ─── Reservas activas ─── */
+.jefe-reservas-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.jefe-reserva-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  align-items: center;
+}
+
+.jefe-reserva-date {
+  text-align: center;
+  padding: 6px 12px;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid var(--red-deep);
+  border-radius: 2px;
+  min-width: 50px;
+}
+
+.jefe-reserva-date--past {
+  background: var(--ink-deep);
+  border-color: var(--ink-line);
+  opacity: 0.6;
+}
+
+.jefe-reserva-day {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--red-glow);
+  line-height: 1;
+}
+
+.jefe-reserva-date--past .jefe-reserva-day {
+  color: var(--graphite);
+}
+
+.jefe-reserva-month {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  margin-top: 2px;
+}
+
+.jefe-reserva-name {
+  font-size: 13px;
+  color: var(--bone);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.jefe-reserva-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--graphite);
+}
+
+.jefe-reserva-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jefe-reserva-status--pending {
+  color: var(--brass);
+  background: rgba(196, 160, 98, 0.08);
+}
+
+.jefe-reserva-status--completed {
+  color: var(--emerald-glow);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1200px) {
+  .guardia-main {
+    grid-template-columns: 1fr;
+  }
+  .guardia-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .guardia-stats {
+    grid-template-columns: 1fr;
+  }
+  .jefe-banner {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .jefe-banner-stats {
+    justify-content: center;
+    text-align: center;
+  }
+  .jefe-bunk-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: var(--sp-3);
+  }
+  .jefe-bunk-row--header {
+    display: none;
+  }
+  .bunk-beds {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario · UBO 163 — Centro de Comando</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     BACKGROUND ATMOSPHERE
+     ═════════════════════════════════════════════════════════════════ -->
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+<div class="bg-glow bg-glow--bottom"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     LAYOUT PRINCIPAL
+     ═════════════════════════════════════════════════════════════════ -->
+<div class="shell">
+
+  <!-- ──────────────── SIDEBAR ──────────────── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-shield">
+        <img src="escudo-163.svg" alt="Escudo UBO 163" width="56" height="56">
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">Bomberos Ancón</div>
+        <div class="brand-meta">
+          <span class="brand-number">CÍA. N.° 163</span>
+          <span class="brand-dot">·</span>
+          <span class="brand-subtitle">CGBVP</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 L12 3 L21 12 M5 10 V20 H19 V10"/></svg>
+        <span>Inicio</span>
+      </a>
+
+      <div class="nav-section">
+        <div class="nav-label">Gestión Operativa</div>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Operatividad</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+          <span>Estadísticas</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+          <span>Partes de Emergencia</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Gestión Administrativa</div>
+        <a href="#" class="nav-item nav-item--active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m7.5 4.27 9 5.15M3.3 7 12 12l8.7-5M12 22V12"/></svg>
+          <span>Inventario</span>
+          <span class="nav-indicator"></span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Personal</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Gestión Formativa</div>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span>ESBAS</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="user-text">
+        <div class="user-name">HERRERA VARGAS, José</div>
+        <div class="user-role">Jefe de Máquinas · A23118</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ──────────────── CONTENIDO ──────────────── -->
+  <main class="content">
+
+    <!-- Header con documento institucional -->
+    <header class="page-header">
+      <div class="doc-meta">
+        <div class="doc-reg">
+          <span class="doc-label">REGISTRO</span>
+          <span class="doc-value">RIF-XVI-163</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">MÓDULO</span>
+          <span class="doc-value">INVENTARIO</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">VIGENCIA</span>
+          <span class="doc-value">06·MAY·2026</span>
+        </div>
+      </div>
+
+      <div class="page-title-wrap">
+        <h1 class="page-title">
+          <span class="page-title-main">Inventario General</span>
+          <span class="page-title-sub">Compañía de Bomberos Voluntarios N.° 163 — Ancón</span>
+        </h1>
+
+        <div class="page-actions">
+          <button class="btn btn--ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <span>Plantilla</span>
+          </button>
+          <button class="btn btn--primary" onclick="window.location.href='import-modal.html'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <span>Importar Excel</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats institucionales -->
+    <section class="stats-row">
+      <div class="stat-card stat-card--featured">
+        <div class="stat-card-bracket stat-card-bracket--tl"></div>
+        <div class="stat-card-bracket stat-card-bracket--tr"></div>
+        <div class="stat-card-bracket stat-card-bracket--bl"></div>
+        <div class="stat-card-bracket stat-card-bracket--br"></div>
+
+        <div class="stat-label">INVENTARIO TOTAL</div>
+        <div class="stat-value">
+          <span class="stat-value-num">1,247</span>
+          <span class="stat-value-unit">ítems</span>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-up">▲ 23</span>
+          <span class="stat-trend-text">incorporados este mes</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label stat-label--emerald">OPERATIVOS</div>
+        <div class="stat-value stat-value--emerald">1,089</div>
+        <div class="stat-bar">
+          <div class="stat-bar-fill stat-bar-fill--emerald" style="width: 87%"></div>
+        </div>
+        <div class="stat-sub">87.3% del total</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label stat-label--flame">REQUIEREN ATENCIÓN</div>
+        <div class="stat-value stat-value--flame">142</div>
+        <div class="stat-bar">
+          <div class="stat-bar-fill stat-bar-fill--flame" style="width: 11%"></div>
+        </div>
+        <div class="stat-sub">Mantenimiento / certificación</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label stat-label--red">CRÍTICOS</div>
+        <div class="stat-value stat-value--red">16</div>
+        <div class="stat-bar">
+          <div class="stat-bar-fill stat-bar-fill--red" style="width: 4%"></div>
+        </div>
+        <div class="stat-sub">Baja / vencidos</div>
+      </div>
+    </section>
+
+    <!-- Layout de 2 columnas: almacenes + tabla -->
+    <section class="main-grid">
+
+      <!-- ── Columna izquierda: almacenes ── -->
+      <aside class="warehouses">
+        <div class="section-header">
+          <div class="section-header-rule"></div>
+          <h2 class="section-title">Almacenes</h2>
+          <div class="section-header-rule"></div>
+        </div>
+
+        <div class="warehouse-list">
+          <button class="warehouse warehouse--active">
+            <div class="warehouse-seal">MQ</div>
+            <div class="warehouse-info">
+              <div class="warehouse-name">Sala de Máquinas</div>
+              <div class="warehouse-meta">
+                <span class="warehouse-count">384</span>
+                <span class="warehouse-sep">·</span>
+                <span class="warehouse-sub">4 unidades</span>
+              </div>
+            </div>
+            <svg class="warehouse-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+
+          <div class="warehouse-children">
+            <button class="sub-warehouse">
+              <div class="sub-mark"></div>
+              <span class="sub-name">MAQUINA 163-1</span>
+              <span class="sub-count">127</span>
+            </button>
+            <button class="sub-warehouse sub-warehouse--active">
+              <div class="sub-mark"></div>
+              <span class="sub-name">AMBULANCIA 163</span>
+              <span class="sub-count">94</span>
+            </button>
+            <button class="sub-warehouse">
+              <div class="sub-mark"></div>
+              <span class="sub-name">RESCATE 163</span>
+              <span class="sub-count">86</span>
+            </button>
+            <button class="sub-warehouse">
+              <div class="sub-mark"></div>
+              <span class="sub-name">AUXILIAR 163</span>
+              <span class="sub-count">77</span>
+            </button>
+          </div>
+
+          <button class="warehouse">
+            <div class="warehouse-seal">SN</div>
+            <div class="warehouse-info">
+              <div class="warehouse-name">Almacén de Sanidad</div>
+              <div class="warehouse-meta">
+                <span class="warehouse-count">312</span>
+                <span class="warehouse-sep">·</span>
+                <span class="warehouse-sub warehouse-sub--flame">18 por vencer</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="warehouse">
+            <div class="warehouse-seal">SG</div>
+            <div class="warehouse-info">
+              <div class="warehouse-name">Servicios Generales</div>
+              <div class="warehouse-meta">
+                <span class="warehouse-count">267</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="warehouse">
+            <div class="warehouse-seal">IN</div>
+            <div class="warehouse-info">
+              <div class="warehouse-name">Instrucción</div>
+              <div class="warehouse-meta">
+                <span class="warehouse-count">148</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="warehouse">
+            <div class="warehouse-seal">IM</div>
+            <div class="warehouse-info">
+              <div class="warehouse-name">Imagen Institucional</div>
+              <div class="warehouse-meta">
+                <span class="warehouse-count">52</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="warehouse">
+            <div class="warehouse-seal">AD</div>
+            <div class="warehouse-info">
+              <div class="warehouse-name">Administración</div>
+              <div class="warehouse-meta">
+                <span class="warehouse-count">84</span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ── Tabla central ── -->
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <div class="toolbar-crumb">
+            <span class="crumb-pre">CONSULTANDO</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 18l6-6-6-6"/></svg>
+            <span class="crumb-main">Sala de Máquinas</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 18l6-6-6-6"/></svg>
+            <span class="crumb-main crumb-main--strong">AMBULANCIA 163</span>
+          </div>
+
+          <div class="toolbar-actions">
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="search" placeholder="Buscar en inventario..." class="search-input">
+            </div>
+            <button class="tool-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+              <span>Filtros</span>
+            </button>
+            <button class="tool-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              <span>Columnas · 14/32</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="items-table">
+          <div class="items-head">
+            <div class="col col-code">CÓD. CBP</div>
+            <div class="col col-name">DESIGNACIÓN</div>
+            <div class="col col-brand">MARCA / MODELO</div>
+            <div class="col col-loc">UBICACIÓN</div>
+            <div class="col col-qty">CANT.</div>
+            <div class="col col-status">CONDICIÓN</div>
+            <div class="col col-cert">VENCE</div>
+          </div>
+
+          <!-- Fila destacada: seleccionada -->
+          <button class="items-row items-row--selected">
+            <div class="col col-code mono">CBP-163-DEA-01</div>
+            <div class="col col-name">
+              <div class="item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Desfibrilador DEA</div>
+                <div class="item-sub">Equipo médico · serie SN-12456</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Zoll</div>
+              <div class="brand-model">AED Plus</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">AMBULANCIA 163</div>
+              <div class="loc-secondary">Cabina trasera · mueble A</div>
+            </div>
+            <div class="col col-qty mono">1</div>
+            <div class="col col-status">
+              <div class="status status--ok">
+                <span class="status-dot"></span>
+                OPERATIVO
+              </div>
+            </div>
+            <div class="col col-cert mono">2026·08·15</div>
+          </button>
+
+          <button class="items-row">
+            <div class="col col-code mono">—</div>
+            <div class="col col-name">
+              <div class="item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><rect x="4" y="6" width="16" height="14" rx="1"/><path d="M8 10v-2a4 4 0 1 1 8 0v2"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Ampolla Adrenalina 1mg</div>
+                <div class="item-sub">Medicamento · lote L-ADR-2406-08</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Genfar</div>
+              <div class="brand-model">1mg/1ml</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">AMBULANCIA 163</div>
+              <div class="loc-secondary">Gaveta médica 2</div>
+            </div>
+            <div class="col col-qty mono">20</div>
+            <div class="col col-status">
+              <div class="status status--ok">
+                <span class="status-dot"></span>
+                OPERATIVO
+              </div>
+            </div>
+            <div class="col col-cert mono">2027·03·15</div>
+          </button>
+
+          <button class="items-row items-row--warn">
+            <div class="col col-code mono">CBP-163-SCBA-04</div>
+            <div class="col col-name">
+              <div class="item-icon item-icon--warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">SCBA Botella 4500psi</div>
+                <div class="item-sub">EPP · certificación próxima</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Scott</div>
+              <div class="brand-model">AirPak X3</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">MAQUINA 163-1</div>
+              <div class="loc-secondary">Cabina interior</div>
+            </div>
+            <div class="col col-qty mono">4</div>
+            <div class="col col-status">
+              <div class="status status--warn">
+                <span class="status-dot"></span>
+                REVISIÓN
+              </div>
+            </div>
+            <div class="col col-cert mono col-cert--warn">2026·11·20</div>
+          </button>
+
+          <button class="items-row">
+            <div class="col col-code mono">CBP-163-BOT-03</div>
+            <div class="col col-name">
+              <div class="item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM12 3v9l6 3"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Botiquín APH Avanzado</div>
+                <div class="item-sub">Equipo · Kit estándar CGBVP</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">—</div>
+              <div class="brand-model">CGBVP</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">AMBULANCIA 163</div>
+              <div class="loc-secondary">Cabina trasera</div>
+            </div>
+            <div class="col col-qty mono">1</div>
+            <div class="col col-status">
+              <div class="status status--ok">
+                <span class="status-dot"></span>
+                OPERATIVO
+              </div>
+            </div>
+            <div class="col col-cert mono">—</div>
+          </button>
+
+          <button class="items-row">
+            <div class="col col-code mono">CBP-163-HID-01</div>
+            <div class="col col-name">
+              <div class="item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Cizalla Hidráulica</div>
+                <div class="item-sub">Herramienta · serie HLM-CU-12456</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Holmatro</div>
+              <div class="brand-model">CU5050</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">MAQUINA 163-1</div>
+              <div class="loc-secondary">Compartimiento lateral 2</div>
+            </div>
+            <div class="col col-qty mono">1</div>
+            <div class="col col-status">
+              <div class="status status--ok">
+                <span class="status-dot"></span>
+                OPERATIVO
+              </div>
+            </div>
+            <div class="col col-cert mono">2026·10·15</div>
+          </button>
+
+          <button class="items-row items-row--critical">
+            <div class="col col-code mono">CBP-163-TRJ-018</div>
+            <div class="col col-name">
+              <div class="item-icon item-icon--critical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Capote estructural</div>
+                <div class="item-sub">EPP · asignado A23118 · vida útil excedida</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Globe</div>
+              <div class="brand-model">G-XTREME · 2014</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">SERVICIOS</div>
+              <div class="loc-secondary">Asignado a A23118</div>
+            </div>
+            <div class="col col-qty mono">1</div>
+            <div class="col col-status">
+              <div class="status status--critical">
+                <span class="status-dot"></span>
+                CRÍTICO
+              </div>
+            </div>
+            <div class="col col-cert mono col-cert--critical">2024·06·15</div>
+          </button>
+
+          <button class="items-row">
+            <div class="col col-code mono">—</div>
+            <div class="col col-name">
+              <div class="item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="M12 2 L15 9 L22 9 L16 14 L18 21 L12 17 L6 21 L8 14 L2 9 L9 9 Z"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Suero Fisiológico 1L</div>
+                <div class="item-sub">Insumo médico · lote L-SF-2025-014</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Baxter</div>
+              <div class="brand-model">NaCl 0.9%</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">AMBULANCIA 163</div>
+              <div class="loc-secondary">Compartimiento 4</div>
+            </div>
+            <div class="col col-qty mono">12</div>
+            <div class="col col-status">
+              <div class="status status--ok">
+                <span class="status-dot"></span>
+                OPERATIVO
+              </div>
+            </div>
+            <div class="col col-cert mono">2028·06·01</div>
+          </button>
+
+          <button class="items-row">
+            <div class="col col-code mono">CBP-163-RAD-12</div>
+            <div class="col col-name">
+              <div class="item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><rect x="7" y="4" width="10" height="16" rx="1"/><path d="M9 20h6M12 8v0"/></svg></div>
+              <div class="item-name-col">
+                <div class="item-name">Radio portátil</div>
+                <div class="item-sub">EPP técnico · asignado R09570</div>
+              </div>
+            </div>
+            <div class="col col-brand">
+              <div class="brand-name-col">Motorola</div>
+              <div class="brand-model">APX900</div>
+            </div>
+            <div class="col col-loc">
+              <div class="loc-primary">SERVICIOS</div>
+              <div class="loc-secondary">Piloto rentado</div>
+            </div>
+            <div class="col col-qty mono">1</div>
+            <div class="col col-status">
+              <div class="status status--ok">
+                <span class="status-dot"></span>
+                OPERATIVO
+              </div>
+            </div>
+            <div class="col col-cert mono">—</div>
+          </button>
+        </div>
+
+        <div class="table-footer">
+          <div class="footer-meta">
+            Mostrando <span class="mono">8</span> de <span class="mono">384</span> ítems
+          </div>
+          <div class="pagination">
+            <button class="page-btn page-btn--disabled">←</button>
+            <button class="page-btn page-btn--active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <span class="page-dots">…</span>
+            <button class="page-btn">48</button>
+            <button class="page-btn">→</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Panel detalle derecha ── -->
+      <aside class="detail-panel" onclick="window.location.href='attachments-modal.html'">
+        <div class="detail-corner detail-corner--tl"></div>
+        <div class="detail-corner detail-corner--tr"></div>
+        <div class="detail-corner detail-corner--bl"></div>
+        <div class="detail-corner detail-corner--br"></div>
+
+        <div class="detail-header">
+          <div class="detail-label">FICHA TÉCNICA</div>
+          <div class="detail-id mono">CBP-163-DEA-01</div>
+        </div>
+
+        <div class="detail-item-name">Desfibrilador DEA</div>
+        <div class="detail-item-brand">Zoll · AED Plus</div>
+
+        <div class="detail-hairline"></div>
+
+        <div class="detail-section">
+          <div class="detail-row">
+            <span class="detail-row-label">CATEGORÍA</span>
+            <span class="detail-row-value">Equipo médico</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">SERIE</span>
+            <span class="detail-row-value mono">SN-12456</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">AÑO</span>
+            <span class="detail-row-value mono">2022</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">UBICACIÓN</span>
+            <span class="detail-row-value">AMBULANCIA 163</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">POSICIÓN</span>
+            <span class="detail-row-value">Cabina trasera · mueble A</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">CANTIDAD</span>
+            <span class="detail-row-value mono">1 unidad</span>
+          </div>
+        </div>
+
+        <div class="detail-hairline"></div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Mantenimiento</div>
+          <div class="detail-row">
+            <span class="detail-row-label">ÚLTIMA</span>
+            <span class="detail-row-value mono">2026·03·01</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">PRÓXIMA</span>
+            <span class="detail-row-value mono detail-row-value--warn">2026·08·15</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-row-label">INTERVALO</span>
+            <span class="detail-row-value">Cada 6 meses</span>
+          </div>
+        </div>
+
+        <div class="detail-hairline"></div>
+
+        <div class="detail-attachments">
+          <div class="detail-section-title">
+            <span>Adjuntos</span>
+            <span class="attach-count mono">03</span>
+          </div>
+
+          <div class="attach-item">
+            <div class="attach-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+            </div>
+            <div class="attach-text">
+              <div class="attach-name">ficha-tecnica-zoll.pdf</div>
+              <div class="attach-meta">FICHA TÉCNICA · 2.1MB</div>
+            </div>
+          </div>
+
+          <div class="attach-item">
+            <div class="attach-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="attach-text">
+              <div class="attach-name">certificacion-2026.pdf</div>
+              <div class="attach-meta">CERTIFICACIÓN · 850KB</div>
+            </div>
+          </div>
+
+          <div class="attach-item">
+            <div class="attach-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </div>
+            <div class="attach-text">
+              <div class="attach-name">foto-cabina.jpg</div>
+              <div class="attach-meta">FOTOGRAFÍA · 1.4MB</div>
+            </div>
+          </div>
+
+          <button class="detail-action">
+            Ver todos los adjuntos →
+          </button>
+        </div>
+
+        <div class="detail-watermark">
+          <img src="escudo-163.svg" alt="">
+        </div>
+      </aside>
+
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Perfil · Legajo Institucional · UBO 163</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../inventario/style.css">
+<link rel="stylesheet" href="../sidebar-responsive/sidebar.css">
+<link rel="stylesheet" href="perfil.css">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+
+<button class="hamburger" id="hamburger" aria-label="Abrir menú">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="shell">
+  <!-- Toggle colapsar/expandir (solo desktop) -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar menú" title="Colapsar menú lateral">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebarClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+
+    <div class="brand">
+      <div class="brand-shield"><img src="../inventario/escudo-163.svg" alt="" width="56" height="56"></div>
+      <div class="brand-text">
+        <div class="brand-name">Bomberos Ancón</div>
+        <div class="brand-meta"><span class="brand-number">CÍA. N.° 163</span><span class="brand-dot">·</span><span class="brand-subtitle">CGBVP</span></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-label">Personal</div>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 L12 3 L21 12 M5 10 V20 H19 V10"/></svg>
+          <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item nav-item--active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Mi Perfil</span>
+          <span class="nav-indicator"></span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+          <span>Mi Guardia Nocturna</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>
+          <span>Anuncios</span>
+          <span class="nav-badge">3</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Faena y Servicio</div>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg><span>Inspecciones</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/></svg><span>Reportar incidencia</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span>Solicitudes</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Capacitación</div>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Mis cursos</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Biblioteca</span></a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="user-text">
+        <div class="user-name">RIOJAS MENDOZA, María</div>
+        <div class="user-role">Seccionario · A23118</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- ═══════════════ HERO DEL PERFIL ═══════════════ -->
+    <section class="profile-hero">
+      <div class="profile-hero-bg">
+        <img src="../inventario/escudo-163.svg" alt="">
+      </div>
+
+      <div class="profile-hero-content">
+        <div class="profile-avatar">
+          <div class="profile-avatar-initials">MR</div>
+        </div>
+
+        <div class="profile-hero-text">
+          <div class="profile-hero-meta">
+            <span class="profile-grade-badge">SECCIONARIO</span>
+            <span class="profile-meta-sep">·</span>
+            <span class="profile-hero-status">
+              <span class="status-dot-sm"></span>
+              En actividad
+            </span>
+          </div>
+          <h1 class="profile-hero-name">María Elena Riojas Mendoza</h1>
+          <div class="profile-hero-codes">
+            <div class="profile-hero-code">
+              <span class="profile-hero-code-label">CÓDIGO CGBVP</span>
+              <span class="profile-hero-code-value mono">A23118</span>
+            </div>
+            <div class="profile-hero-code">
+              <span class="profile-hero-code-label">DNI</span>
+              <span class="profile-hero-code-value mono">45678912</span>
+            </div>
+            <div class="profile-hero-code">
+              <span class="profile-hero-code-label">INCORPORACIÓN</span>
+              <span class="profile-hero-code-value mono">15·mar·2023</span>
+            </div>
+            <div class="profile-hero-code">
+              <span class="profile-hero-code-label">PROMOCIÓN</span>
+              <span class="profile-hero-code-value mono">ESBAS-2022-I</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-hero-actions">
+          <button class="btn btn--ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <span>Descargar legajo</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ TABS ═══════════════ -->
+    <nav class="profile-tabs">
+      <button class="profile-tab profile-tab--active" data-tab="datos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Datos personales</span>
+      </button>
+      <button class="profile-tab" data-tab="formacion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M2 3h6a4 4 0 0 1 4 4v14"/></svg>
+        <span>Formación</span>
+        <span class="profile-tab-count mono">12</span>
+      </button>
+      <button class="profile-tab" data-tab="equipos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8"/></svg>
+        <span>Equipos asignados</span>
+        <span class="profile-tab-count mono">7</span>
+      </button>
+      <button class="profile-tab" data-tab="historial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        <span>Historial operativo</span>
+      </button>
+      <button class="profile-tab" data-tab="condecoraciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="8" r="7"/><path d="m8.21 13.89-1.21 7.11 5-3 5 3-1.21-7.12"/></svg>
+        <span>Condecoraciones</span>
+      </button>
+      <button class="profile-tab" data-tab="ascensos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M5 12l7-7 7 7M12 5v14"/></svg>
+        <span>Ascensos</span>
+      </button>
+    </nav>
+
+    <!-- ═══════════════ TAB: DATOS PERSONALES ═══════════════ -->
+    <section class="profile-view" data-view="datos">
+
+      <div class="profile-grid">
+
+        <!-- Columna izq: datos institucionales -->
+        <div class="profile-card">
+          <div class="profile-card-bracket profile-card-bracket--tl"></div>
+          <div class="profile-card-bracket profile-card-bracket--tr"></div>
+          <div class="profile-card-bracket profile-card-bracket--bl"></div>
+          <div class="profile-card-bracket profile-card-bracket--br"></div>
+
+          <div class="profile-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <h3>Datos institucionales</h3>
+            <span class="profile-card-badge">solo lectura</span>
+          </div>
+
+          <div class="profile-field-grid">
+            <div class="profile-field">
+              <span class="profile-field-label">GRADO</span>
+              <span class="profile-field-value">Seccionario</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">COMPAÑÍA</span>
+              <span class="profile-field-value">UBO 163 — Ancón</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">SITUACIÓN</span>
+              <span class="profile-field-value profile-field-value--ok">En actividad</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">FECHA DE INCORPORACIÓN</span>
+              <span class="profile-field-value mono">15 de marzo de 2022</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">ESCUELA (ESBAS)</span>
+              <span class="profile-field-value mono">Promoción 2023-II</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">ESPECIALIDADES</span>
+              <span class="profile-field-value">Lote de Cuerdas, MATPEL I</span>
+            </div>
+          </div>
+
+          <div class="profile-card-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span>Estos datos provienen del CGBVP. Para modificarlos, contacte al área de Administración.</span>
+          </div>
+        </div>
+
+        <!-- Columna der arriba: contacto -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <h3>Contacto personal</h3>
+            <button class="profile-edit-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Editar</span>
+            </button>
+          </div>
+
+          <div class="profile-field-grid">
+            <div class="profile-field">
+              <span class="profile-field-label">CORREO</span>
+              <span class="profile-field-value">maria.riojas@bomberos163.pe</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">TELÉFONO</span>
+              <span class="profile-field-value mono">+51 987 654 321</span>
+            </div>
+            <div class="profile-field profile-field--full">
+              <span class="profile-field-label">DIRECCIÓN</span>
+              <span class="profile-field-value">Av. Central 456, Ancón, Lima</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <h3>Información personal</h3>
+          </div>
+
+          <div class="profile-field-grid">
+            <div class="profile-field">
+              <span class="profile-field-label">FECHA DE NACIMIENTO</span>
+              <span class="profile-field-value mono">12·ene·1998</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">EDAD</span>
+              <span class="profile-field-value">28 años</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">GÉNERO</span>
+              <span class="profile-field-value">Femenino</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">TIPO DE SANGRE</span>
+              <span class="profile-field-value profile-field-value--blood mono">O+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacto emergencia -->
+        <div class="profile-card profile-card--critical">
+          <div class="profile-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18" style="color: var(--red-glow)"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+            <h3>Contacto de emergencia</h3>
+            <button class="profile-edit-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg>
+              <span>Editar</span>
+            </button>
+          </div>
+
+          <div class="profile-field-grid">
+            <div class="profile-field">
+              <span class="profile-field-label">NOMBRE</span>
+              <span class="profile-field-value">Ana María Mendoza de Riojas</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">RELACIÓN</span>
+              <span class="profile-field-value">Madre</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">TELÉFONO</span>
+              <span class="profile-field-value mono">+51 912 345 678</span>
+            </div>
+            <div class="profile-field">
+              <span class="profile-field-label">SECUNDARIO</span>
+              <span class="profile-field-value mono">+51 999 888 777</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════ TAB: FORMACIÓN ═══════════════ -->
+    <section class="profile-view" data-view="formacion" style="display:none">
+
+      <div class="formation-stats">
+        <div class="formation-stat">
+          <div class="formation-stat-value">12</div>
+          <div class="formation-stat-label">CURSOS COMPLETADOS</div>
+        </div>
+        <div class="formation-stat">
+          <div class="formation-stat-value">2</div>
+          <div class="formation-stat-label">EN PROGRESO</div>
+        </div>
+        <div class="formation-stat">
+          <div class="formation-stat-value">848</div>
+          <div class="formation-stat-label">HORAS ACUMULADAS</div>
+        </div>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-card-header">
+          <h3>Cursos completados</h3>
+        </div>
+
+        <div class="course-history">
+          <div class="course-item course-item--certified">
+            <div class="course-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            </div>
+            <div class="course-item-body">
+              <div class="course-item-head">
+                <span class="course-item-title">ESBAS</span>
+                <span class="course-item-grade mono">20/20</span>
+              </div>
+              <div class="course-item-sub">Escuela Básica de Bomberos · Promoción 2023-II</div>
+              <div class="course-item-meta">
+                <span>Completado 10·oct·2023</span>
+                <span class="course-item-sep">·</span>
+                <span>400 horas</span>
+              </div>
+            </div>
+            <button class="course-item-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Certificado
+            </button>
+          </div>
+
+          <div class="course-item">
+            <div class="course-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </div>
+            <div class="course-item-body">
+              <div class="course-item-head">
+                <span class="course-item-title">MATPEL I</span>
+                <span class="course-item-grade mono">18/20</span>
+              </div>
+              <div class="course-item-sub">Materiales Peligrosos · Nivel Primer Respondedor</div>
+              <div class="course-item-meta">
+                <span>Completado 15·feb·2024</span>
+                <span class="course-item-sep">·</span>
+                <span>24 horas</span>
+              </div>
+            </div>
+            <button class="course-item-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+              Certificado
+            </button>
+          </div>
+
+          <div class="course-item">
+            <div class="course-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M12 2 L22 20 L2 20 Z"/></svg>
+            </div>
+            <div class="course-item-body">
+              <div class="course-item-head">
+                <span class="course-item-title">Lote de Cuerdas de Rescate</span>
+                <span class="course-item-grade mono">19/20</span>
+              </div>
+              <div class="course-item-sub">Sistemas y técnicas con cuerdas</div>
+              <div class="course-item-meta">
+                <span>Completado 5·jun·2024</span>
+                <span class="course-item-sep">·</span>
+                <span>40 horas</span>
+              </div>
+            </div>
+            <button class="course-item-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4"/></svg>
+              Certificado
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-card-header">
+          <h3>En progreso</h3>
+        </div>
+
+        <div class="course-history">
+          <div class="course-item course-item--progress">
+            <div class="course-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="course-item-body">
+              <div class="course-item-head">
+                <span class="course-item-title">BREC</span>
+                <span class="course-item-progress-label">En curso · 62 %</span>
+              </div>
+              <div class="course-item-sub">Búsqueda y Rescate en Estructuras Colapsadas</div>
+              <div class="course-progress-bar">
+                <div class="course-progress-fill" style="width: 62%"></div>
+              </div>
+              <div class="course-item-meta">
+                <span>Inició 10·feb·2026</span>
+                <span class="course-item-sep">·</span>
+                <span>74/120 horas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-card-header">
+          <h3>Certificados externos</h3>
+          <button class="profile-edit-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Agregar</span>
+          </button>
+        </div>
+
+        <div class="certificate-grid">
+          <div class="certificate-card">
+            <div class="certificate-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24" height="24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="certificate-card-body">
+              <div class="certificate-card-title">Primeros Auxilios Psicológicos</div>
+              <div class="certificate-card-issuer">Cruz Roja Peruana</div>
+              <div class="certificate-card-date mono">Mar 2024 · Vigente hasta Mar 2027</div>
+            </div>
+            <div class="certificate-card-verified">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+              <span>Verificado</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ TAB: EQUIPOS ASIGNADOS ═══════════════ -->
+    <section class="profile-view" data-view="equipos" style="display:none">
+
+      <div class="equipment-header">
+        <div class="equipment-header-stats">
+          <div class="eq-stat"><strong>7</strong> equipos asignados</div>
+          <span class="equipment-sep">·</span>
+          <div class="eq-stat"><strong class="text-brass">1</strong> próximo a renovación</div>
+        </div>
+        <button class="btn btn--ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+          <span>Reportar daño o pérdida</span>
+        </button>
+      </div>
+
+      <div class="equipment-grid">
+
+        <div class="equipment-card">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--brass)"><path d="M12 2 L15 9 L22 9 L16 14 L18 21 L12 17 L6 21 L8 14 L2 9 L9 9 Z"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">CAPOTE ESTRUCTURAL</div>
+            <div class="equipment-card-name">Globe · G-XTREME</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">CBP</span>
+                <span class="eq-meta-value mono">CBP-163-CAP-018</span>
+              </div>
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">VIDA ÚTIL</span>
+                <span class="eq-meta-value">hasta jun 2034</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--ok">
+              <span class="status-dot-sm"></span>
+              Operativo
+            </div>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--brass)"><path d="M12 2v20M4 8l8-6 8 6"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">PANTALÓN ESTRUCTURAL</div>
+            <div class="equipment-card-name">Lion · V-Force</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">CBP</span>
+                <span class="eq-meta-value mono">CBP-163-PAN-022</span>
+              </div>
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">VIDA ÚTIL</span>
+                <span class="eq-meta-value">hasta jun 2034</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--ok">
+              <span class="status-dot-sm"></span>
+              Operativo
+            </div>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--brass)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">CASCO ESTRUCTURAL</div>
+            <div class="equipment-card-name">Bullard · UPF</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">CBP</span>
+                <span class="eq-meta-value mono">CBP-163-CAS-022</span>
+              </div>
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">VIDA ÚTIL</span>
+                <span class="eq-meta-value">hasta sep 2033</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--ok">
+              <span class="status-dot-sm"></span>
+              Operativo
+            </div>
+          </div>
+        </div>
+
+        <div class="equipment-card equipment-card--warn">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--flame)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4"/><path d="M4 4l16 16"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">GUANTES ESTRUCTURALES</div>
+            <div class="equipment-card-name">Shelby · Big Bull</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">CBP</span>
+                <span class="eq-meta-value mono">CBP-163-GUA-034</span>
+              </div>
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">VIDA ÚTIL</span>
+                <span class="eq-meta-value eq-meta-value--warn">hasta ago 2026 · reponer</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--warn">
+              <span class="status-dot-sm"></span>
+              Próxima reposición
+            </div>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--brass)"><rect x="7" y="4" width="10" height="16" rx="1"/><path d="M9 20h6M12 8v0"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">RADIO PORTÁTIL</div>
+            <div class="equipment-card-name">Motorola · APX900</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">SERIE</span>
+                <span class="eq-meta-value mono">MT-AP-445612</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--ok">
+              <span class="status-dot-sm"></span>
+              Operativo
+            </div>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--brass)"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">CASILLERO</div>
+            <div class="equipment-card-name">Casillero N.° 14 · Vestidor B</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">UBICACIÓN</span>
+                <span class="eq-meta-value">Vestidor zona B</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--ok">
+              <span class="status-dot-sm"></span>
+              Asignado
+            </div>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" width="32" height="32" style="color: var(--brass)"><path d="M12 2 L15 9 L22 9 L16 14 L18 21 L12 17 L6 21 L8 14 L2 9 L9 9 Z"/></svg>
+          </div>
+          <div class="equipment-card-body">
+            <div class="equipment-card-subcat">LINTERNA</div>
+            <div class="equipment-card-name">Streamlight · Survivor</div>
+            <div class="equipment-card-meta">
+              <div class="eq-meta-row">
+                <span class="eq-meta-label">SERIE</span>
+                <span class="eq-meta-value mono">STL-SRV-2024</span>
+              </div>
+            </div>
+            <div class="equipment-card-status equipment-card-status--ok">
+              <span class="status-dot-sm"></span>
+              Operativo
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ TAB: HISTORIAL OPERATIVO ═══════════════ -->
+    <section class="profile-view" data-view="historial" style="display:none">
+
+      <!-- Dashboard trimestre -->
+      <div class="profile-card profile-card--featured">
+        <div class="profile-card-bracket profile-card-bracket--tl"></div>
+        <div class="profile-card-bracket profile-card-bracket--tr"></div>
+        <div class="profile-card-bracket profile-card-bracket--bl"></div>
+        <div class="profile-card-bracket profile-card-bracket--br"></div>
+
+        <div class="trimester-header">
+          <div class="trimester-title">
+            <span class="trimester-label">CUMPLIMIENTO REGLAMENTARIO</span>
+            <span class="trimester-period">2° trimestre 2026 · abril a junio</span>
+          </div>
+          <div class="trimester-countdown">
+            <span class="trimester-countdown-value mono">47</span>
+            <span class="trimester-countdown-unit">días restantes</span>
+          </div>
+        </div>
+
+        <div class="trimester-main">
+          <div class="trimester-progress">
+            <div class="trimester-progress-track">
+              <div class="trimester-progress-fill" style="width: 72%"></div>
+              <div class="trimester-progress-marker" style="left: 72%">
+                <span class="trimester-progress-value mono">108 h</span>
+              </div>
+            </div>
+            <div class="trimester-progress-labels">
+              <span>0 h</span>
+              <span class="trimester-progress-label-target">Meta: 150 h</span>
+            </div>
+          </div>
+
+          <div class="trimester-metrics">
+            <div class="trimester-metric">
+              <span class="trimester-metric-label">HORAS ACUMULADAS</span>
+              <span class="trimester-metric-value mono">108 h</span>
+            </div>
+            <div class="trimester-metric">
+              <span class="trimester-metric-label">HORAS RESTANTES</span>
+              <span class="trimester-metric-value mono">42 h</span>
+            </div>
+            <div class="trimester-metric">
+              <span class="trimester-metric-label">PROYECCIÓN AL CIERRE</span>
+              <span class="trimester-metric-value mono trimester-metric-value--ok">168 h</span>
+            </div>
+            <div class="trimester-metric">
+              <span class="trimester-metric-label">ESTADO</span>
+              <span class="trimester-metric-value trimester-metric-value--ok">Al día</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial mensual -->
+      <div class="profile-grid profile-grid--two">
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <h3>Últimos meses</h3>
+          </div>
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>MES</th>
+                <th>DÍAS</th>
+                <th>GUARDIAS</th>
+                <th>HORAS</th>
+                <th>EMERG.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Mayo 2026</strong></td>
+                <td class="mono">18</td>
+                <td class="mono">12</td>
+                <td class="mono">92</td>
+                <td class="mono">5</td>
+              </tr>
+              <tr>
+                <td>Abril 2026</td>
+                <td class="mono">16</td>
+                <td class="mono">11</td>
+                <td class="mono">88</td>
+                <td class="mono">7</td>
+              </tr>
+              <tr>
+                <td>Marzo 2026</td>
+                <td class="mono">20</td>
+                <td class="mono">14</td>
+                <td class="mono">112</td>
+                <td class="mono">9</td>
+              </tr>
+              <tr>
+                <td>Febrero 2026</td>
+                <td class="mono">17</td>
+                <td class="mono">10</td>
+                <td class="mono">84</td>
+                <td class="mono">6</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <h3>Últimas emergencias atendidas</h3>
+          </div>
+          <div class="emergency-list">
+            <div class="emergency-item">
+              <div class="emergency-item-type emergency-item-type--incendio">INC</div>
+              <div class="emergency-item-body">
+                <div class="emergency-item-title">Incendio estructural · vivienda</div>
+                <div class="emergency-item-meta mono">2026-04-18 · parte 2026-001847</div>
+              </div>
+            </div>
+            <div class="emergency-item">
+              <div class="emergency-item-type emergency-item-type--medica">EMG</div>
+              <div class="emergency-item-body">
+                <div class="emergency-item-title">Emergencia médica · traumática</div>
+                <div class="emergency-item-meta mono">2026-04-12 · parte 2026-001812</div>
+              </div>
+            </div>
+            <div class="emergency-item">
+              <div class="emergency-item-type emergency-item-type--rescate">RES</div>
+              <div class="emergency-item-body">
+                <div class="emergency-item-title">Rescate vehicular</div>
+                <div class="emergency-item-meta mono">2026-04-03 · parte 2026-001775</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ TAB: CONDECORACIONES ═══════════════ -->
+    <section class="profile-view" data-view="condecoraciones" style="display:none">
+
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="48" height="48">
+            <circle cx="12" cy="8" r="7"/>
+            <path d="m8.21 13.89-1.21 7.11 5-3 5 3-1.21-7.12"/>
+          </svg>
+        </div>
+        <h3 class="empty-state-title">Aún no ha recibido condecoraciones</h3>
+        <p class="empty-state-text">
+          Las condecoraciones y reconocimientos que reciba aparecerán aquí. Incluyen los cinco grados de la medalla Dios-Patria-Humanidad según la NDR de Uniformes, Insignias, Reconocimientos y Condecoraciones del CGBVP.
+        </p>
+      </div>
+
+      <div class="grades-preview">
+        <h4 class="grades-preview-title">Grados de condecoración</h4>
+        <div class="grade-item">
+          <div class="grade-medal grade-medal--5">V</div>
+          <div>
+            <div class="grade-name">Soldado del Fuego</div>
+            <div class="grade-desc">Grado inicial · servicio destacado</div>
+          </div>
+        </div>
+        <div class="grade-item">
+          <div class="grade-medal grade-medal--4">IV</div>
+          <div>
+            <div class="grade-name">Caballero del Fuego</div>
+            <div class="grade-desc">Trayectoria sostenida con méritos</div>
+          </div>
+        </div>
+        <div class="grade-item">
+          <div class="grade-medal grade-medal--3">III</div>
+          <div>
+            <div class="grade-name">Servicios Distinguidos</div>
+            <div class="grade-desc">Aportes significativos al servicio</div>
+          </div>
+        </div>
+        <div class="grade-item">
+          <div class="grade-medal grade-medal--2">II</div>
+          <div>
+            <div class="grade-name">Bombero Emérito del Perú</div>
+            <div class="grade-desc">Una vida dedicada al voluntariado</div>
+          </div>
+        </div>
+        <div class="grade-item">
+          <div class="grade-medal grade-medal--1">I</div>
+          <div>
+            <div class="grade-name">Estrella de Fuego</div>
+            <div class="grade-desc">Máxima distinción del CGBVP</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ TAB: ASCENSOS ═══════════════ -->
+    <section class="profile-view" data-view="ascensos" style="display:none">
+
+      <div class="timeline">
+        <div class="timeline-item timeline-item--current">
+          <div class="timeline-marker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2 L2 22 h20 Z"/></svg>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-head">
+              <span class="timeline-grade">SECCIONARIO</span>
+              <span class="timeline-date mono">11·oct·2023</span>
+            </div>
+            <div class="timeline-desc">
+              Resolución de grado tras completar satisfactoriamente la Escuela Básica de Bomberos (ESBAS) promoción 2023-II.
+            </div>
+            <div class="timeline-meta">
+              <span>Resolución N.° 0318-2022-CG/CGBVP</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-marker timeline-marker--past">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-head">
+              <span class="timeline-grade">ASPIRANTE EN CURSO</span>
+              <span class="timeline-date mono">10·mar·2023</span>
+            </div>
+            <div class="timeline-desc">
+              Admitida oficialmente al CGBVP como Aspirante. Inicio del curso ESBAS.
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-marker timeline-marker--past">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-head">
+              <span class="timeline-grade">POSTULANTE</span>
+              <span class="timeline-date mono">15·sep·2022</span>
+            </div>
+            <div class="timeline-desc">
+              Ingreso a la UBO 163 como postulante. Seis meses de formación interna en la compañía.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="next-grade-card">
+        <div class="next-grade-header">
+          <span class="next-grade-label">PRÓXIMO ASCENSO POSIBLE</span>
+          <span class="next-grade-date mono">Disponible desde abr 2027</span>
+        </div>
+        <div class="next-grade-body">
+          <div class="next-grade-name">Subteniente</div>
+          <div class="next-grade-progress">
+            <div class="next-grade-requirement next-grade-requirement--ok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>3 años en el grado actual</span>
+              <span class="req-status mono">✓ 3 años cumplidos</span>
+            </div>
+            <div class="next-grade-requirement next-grade-requirement--ok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>600 horas acumuladas</span>
+              <span class="req-status mono">✓ 848 h</span>
+            </div>
+            <div class="next-grade-requirement next-grade-requirement--ok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>ESBAS aprobado</span>
+              <span class="req-status mono">✓ 20/20</span>
+            </div>
+            <div class="next-grade-requirement next-grade-requirement--pending">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>
+              <span>MATPEL II completado</span>
+              <span class="req-status req-status--pending mono">pendiente</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <footer class="footer-motto">
+      <div class="motto-line"></div>
+      <div class="motto-text">Dios · Patria · Humanidad</div>
+      <div class="motto-line"></div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Tabs
+  document.querySelectorAll('.profile-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.profile-tab').forEach((t) => t.classList.remove('profile-tab--active'));
+      tab.classList.add('profile-tab--active');
+      document.querySelectorAll('.profile-view').forEach((v) => {
+        v.style.display = v.dataset.view === target ? '' : 'none';
+      });
+    });
+  });
+
+  // Mobile drawer
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const closeBtn = document.getElementById('sidebarClose');
+  const open = () => { sidebar.classList.add('sidebar--open'); backdrop.classList.add('sidebar-backdrop--visible'); };
+  const close = () => { sidebar.classList.remove('sidebar--open'); backdrop.classList.remove('sidebar-backdrop--visible'); };
+  hamburger?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+
+  // Desktop collapse toggle
+  const shell = document.querySelector('.shell');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const COLLAPSED_KEY = 'ubo163:sidebar:collapsed';
+  if (localStorage.getItem(COLLAPSED_KEY) === 'true') {
+    shell.classList.add('shell--sidebar-collapsed');
+  }
+  toggleBtn?.addEventListener('click', () => {
+    const collapsed = shell.classList.toggle('shell--sidebar-collapsed');
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? 'true' : 'false');
+  });
+</script>
+
+</body>
+</html>

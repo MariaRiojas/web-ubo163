@@ -20,20 +20,19 @@ import {
   Users,
   Flame,
   Activity,
-  Trophy,
   Medal,
   Clock,
   CalendarDays,
   Siren,
   Hash,
   Moon,
-  BookOpen,
   GraduationCap,
   Building2,
   FileText,
   Settings,
-  Shield,
   Package,
+  Wrench,
+  CheckCircle2,
 } from "lucide-react"
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -46,8 +45,8 @@ function getGreeting(hour: number) {
 
 function formatDateES(d: Date) {
   const dias = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"]
-  const meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
-  return `${dias[d.getDay()]}, ${d.getDate()} DE ${meses[d.getMonth()]} DE ${d.getFullYear()}`
+  const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
+  return `${dias[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}·${meses[d.getMonth()]}·${d.getFullYear()}`
 }
 
 function initials(name: string) {
@@ -59,11 +58,16 @@ function metaHorasMensual(grade: string): number {
   return Math.round(quarterly / 3)
 }
 
-const estadoBadge: Record<string, string> = {
-  "EN BASE": "bg-gray-100 text-gray-700",
-  "CON FALLA": "bg-red-100 text-red-700",
-  "EN EMERG.": "bg-blue-100 text-blue-700",
-  "EN EMERGENCIA": "bg-blue-100 text-blue-700",
+function monthName(m: number) {
+  const names = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+  return names[m] ?? ""
+}
+
+const VEHICLE_STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+  "EN BASE":       { bg: "rgba(16,185,129,0.10)",  color: "var(--emerald-glow)", label: "EN BASE" },
+  "CON FALLA":     { bg: "rgba(220,38,38,0.12)",   color: "var(--red-glow)",    label: "CON FALLA" },
+  "EN EMERG.":     { bg: "rgba(245,158,11,0.12)",  color: "var(--flame)",       label: "EN EMERG." },
+  "EN EMERGENCIA": { bg: "rgba(245,158,11,0.12)",  color: "var(--flame)",       label: "EN EMERG." },
 }
 
 // ── Page ─────────────────────────────────────────────────────────
@@ -81,11 +85,9 @@ export default async function DashboardPage() {
   const greeting = getGreeting(hour)
   const dateStr = formatDateES(now)
 
-  // Previous month for ranking
-  const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth() // 1-12
+  const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
 
-  // ── Parallel queries ──────────────────────────────────────────
   const [latestStatus, vehicles, activeEmergencies, rankingRows] = await Promise.all([
     db.select().from(cgbvpCompanyStatus).orderBy(desc(cgbvpCompanyStatus.createdAt)).limit(1),
     db.select().from(cgbvpVehicles).orderBy(cgbvpVehicles.codigo),
@@ -113,11 +115,9 @@ export default async function DashboardPage() {
   const flotaTotal = vehicles.length
   const emergenciasActivas = activeEmergencies.length
 
-  // Current user stats (for efectivo mode)
   const myRankingIdx = rankingRows.findIndex(r => r.profileId === profileId)
   let myStats = rankingRows[myRankingIdx]
 
-  // If user not in top 10, fetch their data separately
   if (!myStats) {
     const [row] = await db
       .select({
@@ -140,7 +140,6 @@ export default async function DashboardPage() {
     myStats = row ?? null
   }
 
-  // Full ranking position for current user
   let myPosition: number | null = null
   if (!isJefatura) {
     if (myRankingIdx >= 0) {
@@ -163,113 +162,124 @@ export default async function DashboardPage() {
   const myPct = myMeta > 0 ? Math.min(Math.round((myHoras / myMeta) * 100), 100) : 0
   const metaCumplida = myHoras >= myMeta
 
-  const medalColors = ["text-yellow-500", "text-gray-400", "text-amber-600"]
-
-  // ── Render ────────────────────────────────────────────────────
+  // Medal accent colors — brass for gold, steel for silver, brass-deep for bronze
+  const medalAccents = ["var(--brass)", "var(--steel)", "var(--brass-deep)"]
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div style={{ maxWidth: 1100, display: "flex", flexDirection: "column", gap: 24 }}>
+
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
-          <p className="text-xs text-muted-foreground tracking-widest">{dateStr}</p>
-          <h1 className="text-2xl font-bold mt-1">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.14em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 6 }}>
+            {dateStr}
+          </p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 500, color: "var(--bone)", letterSpacing: "-0.015em", marginBottom: 4 }}>
             {greeting}, {isJefatura ? email : name}
           </h1>
-          <p className="text-sm text-muted-foreground">{companyConfig.shortName}</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--steel)", letterSpacing: "0.04em" }}>
+            {companyConfig.shortName}
+          </p>
         </div>
-        <div>
-          {emergenciasActivas > 0 ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-              <Flame className="w-3.5 h-3.5" />
-              {emergenciasActivas} emergencia{emergenciasActivas > 1 ? "s" : ""} activa{emergenciasActivas > 1 ? "s" : ""}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-              <Activity className="w-3.5 h-3.5" />
-              Sin emergencias activas
-            </span>
-          )}
-        </div>
-      </div>
 
-      {/* ── Estado de la Compañía ──────────────────────────────── */}
-      <div className="rounded-xl border bg-card shadow-sm">
-        <div className="flex items-center gap-2 px-5 pt-4 pb-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          <h2 className="font-semibold text-sm">Estado de la Compañía</h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-5 pb-5">
-          <KPI label="ESTADO" value="EN SERVICIO" valueClass="text-green-600" icon={<Activity className="w-4 h-4 text-green-600" />} />
-          <KPI label="EN TURNO" value={String(enTurno)} icon={<Users className="w-4 h-4 text-blue-600" />} />
-          <KPI label="FLOTA OPERATIVA" value={`${flotaOperativa}/${flotaTotal}`} icon={<Truck className="w-4 h-4 text-indigo-600" />} />
-          <KPI label="EMERGENCIAS ACTIVAS" value={String(emergenciasActivas)} valueClass={emergenciasActivas > 0 ? "text-red-600" : undefined} icon={<Siren className="w-4 h-4 text-red-600" />} />
-        </div>
+        {emergenciasActivas > 0 ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", border: "1px solid var(--red-163)", background: "rgba(220,38,38,0.12)", color: "var(--red-glow)", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", fontWeight: 600 }}>
+            <Flame className="w-3.5 h-3.5" />
+            {emergenciasActivas} EMERGENCIA{emergenciasActivas > 1 ? "S" : ""} ACTIVA{emergenciasActivas > 1 ? "S" : ""}
+          </span>
+        ) : (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.08)", color: "var(--emerald-glow)", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", fontWeight: 600 }}>
+            <Activity className="w-3.5 h-3.5" />
+            SIN EMERGENCIAS ACTIVAS
+          </span>
+        )}
       </div>
 
       {/* ── Alert banner ──────────────────────────────────────── */}
       {emergenciasActivas > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 px-5 py-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0" />
-          <p className="text-sm font-medium text-yellow-800 flex-1">
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", border: "1px solid var(--red-163)", background: "rgba(220,38,38,0.06)" }}>
+          <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "var(--red-glow)" }} />
+          <p style={{ flex: 1, fontSize: 13, color: "var(--bone)" }}>
             {emergenciasActivas} emergencia{emergenciasActivas > 1 ? "s" : ""} activa{emergenciasActivas > 1 ? "s" : ""} en este momento
           </p>
-          <Link href="/mi-compania" className="text-sm font-semibold text-yellow-700 hover:text-yellow-900 whitespace-nowrap">
-            Ver ahora →
+          <Link href="/mi-compania" style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--red-glow)", fontWeight: 600, textDecoration: "none" }}>
+            VER AHORA →
           </Link>
         </div>
       )}
 
+      {/* ── Estado de la Compañía ──────────────────────────────── */}
+      <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--emerald-glow)", boxShadow: "0 0 8px var(--emerald-glow)", flexShrink: 0 }} />
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase" }}>Estado de la Compañía</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+          <KpiStat label="ESTADO" value="EN SERVICIO" color="var(--emerald-glow)" icon={<Activity className="w-3.5 h-3.5" />} />
+          <KpiStat label="EN TURNO" value={String(enTurno)} icon={<Users className="w-3.5 h-3.5" />} />
+          <KpiStat label="FLOTA OPERATIVA" value={`${flotaOperativa}/${flotaTotal}`} icon={<Truck className="w-3.5 h-3.5" />} />
+          <KpiStat label="EMERGENCIAS ACTIVAS" value={String(emergenciasActivas)} color={emergenciasActivas > 0 ? "var(--red-glow)" : undefined} icon={<Siren className="w-3.5 h-3.5" />} />
+        </div>
+      </div>
+
       {/* ── Efectivo: Personal KPIs ───────────────────────────── */}
       {!isJefatura && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
           {metaCumplida && (
-            <div className="col-span-2 md:col-span-1 rounded-xl border bg-green-50 border-green-200 p-4 flex flex-col items-center justify-center text-center">
-              <span className="text-2xl">🏆</span>
-              <p className="text-xs font-bold text-green-700 mt-1">¡Meta cumplida!</p>
+            <div style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", padding: 16, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+              <p style={{ fontSize: 20 }}>🏆</p>
+              <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--emerald-glow)", fontWeight: 600 }}>¡META CUMPLIDA!</p>
             </div>
           )}
-          <PersonalKPI label="MIS HORAS" value={`${myHoras}h`} sub={`Meta: ${myMeta}h · ${myPct}%`} icon={<Clock className="w-4 h-4" />} />
-          <PersonalKPI label="DÍAS ASISTIDOS" value={String(myStats?.diasAsistidos ?? 0)} icon={<CalendarDays className="w-4 h-4" />} />
-          <PersonalKPI label="MIS EMERGENCIAS" value={String(myStats?.numEmergencias ?? 0)} icon={<Flame className="w-4 h-4" />} />
-          <PersonalKPI label="MI POSICIÓN" value={myPosition ? `#${myPosition}` : "—"} sub="ranking de horas" icon={<Hash className="w-4 h-4" />} />
+          <PersonalKPI label="MIS HORAS" value={`${myHoras}h`} sub={`Meta: ${myMeta}h · ${myPct}%`} icon={<Clock className="w-3.5 h-3.5" />} />
+          <PersonalKPI label="DÍAS ASISTIDOS" value={String(myStats?.diasAsistidos ?? 0)} icon={<CalendarDays className="w-3.5 h-3.5" />} />
+          <PersonalKPI label="EMERGENCIAS" value={String(myStats?.numEmergencias ?? 0)} icon={<Flame className="w-3.5 h-3.5" />} />
+          <PersonalKPI label="MI POSICIÓN" value={myPosition ? `#${myPosition}` : "—"} sub="ranking de horas" icon={<Hash className="w-3.5 h-3.5" />} />
         </div>
       )}
 
       {/* ── Jefatura: Estado de Flota ─────────────────────────── */}
       {isJefatura && vehicles.length > 0 && (
-        <div className="rounded-xl border bg-card shadow-sm">
-          <div className="px-5 pt-4 pb-2">
-            <h2 className="font-semibold text-sm">Estado de Flota</h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-5 pb-5">
-            {vehicles.map(v => (
-              <div key={v.id} className="rounded-lg border p-3 text-center space-y-1">
-                <Truck className="w-5 h-5 mx-auto text-muted-foreground" />
-                <p className="text-sm font-bold">{v.codigo}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{v.tipo ?? "—"}</p>
-                <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${estadoBadge[v.estado ?? "EN BASE"] ?? "bg-gray-100 text-gray-700"}`}>
-                  {v.estado === "EN EMERGENCIA" ? "EN EMERG." : v.estado}
-                </span>
-              </div>
-            ))}
+        <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 24px" }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 16 }}>
+            Estado de Flota
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 }}>
+            {vehicles.map(v => {
+              const estilo = VEHICLE_STATUS_STYLE[v.estado ?? "EN BASE"] ?? VEHICLE_STATUS_STYLE["EN BASE"]
+              return (
+                <div key={v.id} style={{ border: "1px solid var(--ink-line)", padding: "12px 10px", textAlign: "center", background: "var(--ink-surface)" }}>
+                  <Truck className="w-4 h-4 mx-auto" style={{ color: "var(--graphite)", marginBottom: 6 }} />
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--bone)", marginBottom: 2 }}>{v.codigo}</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", letterSpacing: "0.1em", marginBottom: 6 }}>{v.tipo ?? "—"}</p>
+                  <span style={{ display: "inline-block", padding: "2px 8px", background: estilo.bg, color: estilo.color, fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", fontWeight: 600, borderRadius: 1 }}>
+                    {estilo.label}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
 
       {/* ── Ranking de Asistencia ─────────────────────────────── */}
-      <div className="rounded-xl border bg-card shadow-sm">
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h2 className="font-semibold text-sm">Ranking de Asistencia — {monthName(prevMonth)} {prevYear}</h2>
+      <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase" }}>
+            Ranking de Asistencia — {monthName(prevMonth)} {prevYear}
+          </p>
           {!isJefatura && myPosition && (
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-muted">
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--steel)", padding: "2px 8px", border: "1px solid var(--ink-line)" }}>
               Tu posición: #{myPosition}
             </span>
           )}
         </div>
-        <div className="px-5 pb-5 space-y-2">
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {rankingRows.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4 text-center">Sin datos de asistencia para este período.</p>
+            <p style={{ fontSize: 13, color: "var(--graphite)", padding: "16px 0", textAlign: "center" }}>
+              Sin datos de asistencia para este período.
+            </p>
           )}
           {rankingRows.map((r, i) => {
             const isMe = r.profileId === profileId
@@ -278,45 +288,51 @@ export default async function DashboardPage() {
             return (
               <div
                 key={r.profileId}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 ${isMe && !isJefatura ? "border-l-4 border-red-500 bg-red-50/50" : "hover:bg-muted/50"}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 12px",
+                  background: isMe && !isJefatura ? "rgba(220,38,38,0.06)" : "transparent",
+                  borderLeft: isMe && !isJefatura ? "3px solid var(--red-163)" : "3px solid transparent",
+                }}
               >
-                {/* Position / Medal */}
-                <div className="w-7 text-center shrink-0">
+                {/* Position */}
+                <div style={{ width: 28, textAlign: "center", flexShrink: 0 }}>
                   {i < 3 ? (
-                    <Medal className={`w-5 h-5 mx-auto ${medalColors[i]}`} />
+                    <Medal className="w-4 h-4 mx-auto" style={{ color: medalAccents[i] }} />
                   ) : (
-                    <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--graphite)", fontWeight: 700 }}>{i + 1}</span>
                   )}
                 </div>
 
                 {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                  {initials(r.fullName)}
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--ink-elevated)", border: "1px solid var(--ink-line)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--steel)" }}>{initials(r.fullName)}</span>
                 </div>
 
-                {/* Name + meta */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">{r.fullName}</p>
+                {/* Name + progress */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <p style={{ fontSize: 13, color: "var(--bone)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.fullName}</p>
                     {isMe && !isJefatura && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700">TÚ</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "1px 6px", background: "rgba(220,38,38,0.15)", color: "var(--red-glow)", border: "1px solid var(--red-163)", borderRadius: 1, letterSpacing: "0.08em", flexShrink: 0 }}>TÚ</span>
                     )}
                   </div>
-                  {/* Progress bar */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ flex: 1, height: 3, background: "var(--ink-line)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: "var(--red-163)", borderRadius: 2 }} />
                     </div>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                      {pct}% meta {r.diasAsistidos ?? 0}d · {r.numEmergencias ?? 0} emerg.
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", whiteSpace: "nowrap" }}>
+                      {pct}% · {r.diasAsistidos ?? 0}d · {r.numEmergencias ?? 0} emerg.
                     </span>
                   </div>
                 </div>
 
                 {/* Hours */}
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold">{r.horasAcumuladas ?? 0}h</p>
-                  <p className="text-[10px] text-muted-foreground">de {meta}h</p>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--bone)" }}>{r.horasAcumuladas ?? 0}h</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>de {meta}h</p>
                 </div>
               </div>
             )
@@ -325,70 +341,80 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Accesos Rápidos ─────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        <QuickLink href="/guardia-nocturna" icon={Moon} label="Guardia Nocturna" />
-        <QuickLink href="/incidencias" icon={AlertTriangle} label="Incidencias" />
-        <QuickLink href="/esbas" icon={GraduationCap} label="ESBAS" />
-        <QuickLink href="/horas" icon={Clock} label="Jornada Voluntaria" />
-        {permissions.includes("personnel.view_section") && (
-          <QuickLink href="/personal" icon={Users} label="Personal" />
-        )}
-        {permissions.includes("inventory.view") && (
-          <QuickLink href="/inventario" icon={Package} label="Inventario" />
-        )}
-        {permissions.includes("section.manage") && (
-          <QuickLink href="/secciones" icon={Building2} label="Secciones" />
-        )}
-        {permissions.includes("reports.view_section") && (
-          <QuickLink href="/reportes" icon={FileText} label="Reportes" />
-        )}
-        {permissions.includes("system.admin") && (
-          <QuickLink href="/configuracion" icon={Settings} label="Configuración" />
-        )}
+      <div>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 12 }}>
+          Accesos rápidos
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+          <QuickLink href="/guardia-nocturna" icon={Moon} label="Guardia Nocturna" />
+          <QuickLink href="/faena" icon={CheckCircle2} label="Faena y Servicio" />
+          <QuickLink href="/capacitacion" icon={GraduationCap} label="Capacitación" />
+          {permissions.includes("personnel.view_section") && (
+            <QuickLink href="/personal" icon={Users} label="Personal" />
+          )}
+          {permissions.includes("inventory.view") && (
+            <QuickLink href="/inventario" icon={Package} label="Inventario" />
+          )}
+          {permissions.includes("section.manage") && (
+            <QuickLink href="/areas" icon={Building2} label="Áreas" />
+          )}
+          {permissions.includes("reports.view_section") && (
+            <QuickLink href="/reportes" icon={FileText} label="Reportes" />
+          )}
+          {permissions.includes("system.admin") && (
+            <QuickLink href="/configuracion" icon={Settings} label="Configuración" />
+          )}
+        </div>
       </div>
+
     </div>
   )
 }
 
 function QuickLink({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) {
   return (
-    <Link href={href} className="flex items-center gap-3 rounded-xl border bg-card p-3 hover:border-red-200 hover:bg-red-50/30 transition-colors">
-      <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-red-600" />
+    <Link
+      href={href}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 14px",
+        background: "var(--ink-deep)",
+        border: "1px solid var(--ink-line)",
+        textDecoration: "none",
+        transition: "border-color 150ms",
+      }}
+    >
+      <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(220,38,38,0.08)", flexShrink: 0 }}>
+        <Icon className="w-4 h-4" style={{ color: "var(--red-163)" }} />
       </div>
-      <span className="text-sm font-medium truncate">{label}</span>
+      <span style={{ fontSize: 12, color: "var(--bone)", fontWeight: 500 }}>{label}</span>
     </Link>
   )
-} 
+}
 
-// ── Sub-components ───────────────────────────────────────────────
-
-function KPI({ label, value, valueClass, icon }: { label: string; value: string; valueClass?: string; icon: React.ReactNode }) {
+function KpiStat({ label, value, color, icon }: { label: string; value: string; color?: string; icon: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, color: "var(--graphite)" }}>
         {icon}
-        <span className="text-[10px] font-semibold tracking-wider uppercase">{label}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" }}>{label}</span>
       </div>
-      <p className={`text-xl font-bold ${valueClass ?? ""}`}>{value}</p>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: color ?? "var(--bone)", letterSpacing: "-0.01em" }}>{value}</p>
     </div>
   )
 }
 
 function PersonalKPI({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-1">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
+    <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, color: "var(--graphite)" }}>
         {icon}
-        <span className="text-[10px] font-semibold tracking-wider uppercase">{label}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" }}>{label}</span>
       </div>
-      <p className="text-lg font-bold">{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--bone)", marginBottom: sub ? 4 : 0 }}>{value}</p>
+      {sub && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>{sub}</p>}
     </div>
   )
-}
-
-function monthName(m: number) {
-  const names = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-  return names[m] ?? ""
 }

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importar Inventario · UBO 163</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="modal.css">
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+
+<!-- Backdrop -->
+<div class="modal-backdrop" onclick="window.location.href='index.html'"></div>
+
+<!-- Modal -->
+<div class="import-modal">
+  <div class="import-corner import-corner--tl"></div>
+  <div class="import-corner import-corner--tr"></div>
+  <div class="import-corner import-corner--bl"></div>
+  <div class="import-corner import-corner--br"></div>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="import-header">
+    <div class="import-header-left">
+      <div class="import-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 2v6h6"/>
+          <path d="M9 13h6M9 17h6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="import-breadcrumb">
+          <span>INVENTARIO</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M9 18l6-6-6-6"/></svg>
+          <span>CARGA MASIVA</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M9 18l6-6-6-6"/></svg>
+          <span class="strong">VISTA PREVIA</span>
+        </div>
+        <h2 class="import-title">
+          <span>Importar ítems</span>
+          <span class="import-filename mono">ambulancia-163-abril-2026.xlsx</span>
+        </h2>
+      </div>
+    </div>
+
+    <button class="import-close" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </header>
+
+  <!-- ═══════════════ STEPPER ═══════════════ -->
+  <div class="stepper">
+    <div class="step step--done">
+      <div class="step-marker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <div class="step-text">
+        <div class="step-label">01</div>
+        <div class="step-name">Archivo cargado</div>
+      </div>
+    </div>
+    <div class="step-connector step-connector--done"></div>
+    <div class="step step--active">
+      <div class="step-marker">
+        <span class="mono">02</span>
+      </div>
+      <div class="step-text">
+        <div class="step-label">ETAPA</div>
+        <div class="step-name step-name--strong">Validar y revisar</div>
+      </div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-marker">
+        <span class="mono">03</span>
+      </div>
+      <div class="step-text">
+        <div class="step-label">PENDIENTE</div>
+        <div class="step-name">Importar al registro</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ RESUMEN ═══════════════ -->
+  <div class="summary-row">
+    <div class="summary-card summary-card--total">
+      <div class="summary-label">TOTAL DE FILAS</div>
+      <div class="summary-value mono">47</div>
+    </div>
+    <div class="summary-card summary-card--ok">
+      <div class="summary-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M20 6 9 17l-5-5"/></svg>
+        VÁLIDAS
+      </div>
+      <div class="summary-value mono">42</div>
+      <div class="summary-bar">
+        <div class="summary-bar-fill summary-bar-fill--ok" style="width: 89.4%"></div>
+      </div>
+    </div>
+    <div class="summary-card summary-card--warn">
+      <div class="summary-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+        ADVERTENCIAS
+      </div>
+      <div class="summary-value mono">2</div>
+      <div class="summary-bar">
+        <div class="summary-bar-fill summary-bar-fill--warn" style="width: 4.3%"></div>
+      </div>
+    </div>
+    <div class="summary-card summary-card--err">
+      <div class="summary-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        ERRORES
+      </div>
+      <div class="summary-value mono">3</div>
+      <div class="summary-bar">
+        <div class="summary-bar-fill summary-bar-fill--err" style="width: 6.3%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="preview-filters">
+    <div class="filter-tabs">
+      <button class="filter-tab">
+        <span class="mono filter-count">47</span>
+        <span>Todas</span>
+      </button>
+      <button class="filter-tab filter-tab--active filter-tab--err">
+        <span class="mono filter-count">3</span>
+        <span>Con error</span>
+      </button>
+      <button class="filter-tab filter-tab--warn">
+        <span class="mono filter-count">2</span>
+        <span>Advertencias</span>
+      </button>
+      <button class="filter-tab filter-tab--ok">
+        <span class="mono filter-count">42</span>
+        <span>Válidas</span>
+      </button>
+    </div>
+
+    <div class="filter-actions">
+      <div class="search-wrap search-wrap--sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="search" placeholder="Buscar en filas..." class="search-input">
+      </div>
+      <button class="tool-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M21 3v5h-5"/></svg>
+        <span>Revalidar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TABLA DE PREVIEW ═══════════════ -->
+  <div class="preview-table-wrap">
+    <div class="preview-table">
+      <div class="preview-head">
+        <div class="pcol pcol-status">ESTADO</div>
+        <div class="pcol pcol-row">FILA</div>
+        <div class="pcol pcol-name">NOMBRE DEL OBJETO *</div>
+        <div class="pcol pcol-cat">CATEGORÍA *</div>
+        <div class="pcol pcol-brand">MARCA</div>
+        <div class="pcol pcol-model">MODELO</div>
+        <div class="pcol pcol-loc">ALMACÉN *</div>
+        <div class="pcol pcol-ref">MÁQUINA</div>
+        <div class="pcol pcol-assigned">ASIGNADO</div>
+        <div class="pcol pcol-qty">CANT.</div>
+        <div class="pcol pcol-cond">CONDICIÓN *</div>
+      </div>
+
+      <!-- ─── Fila con error: categoría inválida ─── -->
+      <div class="preview-row preview-row--err">
+        <div class="pcol pcol-status">
+          <div class="row-status row-status--err" title="categoría inválida">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-row mono">8</div>
+        <div class="pcol pcol-name">
+          <div class="cell-input">Paracetamol 500mg</div>
+        </div>
+        <div class="pcol pcol-cat">
+          <div class="cell-select cell-select--error">
+            <span>medica</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="cell-err-msg">Debe ser: medicamento</div>
+        </div>
+        <div class="pcol pcol-brand">
+          <div class="cell-input">Medifarma</div>
+        </div>
+        <div class="pcol pcol-model">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-loc">
+          <div class="cell-select">
+            <span>sanidad</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-ref">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-assigned">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-qty mono">200</div>
+        <div class="pcol pcol-cond">
+          <div class="cell-select">
+            <span>operativo</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Fila con error: asignado no existe ─── -->
+      <div class="preview-row preview-row--err">
+        <div class="pcol pcol-status">
+          <div class="row-status row-status--err">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-row mono">14</div>
+        <div class="pcol pcol-name">
+          <div class="cell-input">Casco estructural Bullard</div>
+        </div>
+        <div class="pcol pcol-cat">
+          <div class="cell-select">
+            <span>epp</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-brand">
+          <div class="cell-input">Bullard</div>
+        </div>
+        <div class="pcol pcol-model">
+          <div class="cell-input">UPF</div>
+        </div>
+        <div class="pcol pcol-loc">
+          <div class="cell-select">
+            <span>servicios</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-ref">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-assigned">
+          <div class="cell-input cell-input--error mono">A99999</div>
+          <div class="cell-err-msg">Código no existe</div>
+        </div>
+        <div class="pcol pcol-qty mono">1</div>
+        <div class="pcol pcol-cond">
+          <div class="cell-select">
+            <span>operativo</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Fila con error: máquina requerida ─── -->
+      <div class="preview-row preview-row--err">
+        <div class="pcol pcol-status">
+          <div class="row-status row-status--err">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-row mono">22</div>
+        <div class="pcol pcol-name">
+          <div class="cell-input">Suero Fisiológico 500ml</div>
+        </div>
+        <div class="pcol pcol-cat">
+          <div class="cell-select">
+            <span>insumo_medico</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-brand">
+          <div class="cell-input">Baxter</div>
+        </div>
+        <div class="pcol pcol-model">
+          <div class="cell-input">NaCl 0.9%</div>
+        </div>
+        <div class="pcol pcol-loc">
+          <div class="cell-select">
+            <span>maquina</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-ref">
+          <div class="cell-select cell-select--error">
+            <span class="cell-placeholder">Requerido</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="cell-err-msg">Obligatorio cuando tipo=maquina</div>
+        </div>
+        <div class="pcol pcol-assigned">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-qty mono">12</div>
+        <div class="pcol pcol-cond">
+          <div class="cell-select">
+            <span>operativo</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Fila con advertencia ─── -->
+      <div class="preview-row preview-row--warn">
+        <div class="pcol pcol-status">
+          <div class="row-status row-status--warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-row mono">27</div>
+        <div class="pcol pcol-name">
+          <div class="cell-input">Ampolla Epinefrina 1mg</div>
+        </div>
+        <div class="pcol pcol-cat">
+          <div class="cell-select">
+            <span>medicamento</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-brand">
+          <div class="cell-input">Farmindustria</div>
+        </div>
+        <div class="pcol pcol-model">
+          <div class="cell-input">1mg/1ml</div>
+        </div>
+        <div class="pcol pcol-loc">
+          <div class="cell-select">
+            <span>maquina</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-ref">
+          <div class="cell-select">
+            <span>AMBULANCIA 163</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-assigned">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-qty mono">15</div>
+        <div class="pcol pcol-cond">
+          <div class="cell-select">
+            <span>operativo</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="preview-row-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Vence en menos de 90 días (2026·07·15)
+        </div>
+      </div>
+
+      <!-- ─── Filas válidas ─── -->
+      <div class="preview-row preview-row--ok">
+        <div class="pcol pcol-status">
+          <div class="row-status row-status--ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-row mono">3</div>
+        <div class="pcol pcol-name">
+          <div class="cell-input">Desfibrilador DEA Zoll</div>
+        </div>
+        <div class="pcol pcol-cat">
+          <div class="cell-select">
+            <span>medico</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-brand">
+          <div class="cell-input">Zoll</div>
+        </div>
+        <div class="pcol pcol-model">
+          <div class="cell-input">AED Plus</div>
+        </div>
+        <div class="pcol pcol-loc">
+          <div class="cell-select">
+            <span>maquina</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-ref">
+          <div class="cell-select">
+            <span>AMBULANCIA 163</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-assigned">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-qty mono">1</div>
+        <div class="pcol pcol-cond">
+          <div class="cell-select">
+            <span>operativo</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-row preview-row--ok">
+        <div class="pcol pcol-status">
+          <div class="row-status row-status--ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-row mono">4</div>
+        <div class="pcol pcol-name">
+          <div class="cell-input">Monitor Multiparámetro</div>
+        </div>
+        <div class="pcol pcol-cat">
+          <div class="cell-select">
+            <span>medico</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-brand">
+          <div class="cell-input">Mindray</div>
+        </div>
+        <div class="pcol pcol-model">
+          <div class="cell-input">VS-600</div>
+        </div>
+        <div class="pcol pcol-loc">
+          <div class="cell-select">
+            <span>maquina</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-ref">
+          <div class="cell-select">
+            <span>AMBULANCIA 163</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="pcol pcol-assigned">
+          <div class="cell-input cell-input--empty">—</div>
+        </div>
+        <div class="pcol pcol-qty mono">1</div>
+        <div class="pcol pcol-cond">
+          <div class="cell-select">
+            <span>operativo</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="import-footer">
+    <div class="footer-info">
+      <div class="footer-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Corregí los 3 errores antes de continuar. Los cambios no se guardan hasta confirmar.</span>
+      </div>
+    </div>
+    <div class="footer-actions">
+      <button class="btn btn--ghost" onclick="window.location.href='index.html'">
+        Cancelar
+      </button>
+      <button class="btn btn--ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span>Exportar resultado</span>
+      </button>
+      <button class="btn btn--primary btn--disabled" title="Hay errores que bloquean la importación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>Importar 42 válidas</span>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

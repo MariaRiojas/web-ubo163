@@ -80,54 +80,54 @@ export function AnalisisClient({
   const maxResp2 = Math.max(...responseByType.map((r) => r.minutos), 1)
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-red-500/10 rounded-lg">
-              <MapPin className="h-6 w-6 text-red-500" />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <div style={{ padding: 8, background: "rgba(220,38,38,0.10)" }}>
+              <MapPin className="h-5 w-5" style={{ color: "var(--red-163)" }} />
             </div>
-            <h1 className="text-2xl font-bold">Análisis de Emergencias</h1>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 500, color: "var(--bone)", letterSpacing: "-0.015em" }}>Análisis de Emergencias</h1>
           </div>
-          <p className="text-muted-foreground text-sm ml-[52px]">
+          <p style={{ fontSize: 13, color: "var(--steel)", marginLeft: 42 }}>
             {distritoLabel} · {monthLabel} {year}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
-          <select value={year} onChange={(e) => nav(Number(e.target.value))} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
+          <select value={year} onChange={(e) => nav(Number(e.target.value))} style={{ height: 34, border: "1px solid var(--ink-line)", background: "var(--ink-surface)", color: "var(--bone)", padding: "0 10px", fontSize: 12 }}>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
-          <select value={month} onChange={(e) => nav(undefined, Number(e.target.value))} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+          <select value={month} onChange={(e) => nav(undefined, Number(e.target.value))} style={{ height: 34, border: "1px solid var(--ink-line)", background: "var(--ink-surface)", color: "var(--bone)", padding: "0 10px", fontSize: 12 }}>
             {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
-          <select value={distritoFilter || ""} onChange={(e) => nav(undefined, undefined, e.target.value || null)} className="h-9 rounded-md border border-input bg-background px-3 text-sm max-w-[180px]">
+          <select value={distritoFilter || ""} onChange={(e) => nav(undefined, undefined, e.target.value || null)} style={{ height: 34, border: "1px solid var(--ink-line)", background: "var(--ink-surface)", color: "var(--bone)", padding: "0 10px", fontSize: 12, maxWidth: 180 }}>
             <option value="">Todos los distritos</option>
             {distritosOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
-          <button onClick={() => router.push("/analisis")} className="h-9 px-3 rounded-md border border-input bg-background text-sm hover:bg-muted transition-colors">
+          <button onClick={() => router.push("/analisis")} style={{ height: 34, padding: "0 12px", border: "1px solid var(--ink-line)", background: "var(--ink-surface)", color: "var(--steel)", fontSize: 12, cursor: "pointer" }}>
             Limpiar
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI label="TOTAL EMERGENCIAS" value={String(total)} color="text-red-600" sub={`${distritoLabel} · ${monthLabel}`} />
-        <KPI label="T. RESPUESTA PROMEDIO" value={String(avgResp)} unit="min" color="text-orange-500" sub={`${countResp} partes con datos`} />
-        <KPI label="MÁS RÁPIDO" value={String(minResp)} unit="min" color="text-green-500" sub="tiempo mínimo registrado" />
-        <KPI label="MÁS LENTO" value={String(maxResp)} unit="min" color="text-red-600" sub="tiempo máximo registrado" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+        <KPI label="TOTAL EMERGENCIAS" value={String(total)} color="var(--red-glow)" sub={`${distritoLabel} · ${monthLabel}`} />
+        <KPI label="T. RESPUESTA PROMEDIO" value={String(avgResp)} unit="min" color="var(--flame)" sub={`${countResp} partes con datos`} />
+        <KPI label="MÁS RÁPIDO" value={String(minResp)} unit="min" color="var(--emerald-glow)" sub="tiempo mínimo registrado" />
+        <KPI label="MÁS LENTO" value={String(maxResp)} unit="min" color="var(--red-glow)" sub="tiempo máximo registrado" />
       </div>
 
       {/* Por Distrito + Por Categoría */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 16 }}>
         <Card title="Por Distrito">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byDistrito} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={120} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#8B96A5" }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#8B96A5" }} width={120} />
                 <Tooltip formatter={(v: number) => [v, "Emergencias"]} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {byDistrito.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
@@ -159,9 +159,9 @@ export function AnalisisClient({
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={top10Types} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={200} tickFormatter={(v: string) => v.length > 30 ? v.slice(0, 30) + "…" : v} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#8B96A5" }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#8B96A5" }} width={200} tickFormatter={(v: string) => v.length > 30 ? v.slice(0, 30) + "…" : v} />
               <Tooltip />
               <Bar dataKey="count" name="Emergencias" radius={[0, 4, 4, 0]}>
                 {top10Types.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
@@ -172,14 +172,14 @@ export function AnalisisClient({
       </Card>
 
       {/* Salidas por Vehículo + Por Hora */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 16 }}>
         <Card title="Salidas por Vehículo">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byVehicle} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#8B96A5" }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#8B96A5" }} width={100} />
                 <Tooltip formatter={(v: number) => [v, "Salidas"]} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {byVehicle.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
@@ -193,9 +193,9 @@ export function AnalisisClient({
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8B96A5" }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#8B96A5" }} />
                 <Tooltip formatter={(v: number) => [v, "Emergencias"]} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {hourData.map((d, i) => <Cell key={i} fill={d.fill} />)}
@@ -219,9 +219,9 @@ export function AnalisisClient({
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dayData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#8B96A5" }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#8B96A5" }} />
               <Tooltip formatter={(v: number) => [v, "Emergencias"]} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {dayData.map((d, i) => <Cell key={i} fill={d.fill} />)}
@@ -242,23 +242,23 @@ export function AnalisisClient({
       {/* Tiempo de Respuesta por Tipo */}
       {responseByType.length > 0 && (
         <Card title="Tiempo de Respuesta por Tipo">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
             {responseByType.map((r, i) => {
               const pct = Math.min((r.minutos / maxResp2) * 100, 100)
-              const color = r.minutos <= 5 ? "bg-green-500 text-green-600" : r.minutos <= 10 ? "bg-orange-500 text-orange-600" : "bg-red-500 text-red-600"
-              const [bgColor, textColor] = color.split(" ")
+              const barColor = r.minutos <= 5 ? "#10B981" : r.minutos <= 10 ? "#F59E0B" : "#EF4444"
+              const textColor = r.minutos <= 5 ? "var(--emerald-glow)" : r.minutos <= 10 ? "var(--flame)" : "var(--red-glow)"
               return (
-                <div key={i} className="bg-gray-50 dark:bg-muted/50 rounded-lg p-3">
-                  <p className="text-xs font-medium text-muted-foreground truncate" title={r.name}>
+                <div key={i} style={{ background: "var(--ink-surface)", border: "1px solid var(--ink-line)", padding: "12px 12px" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.name}>
                     {r.name.length > 28 ? r.name.slice(0, 28) + "…" : r.name}
                   </p>
-                  <p className={`text-2xl font-bold mt-1 ${textColor}`}>
-                    {r.minutos}<span className="text-sm ml-0.5">min</span>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: textColor, marginBottom: 8 }}>
+                    {r.minutos}<span style={{ fontSize: 11 }}>min</span>
                   </p>
-                  <div className="w-full h-1.5 bg-gray-200 dark:bg-muted rounded-full mt-2">
-                    <div className={`h-full rounded-full ${bgColor}`} style={{ width: `${pct}%` }} />
+                  <div style={{ height: 3, background: "var(--ink-line)", borderRadius: 2, marginBottom: 6 }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 2 }} />
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">{r.partes} partes con datos</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>{r.partes} partes con datos</p>
                 </div>
               )
             })}
@@ -271,8 +271,8 @@ export function AnalisisClient({
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-card rounded-xl border shadow-sm p-5">
-      <h3 className="text-sm font-semibold mb-4">{title}</h3>
+    <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 20px" }}>
+      <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 16 }}>{title}</h3>
       {children}
     </div>
   )
@@ -282,12 +282,12 @@ function KPI({ label, value, color, unit, sub }: {
   label: string; value: string; color?: string; unit?: string; sub: string
 }) {
   return (
-    <div className="bg-white dark:bg-card rounded-xl border shadow-sm p-4">
-      <p className="text-[11px] font-medium text-muted-foreground tracking-wide">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${color ?? ""}`}>
-        {value}{unit && <span className="text-lg ml-0.5">{unit}</span>}
+    <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "16px 16px" }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 8 }}>{label}</p>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: color ?? "var(--bone)" }}>
+        {value}{unit && <span style={{ fontSize: 14 }}>{unit}</span>}
       </p>
-      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", marginTop: 6 }}>{sub}</p>
     </div>
   )
 }

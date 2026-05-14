@@ -28,10 +28,15 @@ export const authConfig: NextAuthConfig = {
         password: { label: 'Contraseña', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[AUTH] Intentando autorizar:', credentials?.username)
         const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) return null
+        if (!parsed.success) {
+          console.log('[AUTH] Fallo de validación Zod:', parsed.error.format())
+          return null
+        }
 
         const { username, password } = parsed.data
+        console.log('[AUTH] Debug Pass:', password, 'Length:', password.length)
 
         // Buscar por email o DNI como username
         const profile = await db.query.profiles.findFirst({
@@ -39,16 +44,37 @@ export const authConfig: NextAuthConfig = {
             or(eq(p.email, username), eq(p.dni, username)),
         })
 
-        if (!profile?.userId) return null
+        if (!profile) {
+          console.log('[AUTH] Perfil no encontrado para:', username)
+          return null
+        }
+        
+        if (!profile.userId) {
+          console.log('[AUTH] Perfil encontrado pero sin userId vinculado:', profile.email)
+          return null
+        }
 
         // Verificar contraseña con bcrypt
         const user = await db.query.users.findFirst({
           where: eq(users.id, profile.userId),
         })
-        if (!user) return null
+        if (!user) {
+          console.log('[AUTH] Usuario no encontrado en tabla users para ID:', profile.userId)
+          return null
+        }
 
+        console.log('[AUTH] Usuario encontrado:', user.email)
+        console.log('[AUTH] Hash en DB:', user.passwordHash)
+        
         const isValid = await bcrypt.compare(password, user.passwordHash)
-        if (!isValid) return null
+        console.log('[AUTH] ¿Contraseña válida?:', isValid)
+
+        if (!isValid) {
+          console.log('[AUTH] Contraseña incorrecta para:', username)
+          return null
+        }
+
+        console.log('[AUTH] Login exitoso:', username)
 
         // Cargar roles para calcular permisos
         const roles = await db.query.sectionRoles.findMany({

@@ -8,14 +8,16 @@ import {
   cgbvpVehicles,
 } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
-import {
-  Flame,
-  Users,
-  Truck,
-  AlertTriangle,
-  Wrench,
-  CheckCircle2,
-} from "lucide-react"
+import { Flame, Users, Truck, AlertTriangle, Wrench, CheckCircle2 } from "lucide-react"
+
+const VEHICLE_STATUS: Record<string, { bg: string; color: string; label: string; dotColor: string }> = {
+  "FALLA":           { bg: "rgba(220,38,38,0.10)",  color: "var(--red-glow)",    label: "CON FALLA",  dotColor: "var(--red-163)" },
+  "CON FALLA":       { bg: "rgba(220,38,38,0.10)",  color: "var(--red-glow)",    label: "CON FALLA",  dotColor: "var(--red-163)" },
+  "EMERGENCIA":      { bg: "rgba(245,158,11,0.10)", color: "var(--flame)",       label: "EMERG.",     dotColor: "var(--flame)" },
+  "EN EMERGENCIA":   { bg: "rgba(245,158,11,0.10)", color: "var(--flame)",       label: "EMERG.",     dotColor: "var(--flame)" },
+  "EN BASE":         { bg: "rgba(16,185,129,0.08)", color: "var(--emerald-glow)","label": "EN BASE",  dotColor: "var(--emerald-glow)" },
+  "FUERA DE SERVICIO":{ bg: "rgba(91,101,117,0.15)", color: "var(--graphite)",   label: "FUERA",      dotColor: "var(--graphite)" },
+}
 
 export default async function MiCompaniaPage() {
   const session = await auth()
@@ -31,149 +33,139 @@ export default async function MiCompaniaPage() {
 
   const [shiftPeople, vehicles] = await Promise.all([
     statusId
-      ? db
-          .select()
-          .from(cgbvpShiftAttendance)
-          .where(eq(cgbvpShiftAttendance.statusId, statusId))
+      ? db.select().from(cgbvpShiftAttendance).where(eq(cgbvpShiftAttendance.statusId, statusId))
       : Promise.resolve([]),
     db.select().from(cgbvpVehicles),
   ])
 
-  const bomberos = shiftPeople.filter((p) => p.tipo === "BOM").length
-  const rentados = shiftPeople.filter((p) => p.tipo === "REN").length
-  const operativas = vehicles.filter(
-    (v) => v.estado === "EN BASE" || v.estado === "EMERGENCIA"
-  ).length
-  const conFalla = vehicles.filter((v) => v.estado === "FALLA").length
-  const enEmergencia = vehicles.filter(
-    (v) => v.estado === "EMERGENCIA"
-  ).length
+  const bomberos = shiftPeople.filter(p => p.tipo === "BOM").length
+  const rentados = shiftPeople.filter(p => p.tipo === "REN").length
+  const operativas = vehicles.filter(v => v.estado === "EN BASE" || v.estado === "EMERGENCIA").length
+  const conFalla = vehicles.filter(v => v.estado === "FALLA" || v.estado === "CON FALLA").length
+  const enEmergencia = vehicles.filter(v => v.estado === "EMERGENCIA" || v.estado === "EN EMERGENCIA").length
 
   const estadoGeneral = latestStatus?.estadoGeneral ?? "EN SERVICIO"
   const fechaStatus = latestStatus?.fechaHora ?? latestStatus?.createdAt
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Flame className="h-6 w-6 text-red-500" />
-          <h1 className="text-2xl font-bold">Mi Compañía</h1>
+    <div style={{ maxWidth: 1100, display: "flex", flexDirection: "column", gap: 24 }}>
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <header style={{ paddingBottom: 16, borderBottom: "1px solid var(--ink-line)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <Flame className="h-6 w-6" style={{ color: "var(--red-163)" }} />
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 500, color: "var(--bone)", letterSpacing: "-0.015em" }}>
+            Mi Compañía
+          </h1>
         </div>
-        <p className="text-muted-foreground">
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.04em", color: "var(--steel)" }}>
           Cía. B. V. N.° {companyConfig.id} — {companyConfig.location.district}
         </p>
-      </div>
+      </header>
 
-      {/* Status banner */}
-      <div className="flex items-center justify-between rounded-xl border bg-white p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-          <span className="font-bold text-green-600">{estadoGeneral}</span>
+      {/* ── Status banner ──────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "var(--ink-deep)", border: "1px solid var(--ink-line)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--emerald-glow)", boxShadow: "0 0 8px var(--emerald-glow)", flexShrink: 0 }} />
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--emerald-glow)", letterSpacing: "0.06em" }}>
+            {estadoGeneral}
+          </span>
         </div>
         {fechaStatus && (
-          <span className="text-sm text-muted-foreground">
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--graphite)", letterSpacing: "0.06em" }}>
             {new Date(fechaStatus).toLocaleDateString("es-PE", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
+              day: "numeric", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit",
             })}
           </span>
         )}
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border bg-white p-4 text-center">
-          <Users className="h-5 w-5 mx-auto mb-2 text-blue-500" />
-          <p className="text-2xl font-bold">
+      {/* ── KPI cards ──────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "18px 16px", textAlign: "center" }}>
+          <Users className="h-5 w-5 mx-auto" style={{ color: "var(--graphite)", marginBottom: 10 }} />
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--bone)", marginBottom: 4 }}>
             {latestStatus?.personalDisponible ?? shiftPeople.length}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {bomberos} bomb. · {rentados} rent.
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--graphite)" }}>
+            {bomberos} BOMB. · {rentados} RENT.
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-4 text-center">
-          <Truck className="h-5 w-5 mx-auto mb-2 text-blue-500" />
-          <p className="text-2xl font-bold">
+        <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "18px 16px", textAlign: "center" }}>
+          <Truck className="h-5 w-5 mx-auto" style={{ color: "var(--graphite)", marginBottom: 10 }} />
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--bone)", marginBottom: 4 }}>
             {operativas}
-            <span className="text-base text-muted-foreground">
-              /{vehicles.length}
-            </span>
+            <span style={{ fontSize: 14, color: "var(--steel)" }}>/{vehicles.length}</span>
           </p>
-          <p className="text-xs text-muted-foreground">
-            {conFalla} con falla
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: conFalla > 0 ? "var(--red-glow)" : "var(--graphite)" }}>
+            {conFalla > 0 ? `${conFalla} CON FALLA` : "OPERATIVAS"}
           </p>
         </div>
 
-        <div
-          className={`rounded-xl border p-4 text-center bg-white ${
-            enEmergencia > 0 ? "border-red-400" : ""
-          }`}
-        >
+        <div style={{ background: "var(--ink-deep)", border: `1px solid ${enEmergencia > 0 ? "var(--red-163)" : "var(--ink-line)"}`, padding: "18px 16px", textAlign: "center" }}>
           <AlertTriangle
-            className={`h-5 w-5 mx-auto mb-2 ${
-              enEmergencia > 0 ? "text-red-500" : "text-muted-foreground"
-            }`}
+            className="h-5 w-5 mx-auto"
+            style={{ color: enEmergencia > 0 ? "var(--red-glow)" : "var(--graphite)", marginBottom: 10 }}
           />
-          <p
-            className={`text-2xl font-bold ${
-              enEmergencia > 0 ? "text-red-600" : ""
-            }`}
-          >
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: enEmergencia > 0 ? "var(--red-glow)" : "var(--bone)", marginBottom: 4 }}>
             {enEmergencia}
           </p>
-          <p className="text-xs text-muted-foreground">
-            unidades en emergencia
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--graphite)" }}>
+            EN EMERGENCIA
           </p>
         </div>
       </div>
 
-      {/* Two columns */}
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* ── Two columns ────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
         {/* Personal en Turno */}
-        <div className="rounded-xl border bg-white p-4">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4" /> Personal en Turno
-          </h2>
+        <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--ink-line)" }}>
+            <Users className="h-4 w-4" style={{ color: "var(--graphite)" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase" }}>
+              Personal en Turno
+            </span>
+          </div>
           {shiftPeople.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Sin datos de turno disponibles.
-            </p>
+            <p style={{ fontSize: 13, color: "var(--graphite)", padding: "8px 0" }}>Sin datos de turno disponibles.</p>
           ) : (
-            <div className="space-y-2">
-              {shiftPeople.map((p) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {shiftPeople.map(p => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between border-l-4 border-blue-500 pl-3 py-2"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 10px",
+                    borderLeft: "2px solid var(--red-163)",
+                    background: "var(--ink-surface)",
+                    gap: 8,
+                  }}
                 >
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {p.nombreRaw}
-                      </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 12, color: "var(--bone)", fontWeight: 500 }}>{p.nombreRaw}</span>
                       {p.esAlMando === 1 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.08em", padding: "1px 5px", background: "rgba(196,160,98,0.15)", color: "var(--brass)", border: "1px solid rgba(196,160,98,0.3)", fontWeight: 700 }}>
                           MANDO
                         </span>
                       )}
                       {p.esPiloto === 1 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold">
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.08em", padding: "1px 5px", background: "rgba(37,99,235,0.15)", color: "#60a5fa", border: "1px solid rgba(37,99,235,0.3)", fontWeight: 700 }}>
                           PILOTO
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", marginTop: 2 }}>
                       {p.tipo === "BOM" ? "Bombero" : "Rentado"}
                     </p>
                   </div>
                   {p.horaIngreso && (
-                    <span className="text-xs text-muted-foreground">
-                      {p.horaIngreso}
-                    </span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--graphite)" }}>{p.horaIngreso}</span>
                   )}
                 </div>
               ))}
@@ -182,57 +174,40 @@ export default async function MiCompaniaPage() {
         </div>
 
         {/* Estado de Flota */}
-        <div className="rounded-xl border bg-white p-4">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <Truck className="h-4 w-4" /> Estado de Flota
-          </h2>
+        <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--ink-line)" }}>
+            <Truck className="h-4 w-4" style={{ color: "var(--graphite)" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase" }}>
+              Estado de Flota
+            </span>
+          </div>
           {vehicles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Sin datos de vehículos.
-            </p>
+            <p style={{ fontSize: 13, color: "var(--graphite)", padding: "8px 0" }}>Sin datos de vehículos.</p>
           ) : (
-            <div className="space-y-2">
-              {vehicles.map((v) => {
-                const statusColor =
-                  v.estado === "FALLA"
-                    ? "bg-red-100 text-red-700"
-                    : v.estado === "EMERGENCIA"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : v.estado === "EN BASE"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {vehicles.map(v => {
+                const vs = VEHICLE_STATUS[v.estado ?? "EN BASE"] ?? VEHICLE_STATUS["EN BASE"]
                 return (
                   <div
                     key={v.id}
-                    className="flex items-center justify-between py-2 border-b last:border-0"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: "1px solid var(--ink-line-soft)", gap: 8 }}
                   >
-                    <div className="flex items-center gap-2">
-                      {v.estado === "FALLA" ? (
-                        <Wrench className="h-4 w-4 text-red-500" />
-                      ) : v.estado === "EMERGENCIA" ? (
-                        <Flame className="h-4 w-4 text-yellow-500" />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {v.estado === "FALLA" || v.estado === "CON FALLA" ? (
+                        <Wrench className="h-3.5 w-3.5" style={{ color: "var(--red-glow)" }} />
+                      ) : v.estado === "EMERGENCIA" || v.estado === "EN EMERGENCIA" ? (
+                        <Flame className="h-3.5 w-3.5" style={{ color: "var(--flame)" }} />
                       ) : (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "var(--emerald-glow)" }} />
                       )}
                       <div>
-                        <p className="text-sm font-medium">{v.codigo}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {v.tipo}
-                        </p>
-                        {v.motivo && (
-                          <p className="text-xs text-red-500">{v.motivo}</p>
-                        )}
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--bone)" }}>{v.codigo}</p>
+                        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>{v.tipo}</p>
+                        {v.motivo && <p style={{ fontSize: 11, color: "var(--red-glow)", marginTop: 1 }}>{v.motivo}</p>}
                       </div>
                     </div>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${statusColor}`}
-                    >
-                      {v.estado === "EMERGENCIA"
-                        ? "EMERG."
-                        : v.estado === "FUERA DE SERVICIO"
-                          ? "FUERA"
-                          : v.estado}
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.08em", fontWeight: 700, padding: "2px 7px", background: vs.bg, color: vs.color, borderRadius: 1 }}>
+                      {vs.label}
                     </span>
                   </div>
                 )
@@ -240,6 +215,7 @@ export default async function MiCompaniaPage() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 /**
- * CUARTEL-CRM — Configuración de Compañía
+ * CUARTEL-ERP — Configuración de Compañía
  *
  * Este es el ÚNICO archivo que cada compañía necesita editar
  * para personalizar toda la aplicación.
@@ -17,8 +17,8 @@ export const companyConfig = {
   id: "163",
   name: "Compañía de Bomberos Voluntarios Ancón",
   shortName: "Bomberos Ancón 163",
-  motto: "Excelencia en Servicio",
-  foundedYear: 1952,
+  motto: "Dios-Patria-Humanidad",
+  foundedYear: 2000,
   /** "compania" = UBO con número propio | "estacion" = dependiente de otra */
   type: "compania" as const,
   /**

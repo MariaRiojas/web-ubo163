@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sincronización con el CGBVP · Compañía 163 · Ancón</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../inventario/style.css">
+<link rel="stylesheet" href="cgbvp.css">
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+<div class="bg-glow bg-glow--bottom"></div>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-shield">
+        <img src="../inventario/escudo-163.svg" alt="Escudo UBO 163" width="56" height="56">
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">Bomberos Ancón</div>
+        <div class="brand-meta">
+          <span class="brand-number">CÍA. N.° 163</span>
+          <span class="brand-dot">·</span>
+          <span class="brand-subtitle">CGBVP</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 L12 3 L21 12 M5 10 V20 H19 V10"/></svg>
+        <span>Inicio</span>
+      </a>
+
+      <div class="nav-section">
+        <div class="nav-label">Gestión Operativa</div>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <span>Operatividad</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+          <span>Partes de Emergencia</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Gestión Administrativa</div>
+        <a href="../inventario/index.html" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <span>Inventario</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>Personal</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Sistema</div>
+        <a href="#" class="nav-item nav-item--active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Configuración</span>
+          <span class="nav-indicator"></span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="user-text">
+        <div class="user-name">RIOJAS MENDOZA, María</div>
+        <div class="user-role">Seccionario · A23118</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <main class="content">
+
+    <!-- Header institucional -->
+    <header class="page-header">
+      <div class="doc-meta">
+        <div class="doc-reg">
+          <span class="doc-label">MÓDULO</span>
+          <span class="doc-value">CONFIGURACIÓN</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">SECCIÓN</span>
+          <span class="doc-value">SINCRONIZACIÓN CGBVP</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">ACCESO</span>
+          <span class="doc-value">PRIMER / SEGUNDO JEFE</span>
+        </div>
+      </div>
+
+      <div class="page-title-wrap">
+        <h1 class="page-title">
+          <span class="page-title-main">Sincronización con el CGBVP</span>
+          <span class="page-title-sub">Acceso al intranet institucional para descargar automáticamente padrón, estado de compañía y partes de emergencia</span>
+        </h1>
+      </div>
+    </header>
+
+    <!-- Selector de ejemplo (solo para mockup) -->
+    <div class="mockup-switcher">
+      <span class="mockup-switcher-label">Vista de ejemplo:</span>
+      <button class="mockup-switcher-btn mockup-switcher-btn--active" data-state="never">Sin configurar</button>
+      <button class="mockup-switcher-btn" data-state="ok">Activa y funcionando</button>
+      <button class="mockup-switcher-btn" data-state="error">Con error</button>
+    </div>
+
+    <!-- ═══════════════════ VISTA 1: SIN CONFIGURAR ═══════════════════ -->
+    <section class="view view--never" data-view="never">
+
+      <!-- Banner informativo -->
+      <div class="info-banner">
+        <div class="info-banner-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22" height="22">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+        </div>
+        <div class="info-banner-body">
+          <h3 class="info-banner-title">Aún no se ha configurado la sincronización con el CGBVP</h3>
+          <p class="info-banner-text">
+            Para que el sistema pueda descargar automáticamente el padrón de bomberos, el estado de la compañía y los partes de emergencia, el Primer Jefe o el Segundo Jefe debe ingresar sus credenciales del intranet institucional.
+          </p>
+          <p class="info-banner-text info-banner-text--dim">
+            Las credenciales se guardan con cifrado. Nadie más puede verlas, ni siquiera el administrador del sistema.
+          </p>
+        </div>
+      </div>
+
+      <!-- Formulario de credenciales -->
+      <div class="config-card config-card--featured">
+        <div class="config-card-bracket config-card-bracket--tl"></div>
+        <div class="config-card-bracket config-card-bracket--tr"></div>
+        <div class="config-card-bracket config-card-bracket--bl"></div>
+        <div class="config-card-bracket config-card-bracket--br"></div>
+
+        <div class="config-card-header">
+          <div class="config-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24" height="24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="config-card-title">Ingresar credenciales del intranet</h2>
+            <p class="config-card-subtitle">Use los mismos datos con los que ingresa a bomberosperu.gob.pe/extranet</p>
+          </div>
+        </div>
+
+        <form class="config-form">
+          <div class="form-field">
+            <label class="form-label">
+              <span class="form-label-text">Usuario del CGBVP</span>
+              <span class="form-label-hint">(formato A##### para bomberos)</span>
+            </label>
+            <input type="text" class="form-input mono" placeholder="Ejemplo: A23118" value="">
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">
+              <span class="form-label-text">Contraseña</span>
+              <span class="form-label-hint">(la misma que usa en el intranet del CGBVP)</span>
+            </label>
+            <div class="form-input-wrap">
+              <input type="password" class="form-input" placeholder="••••••••••" value="">
+              <button type="button" class="form-input-icon" title="Mostrar contraseña">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-consent">
+            <label class="consent-label">
+              <input type="checkbox" class="consent-checkbox">
+              <div class="consent-custom-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div class="consent-text">
+                <p class="consent-text-main">
+                  Autorizo a este sistema a usar mis credenciales del CGBVP para descargar automáticamente la información de la Compañía N.° 163.
+                </p>
+                <p class="consent-text-sub">
+                  Entiendo que las credenciales quedan guardadas con cifrado y se usan exclusivamente para las consultas al intranet institucional. Puedo revocar este permiso en cualquier momento desde esta misma pantalla.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn--ghost">Cancelar</button>
+            <button type="button" class="btn btn--primary" id="btnSave">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              <span>Validar y guardar</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Explicación de qué se va a descargar -->
+      <div class="config-card">
+        <h3 class="config-section-title">¿Qué información se descarga del CGBVP?</h3>
+
+        <div class="data-sources">
+          <div class="data-source">
+            <div class="data-source-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="data-source-body">
+              <div class="data-source-title">Padrón de bomberos</div>
+              <div class="data-source-desc">Lista oficial de efectivos con sus códigos CGBVP, grados y DNI. Se actualiza una vez al mes.</div>
+            </div>
+          </div>
+
+          <div class="data-source">
+            <div class="data-source-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="data-source-body">
+              <div class="data-source-title">Estado de compañía</div>
+              <div class="data-source-desc">Personal en turno, estado de vehículos, Jefatura activa. Se actualiza cada 2 minutos.</div>
+            </div>
+          </div>
+
+          <div class="data-source">
+            <div class="data-source-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+            <div class="data-source-body">
+              <div class="data-source-title">Partes de emergencia</div>
+              <div class="data-source-desc">Salidas por vehículo con tiempos, dotación, kilometraje. Se actualiza cada 15 minutos.</div>
+            </div>
+          </div>
+
+          <div class="data-source">
+            <div class="data-source-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="data-source-body">
+              <div class="data-source-title">Asistencia mensual</div>
+              <div class="data-source-desc">Días asistidos, guardias, horas acumuladas y emergencias atendidas. Se descarga una vez al mes (días 1 a 5).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ VISTA 2: CONFIGURADA Y ACTIVA ═══════════════════ -->
+    <section class="view" data-view="ok" style="display:none">
+
+      <!-- Estado actual -->
+      <div class="status-row">
+        <div class="status-card status-card--featured status-card--ok">
+          <div class="config-card-bracket config-card-bracket--tl"></div>
+          <div class="config-card-bracket config-card-bracket--tr"></div>
+          <div class="config-card-bracket config-card-bracket--bl"></div>
+          <div class="config-card-bracket config-card-bracket--br"></div>
+
+          <div class="status-card-header">
+            <div class="status-pulse">
+              <span class="status-pulse-dot"></span>
+              <span class="status-pulse-ring"></span>
+            </div>
+            <div>
+              <div class="status-label">ESTADO DE SINCRONIZACIÓN</div>
+              <div class="status-text">Activa y funcionando correctamente</div>
+            </div>
+          </div>
+
+          <div class="status-metrics">
+            <div class="status-metric">
+              <div class="status-metric-label">ÚLTIMA DESCARGA</div>
+              <div class="status-metric-value mono">Hace 1 min 42 s</div>
+            </div>
+            <div class="status-metric">
+              <div class="status-metric-label">PRÓXIMA</div>
+              <div class="status-metric-value mono">en 18 s</div>
+            </div>
+            <div class="status-metric">
+              <div class="status-metric-label">SINCRONIZACIONES OK</div>
+              <div class="status-metric-value mono">1,247</div>
+            </div>
+            <div class="status-metric">
+              <div class="status-metric-label">ERRORES CONSEC.</div>
+              <div class="status-metric-value mono">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-card config-card--inline">
+          <div class="config-mini-header">
+            <span class="config-mini-label">DESCARGA AUTOMÁTICA</span>
+            <div class="toggle-switch toggle-switch--on">
+              <div class="toggle-switch-knob"></div>
+            </div>
+          </div>
+          <p class="config-mini-text">
+            Los datos del CGBVP se actualizan automáticamente. Para detener la descarga sin eliminar las credenciales, desactive este control.
+          </p>
+        </div>
+      </div>
+
+      <!-- Credenciales guardadas -->
+      <div class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-icon config-card-icon--brass">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24" height="24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="config-card-title">Credenciales guardadas</h2>
+            <p class="config-card-subtitle">Registradas por el Primer Jefe de la Compañía</p>
+          </div>
+        </div>
+
+        <div class="credentials-display">
+          <div class="cred-field">
+            <div class="cred-field-label">USUARIO</div>
+            <div class="cred-field-value mono">A2****18</div>
+          </div>
+          <div class="cred-field">
+            <div class="cred-field-label">CONTRASEÑA</div>
+            <div class="cred-field-value mono cred-field-value--locked">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Guardada con cifrado</span>
+            </div>
+          </div>
+          <div class="cred-field">
+            <div class="cred-field-label">REGISTRADA POR</div>
+            <div class="cred-field-value">Brigadier HERRERA VARGAS</div>
+          </div>
+          <div class="cred-field">
+            <div class="cred-field-label">ÚLTIMA VALIDACIÓN</div>
+            <div class="cred-field-value mono">06·may·2026 17:32</div>
+          </div>
+        </div>
+
+        <div class="cred-actions">
+          <button class="btn btn--ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M21 3v5h-5"/></svg>
+            <span>Actualizar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ejecución manual -->
+      <div class="config-card">
+        <h3 class="config-section-title">Ejecutar descarga manualmente</h3>
+        <p class="config-section-subtitle">
+          Las descargas ya se realizan de forma automática, pero puede forzar una ejecución inmediata si necesita información actualizada ahora mismo.
+        </p>
+
+        <div class="task-grid">
+          <button class="task-card">
+            <div class="task-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="task-card-text">
+              <div class="task-card-title">Actualizar padrón</div>
+              <div class="task-card-desc">Última vez: hace 12 días</div>
+            </div>
+            <svg class="task-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+
+          <button class="task-card">
+            <div class="task-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="task-card-text">
+              <div class="task-card-title">Capturar estado</div>
+              <div class="task-card-desc">Última vez: hace 1 min</div>
+            </div>
+            <svg class="task-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+
+          <button class="task-card">
+            <div class="task-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+            <div class="task-card-text">
+              <div class="task-card-title">Descargar partes</div>
+              <div class="task-card-desc">Última vez: hace 11 min</div>
+            </div>
+            <svg class="task-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+
+          <button class="task-card">
+            <div class="task-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="task-card-text">
+              <div class="task-card-title">Asistencia mensual</div>
+              <div class="task-card-desc">Última vez: hace 6 días</div>
+            </div>
+            <svg class="task-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Historial de actividad -->
+      <div class="config-card">
+        <div class="config-card-header-flex">
+          <h3 class="config-section-title">Registro de actividad</h3>
+          <span class="audit-count mono">últimas 10 acciones</span>
+        </div>
+
+        <div class="audit-list">
+          <div class="audit-item">
+            <div class="audit-item-marker audit-item-marker--ok"></div>
+            <div class="audit-item-body">
+              <div class="audit-item-title">Sincronización exitosa · estado de compañía</div>
+              <div class="audit-item-meta">
+                <span class="mono">hace 1 min</span>
+                <span class="audit-sep">·</span>
+                <span>Automática (sistema)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-marker audit-item-marker--ok"></div>
+            <div class="audit-item-body">
+              <div class="audit-item-title">Sincronización exitosa · partes de emergencia</div>
+              <div class="audit-item-meta">
+                <span class="mono">hace 11 min</span>
+                <span class="audit-sep">·</span>
+                <span>Automática (sistema)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-marker audit-item-marker--action"></div>
+            <div class="audit-item-body">
+              <div class="audit-item-title">Se activó la descarga automática</div>
+              <div class="audit-item-meta">
+                <span class="mono">ayer 14:22</span>
+                <span class="audit-sep">·</span>
+                <span>Brigadier HERRERA VARGAS</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-marker audit-item-marker--action"></div>
+            <div class="audit-item-body">
+              <div class="audit-item-title">Credenciales validadas con el intranet del CGBVP</div>
+              <div class="audit-item-meta">
+                <span class="mono">ayer 14:21</span>
+                <span class="audit-sep">·</span>
+                <span>Brigadier HERRERA VARGAS</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-marker audit-item-marker--action"></div>
+            <div class="audit-item-body">
+              <div class="audit-item-title">Registró credenciales del CGBVP por primera vez</div>
+              <div class="audit-item-meta">
+                <span class="mono">ayer 14:20</span>
+                <span class="audit-sep">·</span>
+                <span>Brigadier HERRERA VARGAS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zona de acciones sensibles -->
+      <div class="config-card config-card--danger">
+        <h3 class="config-section-title config-section-title--danger">Zona de acciones sensibles</h3>
+        <p class="config-section-subtitle">
+          Al eliminar las credenciales se detiene la descarga automática. Los datos ya descargados se conservan, pero no se recibirá información nueva hasta que se ingresen credenciales válidas otra vez.
+        </p>
+        <div class="danger-actions">
+          <button class="btn btn--danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            <span>Eliminar credenciales del CGBVP</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ VISTA 3: CON ERROR ═══════════════════ -->
+    <section class="view" data-view="error" style="display:none">
+
+      <!-- Banner de error -->
+      <div class="error-banner">
+        <div class="error-banner-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22" height="22">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/>
+          </svg>
+        </div>
+        <div class="error-banner-body">
+          <h3 class="error-banner-title">El intranet del CGBVP rechazó las credenciales</h3>
+          <p class="error-banner-text">
+            Desde hace <strong>6 horas</strong> el sistema no puede descargar información nueva. Es posible que la contraseña del Brigadier HERRERA VARGAS haya cambiado en el CGBVP.
+          </p>
+          <p class="error-banner-text">
+            <strong>¿Qué hacer?</strong> El Primer Jefe o el Segundo Jefe debe ingresar las credenciales actualizadas. La información ya descargada se conserva.
+          </p>
+          <div class="error-banner-actions">
+            <button class="btn btn--primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M21 3v5h-5"/></svg>
+              <span>Actualizar credenciales</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resto de la vista similar a "ok" pero con estado degradado -->
+      <div class="status-row">
+        <div class="status-card status-card--featured status-card--error">
+          <div class="config-card-bracket config-card-bracket--tl" style="border-color: var(--red-glow)"></div>
+          <div class="config-card-bracket config-card-bracket--tr" style="border-color: var(--red-glow)"></div>
+          <div class="config-card-bracket config-card-bracket--bl" style="border-color: var(--red-glow)"></div>
+          <div class="config-card-bracket config-card-bracket--br" style="border-color: var(--red-glow)"></div>
+
+          <div class="status-card-header">
+            <div class="status-pulse status-pulse--error">
+              <span class="status-pulse-dot"></span>
+              <span class="status-pulse-ring"></span>
+            </div>
+            <div>
+              <div class="status-label status-label--error">ESTADO DE SINCRONIZACIÓN</div>
+              <div class="status-text">Detenida — credenciales rechazadas</div>
+            </div>
+          </div>
+
+          <div class="status-metrics">
+            <div class="status-metric">
+              <div class="status-metric-label">ÚLTIMA DESCARGA OK</div>
+              <div class="status-metric-value mono">Hace 6 h 24 min</div>
+            </div>
+            <div class="status-metric">
+              <div class="status-metric-label">ÚLTIMO INTENTO</div>
+              <div class="status-metric-value mono status-metric-value--error">hace 2 min</div>
+            </div>
+            <div class="status-metric">
+              <div class="status-metric-label">ERRORES CONSECUTIVOS</div>
+              <div class="status-metric-value mono status-metric-value--error">127</div>
+            </div>
+            <div class="status-metric">
+              <div class="status-metric-label">SINCRONIZACIONES OK</div>
+              <div class="status-metric-value mono">1,247</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer institucional -->
+    <footer class="footer-motto">
+      <div class="motto-line"></div>
+      <div class="motto-text">Dios · Patria · Humanidad</div>
+      <div class="motto-line"></div>
+    </footer>
+
+  </main>
+
+</div>
+
+<script>
+  // Switcher de mockup
+  document.querySelectorAll('.mockup-switcher-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const state = btn.dataset.state;
+      document.querySelectorAll('.mockup-switcher-btn').forEach((b) => b.classList.remove('mockup-switcher-btn--active'));
+      btn.classList.add('mockup-switcher-btn--active');
+      document.querySelectorAll('.view').forEach((v) => {
+        v.style.display = v.dataset.view === state ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

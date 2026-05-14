@@ -3,6 +3,7 @@
  * Captura partes por vehículo, con tiempos, km, al mando, tipo de emergencia.
  */
 import type { Page } from 'puppeteer'
+import type * as cheerio from 'cheerio'
 import { db, emergencies, emergencyVehicles, emergencyTypes, hiredDrivers, profiles } from '../db'
 import { eq, and, ilike, sql } from 'drizzle-orm'
 import { parseHtml, clean, parseFecha, toInt } from '../utils'
@@ -77,7 +78,7 @@ function limpiarCampo(s: string): string | null {
   return v || null
 }
 
-async function procesarFila(tds: cheerio.Cheerio<cheerio.Element>, $: cheerio.CheerioAPI, codTexto: string) {
+async function procesarFila(tds: cheerio.Cheerio<any>, $: cheerio.CheerioAPI, codTexto: string) {
   if (tds.length < 18) return null
 
   const numeroParte = $(tds[2]).text().trim()

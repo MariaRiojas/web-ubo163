@@ -61,30 +61,36 @@ export function AsistenciasClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-red-500/10 rounded-lg">
-              <ClipboardList className="h-6 w-6 text-red-500" />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <div style={{ padding: 8, background: "rgba(220,38,38,0.10)" }}>
+              <ClipboardList className="h-5 w-5" style={{ color: "var(--red-163)" }} />
             </div>
-            <h1 className="text-2xl font-bold">Informe de Asistencias</h1>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 500, color: "var(--bone)", letterSpacing: "-0.015em" }}>Informe de Asistencias</h1>
           </div>
-          <p className="text-muted-foreground text-sm ml-[52px]">
+          <p style={{ fontSize: 13, color: "var(--steel)", marginLeft: 42 }}>
             {monthLabel} {year} — cumplimiento reglamentario y actividad mensual
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
           {pills.map((p) => (
             <button
               key={`${p.mes}-${p.anio}`}
               onClick={() => nav(p.mes, p.anio)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                p.mes === month && p.anio === year
-                  ? "bg-red-500 text-white"
-                  : "bg-muted hover:bg-muted/80 text-muted-foreground"
-              }`}
+              style={{
+                padding: "4px 12px",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                fontWeight: 600,
+                cursor: "pointer",
+                border: p.mes === month && p.anio === year ? "1px solid var(--red-163)" : "1px solid var(--ink-line)",
+                background: p.mes === month && p.anio === year ? "rgba(220,38,38,0.12)" : "var(--ink-surface)",
+                color: p.mes === month && p.anio === year ? "var(--red-glow)" : "var(--steel)",
+              }}
             >
               {p.label}
             </button>
@@ -93,12 +99,12 @@ export function AsistenciasClient({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
         <KPI label="BOMBEROS ACTIVOS" value={String(activeBomberos)} sub={`con registro ${monthLabel?.toLowerCase()}`} />
-        <KPI label="HORAS TOTALES" value={String(totalHours)} valueClass="text-red-600" sub={`promedio: ${avgHours}h`} />
+        <KPI label="HORAS TOTALES" value={String(totalHours)} valueClass="var(--red-glow)" sub={`promedio: ${avgHours}h`} />
         <KPI label="DÍAS DE ASISTENCIA" value={String(totalDays)} sub="suma de todos los bomberos" />
         <KPI label="EMERGENCIAS" value={String(totalEmergencies)} sub="participaciones totales" />
-        <KPI label="CUMPLE REGLAMENTO" value={`${compliancePct}%`} valueClass="text-red-600" sub={`${cumple} de ${activeBomberos}`} />
+        <KPI label="CUMPLE REGLAMENTO" value={`${compliancePct}%`} valueClass="var(--red-glow)" sub={`${cumple} de ${activeBomberos}`} />
       </div>
 
       {/* Evolution Chart */}
@@ -106,10 +112,10 @@ export function AsistenciasClient({
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={evolution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8B96A5" }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#8B96A5" }} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#8B96A5" }} />
               <Tooltip
                 formatter={(v: number, name: string) => [
                   `${v}h`,
@@ -124,14 +130,14 @@ export function AsistenciasClient({
       </Card>
 
       {/* Top 10 + Avg by Grade */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 16 }}>
         <Card title="Top 10 Bomberos">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={top10} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "#8B96A5" }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#8B96A5" }} width={140} />
                 <Tooltip formatter={(v: number) => [`${v}h`, "Horas"]} />
                 <Bar dataKey="horas" radius={[0, 4, 4, 0]}>
                   {top10.map((_, i) => (
@@ -147,9 +153,9 @@ export function AsistenciasClient({
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={avgByGrade} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "#8B96A5" }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#8B96A5" }} width={140} />
                 <Tooltip formatter={(v: number) => [`${v}h`, "Promedio"]} />
                 <Bar dataKey="promedio" radius={[0, 4, 4, 0]}>
                   {avgByGrade.map((entry, i) => (
@@ -167,66 +173,57 @@ export function AsistenciasClient({
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={complianceByGrade} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#232B3B" />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#8B96A5" }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#8B96A5" }} width={140} />
               <Tooltip />
               <Bar dataKey="cumple" stackId="a" fill="#22c55e" name="Cumple" radius={[0, 0, 0, 0]} />
               <Bar dataKey="noCumple" stackId="a" fill="#fda4af" name="No cumple" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p className="text-xs text-muted-foreground mt-3">
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", marginTop: 12 }}>
           * Mínimos mensuales: Seccionario 40h · Subteniente 33h · Teniente 27h · Capitán 20h · Tnte Brigadier 17h · Brigadier 13h
         </p>
       </Card>
 
       {/* Detail Table */}
       <Card title="Detalle individual">
-        <div className="flex justify-end mb-3">
-          <Link href="/personal" className="text-sm text-red-500 hover:underline font-medium">
-            Ver en Bomberos &gt;
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <Link href="/bomberos" style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--brass)", textDecoration: "none" }}>
+            VER EN BOMBEROS →
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="pb-2 pr-2">#</th>
-                <th className="pb-2 pr-2">BOMBERO</th>
-                <th className="pb-2 pr-2">GRADO</th>
-                <th className="pb-2 pr-2 text-right">DÍAS</th>
-                <th className="pb-2 pr-2 text-right">GUARDIAS</th>
-                <th className="pb-2 pr-2 text-right">HORAS</th>
-                <th className="pb-2 pr-2 text-right">EMERGENCIAS</th>
-                <th className="pb-2 pl-4">CUMPLIMIENTO</th>
+              <tr style={{ borderBottom: "1px solid var(--ink-line)" }}>
+                {['#', 'BOMBERO', 'GRADO', 'DÍAS', 'GUARDIAS', 'HORAS', 'EMERGENCIAS', 'CUMPLIMIENTO'].map((h, hi) => (
+                  <th key={hi} style={{ padding: "8px 10px", textAlign: hi >= 3 && hi <= 6 ? "right" : "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--graphite)", paddingLeft: hi === 7 ? 16 : undefined }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {detail.map((r, i) => (
-                <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
-                  <td className="py-2 pr-2 text-muted-foreground">{i + 1}</td>
-                  <td className="py-2 pr-2">
-                    <div className="font-medium">{r.fullName}</div>
-                    <div className="text-xs text-muted-foreground">{r.code}</div>
+                <tr key={i} style={{ borderBottom: "1px solid var(--ink-line-soft)" }}>
+                  <td style={{ padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--graphite)" }}>{i + 1}</td>
+                  <td style={{ padding: "8px 10px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--bone)" }}>{r.fullName}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>{r.code}</div>
                   </td>
-                  <td className="py-2 pr-2 text-xs">{r.grade}</td>
-                  <td className="py-2 pr-2 text-right">{r.dias}</td>
-                  <td className="py-2 pr-2 text-right">{r.guardias}</td>
-                  <td className="py-2 pr-2 text-right font-bold">{r.horas}</td>
-                  <td className="py-2 pr-2 text-right">{r.emergencias}</td>
-                  <td className="py-2 pl-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${r.cumplimiento}%`,
-                            backgroundColor: r.cumplimiento >= 75 ? "#22c55e" : r.cumplimiento >= 50 ? "#f59e0b" : "#ef4444",
-                          }}
-                        />
+                  <td style={{ padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--steel)" }}>{r.grade}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--bone)" }}>{r.dias}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--bone)" }}>{r.guardias}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--bone)" }}>{r.horas}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--bone)" }}>{r.emergencias}</td>
+                  <td style={{ padding: "8px 10px", paddingLeft: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, height: 3, background: "var(--ink-line)", borderRadius: 2 }}>
+                        <div style={{ width: `${r.cumplimiento}%`, height: "100%", borderRadius: 2, backgroundColor: r.cumplimiento >= 75 ? "#10B981" : r.cumplimiento >= 50 ? "#F59E0B" : "#EF4444" }} />
                       </div>
-                      <span className="text-xs font-medium w-10 text-right">{r.cumplimiento}%</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--bone)", minWidth: 32, textAlign: "right" }}>{r.cumplimiento}%</span>
                     </div>
                   </td>
                 </tr>
@@ -235,14 +232,15 @@ export function AsistenciasClient({
           </table>
         </div>
       </Card>
+
     </div>
   )
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-card rounded-xl border shadow-sm p-5">
-      <h3 className="text-sm font-semibold mb-4">{title}</h3>
+    <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "20px 20px" }}>
+      <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 16 }}>{title}</h3>
       {children}
     </div>
   )
@@ -250,10 +248,10 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function KPI({ label, value, valueClass, sub }: { label: string; value: string; valueClass?: string; sub: string }) {
   return (
-    <div className="bg-white dark:bg-card rounded-xl border shadow-sm p-4">
-      <p className="text-[11px] font-medium text-muted-foreground tracking-wide">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${valueClass ?? ""}`}>{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+    <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "16px 16px" }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 8 }}>{label}</p>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: valueClass ?? "var(--bone)" }}>{value}</p>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)", marginTop: 6 }}>{sub}</p>
     </div>
   )
 }

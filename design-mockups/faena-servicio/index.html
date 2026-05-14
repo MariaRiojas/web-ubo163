@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faena y Servicio · UBO 163</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../inventario/style.css">
+<link rel="stylesheet" href="../sidebar-responsive/sidebar.css">
+<link rel="stylesheet" href="faena.css">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+
+<button class="hamburger" id="hamburger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="shell">
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Colapsar menú lateral">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebarClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+
+    <div class="brand">
+      <div class="brand-shield"><img src="../inventario/escudo-163.svg" alt="" width="56" height="56"></div>
+      <div class="brand-text">
+        <div class="brand-name">Bomberos Ancón</div>
+        <div class="brand-meta"><span class="brand-number">CÍA. N.° 163</span><span class="brand-dot">·</span><span class="brand-subtitle">CGBVP</span></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-label">Personal</div>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 L12 3 L21 12 M5 10 V20 H19 V10"/></svg><span>Inicio</span></a>
+        <a href="../mi-perfil/index.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Mi Perfil</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Mi Guardia Nocturna</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg><span>Anuncios</span><span class="nav-badge">3</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Faena y Servicio</div>
+        <a href="#" class="nav-item nav-item--active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span>Inspecciones</span><span class="nav-indicator"></span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Reportar incidencia</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Solicitudes</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Capacitación</div>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Mis cursos</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Biblioteca</span></a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="user-text">
+        <div class="user-name">RIOJAS MENDOZA, María</div>
+        <div class="user-role">Seccionario · A23118</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <header class="page-header">
+      <div class="doc-meta">
+        <div class="doc-reg">
+          <span class="doc-label">MÓDULO</span>
+          <span class="doc-value">FAENA Y SERVICIO</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">TURNO ACTUAL</span>
+          <span class="doc-value">MAÑANA · 07:00–15:00</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">FECHA</span>
+          <span class="doc-value">JUEVES 07·MAY·2026</span>
+        </div>
+      </div>
+
+      <div class="page-title-wrap">
+        <h1 class="page-title">
+          <span class="page-title-main">Inspecciones de hoy</span>
+          <span class="page-title-sub">Escanee el código QR del compartimiento para iniciar la inspección, o seleccione la máquina manualmente.</span>
+        </h1>
+
+        <div class="page-actions">
+          <button class="btn btn--primary" id="btnScanQR">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM17 17h4M20 20h1M14 20h1"/></svg>
+            <span>Escanear QR</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs (tipos de tarea) -->
+    <nav class="faena-tabs">
+      <button class="faena-tab faena-tab--active" data-tab="checklists">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>Inspecciones</span>
+        <span class="faena-tab-count mono">3 pendientes</span>
+      </button>
+      <button class="faena-tab" data-tab="incidencias">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+        <span>Mis incidencias</span>
+        <span class="faena-tab-count mono">2</span>
+      </button>
+      <button class="faena-tab" data-tab="solicitudes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span>Mis solicitudes</span>
+        <span class="faena-tab-count mono">1</span>
+      </button>
+    </nav>
+
+    <!-- ═══════════════ TAB: INSPECCIONES ═══════════════ -->
+    <section class="faena-view" data-view="checklists">
+
+      <!-- Resumen del turno -->
+      <div class="turno-banner">
+        <div class="turno-banner-pulse">
+          <span class="status-dot-sm"></span>
+        </div>
+        <div class="turno-banner-body">
+          <div class="turno-banner-title">Turno en curso · Mañana (07:00 – 15:00)</div>
+          <div class="turno-banner-stats">
+            <span class="turno-stat"><strong>3</strong> inspecciones pendientes</span>
+            <span class="turno-stat turno-stat--ok"><strong>1</strong> completada</span>
+            <span class="turno-stat turno-stat--warn"><strong>0</strong> diferidas</span>
+          </div>
+        </div>
+        <div class="turno-banner-countdown">
+          <span class="turno-countdown-label">QUEDAN</span>
+          <span class="turno-countdown-value mono">6 h 23 m</span>
+        </div>
+      </div>
+
+      <!-- Máquinas con checklists pendientes -->
+      <h2 class="faena-section-title">Máquinas del turno</h2>
+
+      <div class="machine-grid">
+
+        <!-- MAQUINA 163-1 -->
+        <article class="machine-card machine-card--pending">
+          <div class="machine-card-header">
+            <div class="machine-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="28" height="28"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h3l3 3v5a2 2 0 0 1-2 2h-1"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div class="machine-card-identity">
+              <div class="machine-card-label mono">MAQUINA 163-1</div>
+              <div class="machine-card-kind">Autobomba principal</div>
+            </div>
+            <div class="machine-card-status-badge machine-card-status-badge--pending">
+              PENDIENTE
+            </div>
+          </div>
+
+          <div class="machine-card-compartments">
+            <div class="compart-row">
+              <span class="compart-label mono">15 compartimientos</span>
+              <span class="compart-sep">·</span>
+              <span class="compart-label mono">0 / 15 verificados</span>
+            </div>
+            <div class="compart-progress">
+              <div class="compart-progress-fill" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="machine-card-footer">
+            <div class="machine-card-scan-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>Escanee el QR del primer compartimiento</span>
+            </div>
+            <button class="btn btn--ghost btn--sm">Iniciar manualmente</button>
+          </div>
+        </article>
+
+        <!-- AMBULANCIA 163 -->
+        <article class="machine-card machine-card--progress">
+          <div class="machine-card-header">
+            <div class="machine-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </div>
+            <div class="machine-card-identity">
+              <div class="machine-card-label mono">AMBULANCIA 163</div>
+              <div class="machine-card-kind">Atención prehospitalaria</div>
+            </div>
+            <div class="machine-card-status-badge machine-card-status-badge--progress">
+              EN CURSO
+            </div>
+          </div>
+
+          <div class="machine-card-compartments">
+            <div class="compart-row">
+              <span class="compart-label mono">10 compartimientos</span>
+              <span class="compart-sep">·</span>
+              <span class="compart-label mono">6 / 10 verificados</span>
+            </div>
+            <div class="compart-progress">
+              <div class="compart-progress-fill compart-progress-fill--warn" style="width: 60%"></div>
+            </div>
+          </div>
+
+          <div class="machine-card-footer">
+            <div class="machine-card-scan-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14" style="color: var(--flame)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>Continuá con los 4 compartimientos restantes</span>
+            </div>
+            <button class="btn btn--primary btn--sm">Continuar</button>
+          </div>
+        </article>
+
+        <!-- RESCATE 163 -->
+        <article class="machine-card machine-card--completed">
+          <div class="machine-card-header">
+            <div class="machine-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="28" height="28"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div class="machine-card-identity">
+              <div class="machine-card-label mono">RESCATE 163</div>
+              <div class="machine-card-kind">Unidad de rescate técnico</div>
+            </div>
+            <div class="machine-card-status-badge machine-card-status-badge--ok">
+              COMPLETADA
+            </div>
+          </div>
+
+          <div class="machine-card-compartments">
+            <div class="compart-row">
+              <span class="compart-label mono">12 compartimientos</span>
+              <span class="compart-sep">·</span>
+              <span class="compart-label mono">12 / 12 verificados</span>
+            </div>
+            <div class="compart-progress">
+              <div class="compart-progress-fill compart-progress-fill--ok" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <div class="machine-card-footer">
+            <div class="machine-card-scan-hint machine-card-scan-hint--ok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Verificada a las 07:42 por Subteniente Pérez</span>
+            </div>
+            <button class="btn btn--ghost btn--sm">Ver detalles</button>
+          </div>
+        </article>
+
+        <!-- AUXILIAR 163 -->
+        <article class="machine-card machine-card--pending">
+          <div class="machine-card-header">
+            <div class="machine-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="28" height="28"><rect x="2" y="7" width="20" height="10" rx="2"/><circle cx="6.5" cy="17" r="2.5"/><circle cx="17.5" cy="17" r="2.5"/></svg>
+            </div>
+            <div class="machine-card-identity">
+              <div class="machine-card-label mono">AUXILIAR 163</div>
+              <div class="machine-card-kind">Unidad auxiliar</div>
+            </div>
+            <div class="machine-card-status-badge machine-card-status-badge--pending">
+              PENDIENTE
+            </div>
+          </div>
+
+          <div class="machine-card-compartments">
+            <div class="compart-row">
+              <span class="compart-label mono">5 compartimientos</span>
+              <span class="compart-sep">·</span>
+              <span class="compart-label mono">0 / 5 verificados</span>
+            </div>
+            <div class="compart-progress">
+              <div class="compart-progress-fill" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="machine-card-footer">
+            <div class="machine-card-scan-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>Escanee el QR del primer compartimiento</span>
+            </div>
+            <button class="btn btn--ghost btn--sm">Iniciar manualmente</button>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Ejemplo de checklist en curso (mockup desplegado) -->
+      <h2 class="faena-section-title" style="margin-top: var(--sp-10)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18" style="color: var(--flame)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Ejemplo · Checklist tras escanear QR
+      </h2>
+
+      <article class="checklist-detail">
+        <div class="config-card-bracket config-card-bracket--tl" style="border-color: var(--flame)"></div>
+        <div class="config-card-bracket config-card-bracket--tr" style="border-color: var(--flame)"></div>
+        <div class="config-card-bracket config-card-bracket--bl" style="border-color: var(--flame)"></div>
+        <div class="config-card-bracket config-card-bracket--br" style="border-color: var(--flame)"></div>
+
+        <div class="checklist-detail-header">
+          <div class="checklist-detail-left">
+            <div class="checklist-detail-qr-mini">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="22" height="22"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM17 17h4M20 20h1M14 20h1"/></svg>
+            </div>
+            <div>
+              <div class="checklist-detail-breadcrumb mono">AMBULANCIA 163 → GAVETA MÉDICA 2</div>
+              <h3 class="checklist-detail-title">Verificación de contenido</h3>
+            </div>
+          </div>
+          <div class="checklist-detail-qr-id mono">MC-4F2A9B87</div>
+        </div>
+
+        <div class="checklist-detail-body">
+          <div class="checklist-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            Marque el estado de cada ítem. Si marca <strong>faltante</strong> o <strong>dañado</strong>, puede adjuntar una foto y generar automáticamente una incidencia.
+          </div>
+
+          <div class="checklist-items">
+            <!-- ítem 1: presente -->
+            <div class="checklist-item checklist-item--presente">
+              <div class="checklist-item-info">
+                <div class="checklist-item-name">Ampolla Adrenalina 1mg</div>
+                <div class="checklist-item-meta">
+                  <span>Genfar · 1mg/1ml</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span class="mono">Lote L-ADR-2406-08</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span>Esperadas: 20</span>
+                </div>
+              </div>
+              <div class="checklist-item-actions">
+                <button class="check-btn check-btn--presente check-btn--active">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+                  Presente
+                </button>
+                <button class="check-btn check-btn--faltante">Faltante</button>
+                <button class="check-btn check-btn--danado">Dañado</button>
+              </div>
+            </div>
+
+            <!-- ítem 2: faltante -->
+            <div class="checklist-item checklist-item--faltante">
+              <div class="checklist-item-info">
+                <div class="checklist-item-name">Vendas estériles 10×10</div>
+                <div class="checklist-item-meta">
+                  <span>Protens</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span class="mono">Lote L-VE-2025-018</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span>Esperadas: 12 cajas</span>
+                </div>
+                <div class="checklist-item-alert">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+                  Se detectó faltante — se creará una solicitud de reposición al Área de Sanidad
+                </div>
+              </div>
+              <div class="checklist-item-actions">
+                <button class="check-btn check-btn--presente">Presente</button>
+                <button class="check-btn check-btn--faltante check-btn--active">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  Faltante
+                </button>
+                <button class="check-btn check-btn--danado">Dañado</button>
+              </div>
+            </div>
+
+            <!-- ítem 3: dañado con foto adjunta -->
+            <div class="checklist-item checklist-item--danado">
+              <div class="checklist-item-info">
+                <div class="checklist-item-name">Kit de intubación pediátrica</div>
+                <div class="checklist-item-meta">
+                  <span>Medipack</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span>Esperada: 1 unidad</span>
+                </div>
+                <div class="checklist-item-alert">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                  Empaque rasgado · foto adjuntada
+                </div>
+                <div class="checklist-photo-attached">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  <span>foto-kit-intubacion.jpg</span>
+                </div>
+              </div>
+              <div class="checklist-item-actions">
+                <button class="check-btn check-btn--presente">Presente</button>
+                <button class="check-btn check-btn--faltante">Faltante</button>
+                <button class="check-btn check-btn--danado check-btn--active">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                  Dañado
+                </button>
+              </div>
+            </div>
+
+            <!-- ítem 4: sin marcar aún -->
+            <div class="checklist-item">
+              <div class="checklist-item-info">
+                <div class="checklist-item-name">Oxímetro de pulso pediátrico</div>
+                <div class="checklist-item-meta">
+                  <span>Nonin · 7500</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span class="mono">Serie SN-12498</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span>Esperada: 1 unidad</span>
+                </div>
+              </div>
+              <div class="checklist-item-actions">
+                <button class="check-btn check-btn--presente">Presente</button>
+                <button class="check-btn check-btn--faltante">Faltante</button>
+                <button class="check-btn check-btn--danado">Dañado</button>
+              </div>
+            </div>
+
+            <!-- ítem 5: sin marcar aún -->
+            <div class="checklist-item">
+              <div class="checklist-item-info">
+                <div class="checklist-item-name">Jeringas descartables 5ml</div>
+                <div class="checklist-item-meta">
+                  <span>BD</span>
+                  <span class="checklist-item-sep">·</span>
+                  <span>Esperadas: 30 unidades</span>
+                </div>
+              </div>
+              <div class="checklist-item-actions">
+                <button class="check-btn check-btn--presente">Presente</button>
+                <button class="check-btn check-btn--faltante">Faltante</button>
+                <button class="check-btn check-btn--danado">Dañado</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="checklist-footer">
+            <div class="checklist-progress-info">
+              <span class="mono">3 de 5 ítems verificados</span>
+              <div class="checklist-mini-progress">
+                <div class="checklist-mini-progress-fill" style="width: 60%"></div>
+              </div>
+            </div>
+            <div class="checklist-actions">
+              <button class="btn btn--ghost">Guardar y continuar después</button>
+              <button class="btn btn--primary">Finalizar compartimiento</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- ═══════════════ TAB: INCIDENCIAS ═══════════════ -->
+    <section class="faena-view" data-view="incidencias" style="display:none">
+
+      <div class="faena-view-header">
+        <h2 class="faena-section-title">Mis incidencias reportadas</h2>
+        <button class="btn btn--primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+          Reportar incidencia
+        </button>
+      </div>
+
+      <div class="incident-list">
+
+        <article class="incident-card incident-card--in-progress">
+          <div class="incident-card-left">
+            <div class="incident-card-code mono">INC-2026-142</div>
+            <div class="incident-card-category incident-card-category--equipamiento">
+              EQUIPAMIENTO
+            </div>
+          </div>
+          <div class="incident-card-body">
+            <h4 class="incident-card-title">Hacha estructural del RESCATE 163 con mango suelto</h4>
+            <p class="incident-card-desc">Durante la inspección del turno, se detectó que el hacha pico del compartimiento 3 de la RESCATE 163 tiene el mango con holgura. No es seguro para operación.</p>
+            <div class="incident-card-meta">
+              <div class="incident-meta-item">
+                <span class="incident-meta-label">ASIGNADA A</span>
+                <span>Área de Máquinas</span>
+              </div>
+              <div class="incident-meta-item">
+                <span class="incident-meta-label">REPORTADA</span>
+                <span class="mono">hace 2 días</span>
+              </div>
+              <div class="incident-meta-item">
+                <span class="incident-meta-label">PRIORIDAD</span>
+                <span class="incident-meta-value--alta">Alta</span>
+              </div>
+            </div>
+          </div>
+          <div class="incident-card-status">
+            <span class="incident-status-pill incident-status-pill--in-progress">
+              <span class="status-dot-sm"></span>
+              EN PROCESO
+            </span>
+          </div>
+        </article>
+
+        <article class="incident-card incident-card--resolved">
+          <div class="incident-card-left">
+            <div class="incident-card-code mono">INC-2026-128</div>
+            <div class="incident-card-category incident-card-category--uniforme">
+              UNIFORME
+            </div>
+          </div>
+          <div class="incident-card-body">
+            <h4 class="incident-card-title">Casco con correa del barbiquejo rota</h4>
+            <p class="incident-card-desc">La correa del barbiquejo de mi casco asignado se rompió durante un simulacro. Necesita reemplazo.</p>
+            <div class="incident-card-meta">
+              <div class="incident-meta-item">
+                <span class="incident-meta-label">RESUELTA POR</span>
+                <span>Adjunto de SSGG</span>
+              </div>
+              <div class="incident-meta-item">
+                <span class="incident-meta-label">CERRADA</span>
+                <span class="mono">hace 1 semana</span>
+              </div>
+              <div class="incident-meta-item">
+                <span class="incident-meta-label">RESOLUCIÓN</span>
+                <span>Correa reemplazada</span>
+              </div>
+            </div>
+          </div>
+          <div class="incident-card-status">
+            <span class="incident-status-pill incident-status-pill--resolved">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M20 6 9 17l-5-5"/></svg>
+              RESUELTA
+            </span>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════ TAB: SOLICITUDES ═══════════════ -->
+    <section class="faena-view" data-view="solicitudes" style="display:none">
+
+      <div class="faena-view-header">
+        <h2 class="faena-section-title">Mis solicitudes a las áreas</h2>
+        <button class="btn btn--primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+          Nueva solicitud
+        </button>
+      </div>
+
+      <article class="incident-card incident-card--pending">
+        <div class="incident-card-left">
+          <div class="incident-card-code mono">SOL-2026-088</div>
+          <div class="incident-card-category incident-card-category--reposicion">
+            REPOSICIÓN DE INSUMO
+          </div>
+        </div>
+        <div class="incident-card-body">
+          <h4 class="incident-card-title">Reposición de vendajes en botiquín de abordaje</h4>
+          <p class="incident-card-desc">Durante la emergencia 2026-001847 se agotaron los vendajes del maletín de abordaje de la AMBULANCIA 163. Solicito reposición del stock.</p>
+          <div class="incident-card-meta">
+            <div class="incident-meta-item">
+              <span class="incident-meta-label">DIRIGIDA A</span>
+              <span>Área de Sanidad</span>
+            </div>
+            <div class="incident-meta-item">
+              <span class="incident-meta-label">ENVIADA</span>
+              <span class="mono">hace 3 horas</span>
+            </div>
+            <div class="incident-meta-item">
+              <span class="incident-meta-label">PRIORIDAD</span>
+              <span>Media</span>
+            </div>
+          </div>
+        </div>
+        <div class="incident-card-status">
+          <span class="incident-status-pill incident-status-pill--pending">
+            <span class="status-dot-sm"></span>
+            PENDIENTE
+          </span>
+        </div>
+      </article>
+
+    </section>
+
+    <footer class="footer-motto">
+      <div class="motto-line"></div>
+      <div class="motto-text">Dios · Patria · Humanidad</div>
+      <div class="motto-line"></div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Tabs
+  document.querySelectorAll('.faena-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.faena-tab').forEach((t) => t.classList.remove('faena-tab--active'));
+      tab.classList.add('faena-tab--active');
+      document.querySelectorAll('.faena-view').forEach((v) => {
+        v.style.display = v.dataset.view === target ? '' : 'none';
+      });
+    });
+  });
+
+  // Mobile drawer
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const closeBtn = document.getElementById('sidebarClose');
+  const open = () => { sidebar.classList.add('sidebar--open'); backdrop.classList.add('sidebar-backdrop--visible'); };
+  const close = () => { sidebar.classList.remove('sidebar--open'); backdrop.classList.remove('sidebar-backdrop--visible'); };
+  hamburger?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+
+  // Desktop collapse toggle
+  const shell = document.querySelector('.shell');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const COLLAPSED_KEY = 'ubo163:sidebar:collapsed';
+  if (localStorage.getItem(COLLAPSED_KEY) === 'true') shell.classList.add('shell--sidebar-collapsed');
+  toggleBtn?.addEventListener('click', () => {
+    const collapsed = shell.classList.toggle('shell--sidebar-collapsed');
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? 'true' : 'false');
+  });
+</script>
+</body>
+</html>

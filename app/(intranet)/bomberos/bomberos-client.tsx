@@ -90,157 +90,139 @@ export function BomberosClient({
     router.push(`/bomberos?mes=${val}`)
   }
 
+  const inputStyle: React.CSSProperties = {
+    height: 34,
+    border: "1px solid var(--ink-line)",
+    background: "var(--ink-surface)",
+    color: "var(--bone)",
+    padding: "0 12px",
+    fontSize: 12,
+  }
+
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-1">
-          <Users className="h-7 w-7 text-red-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Bomberos</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <Users className="h-6 w-6" style={{ color: "var(--red-163)" }} />
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 500, color: "var(--bone)", letterSpacing: "-0.015em" }}>Bomberos</h1>
         </div>
-        <p className="text-gray-500 ml-10">Actividad y asistencia — {monthLabel} {anio}</p>
+        <p style={{ fontSize: 13, color: "var(--steel)", marginLeft: 36 }}>Actividad y asistencia — {monthLabel} {anio}</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
         {[
           { label: 'BOMBEROS ACTIVOS', value: totalActivos, sub: 'en la compañía' },
           { label: 'EN TURNO AHORA', value: totalEnTurno, sub: 'estado actual' },
           { label: 'HORAS ACUMULADAS', value: totalHoras, sub: `${monthLabel} ${anio}` },
           { label: 'EMERGENCIAS ATENDIDAS', value: totalEmergencias, sub: 'participaciones totales' },
         ].map(kpi => (
-          <div key={kpi.label} className="bg-white rounded-xl border p-5">
-            <p className="text-xs font-semibold text-gray-400 tracking-wide">{kpi.label}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{kpi.value.toLocaleString()}</p>
-            <p className="text-xs text-gray-400 mt-1">{kpi.sub}</p>
+          <div key={kpi.label} style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "16px 16px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--graphite)", textTransform: "uppercase", marginBottom: 8 }}>{kpi.label}</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--bone)", marginBottom: 4 }}>{kpi.value.toLocaleString()}</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>{kpi.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Filter bar */}
-      <div className="bg-white rounded-xl border p-4 flex flex-wrap items-center gap-3">
-        <input
-          type="month"
-          value={mesFilter}
-          onChange={e => handleMonthChange(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm"
-        />
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", padding: "12px 16px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+        <input type="month" value={mesFilter} onChange={e => handleMonthChange(e.target.value)} style={inputStyle} />
+        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: "var(--graphite)" }} />
           <input
             placeholder="Apellidos, nombres, código..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+            style={{ ...inputStyle, width: "100%", paddingLeft: 32 }}
           />
         </div>
-        <select
-          value={gradeFilter}
-          onChange={e => setGradeFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm"
-        >
+        <select value={gradeFilter} onChange={e => setGradeFilter(e.target.value)} style={inputStyle}>
           <option value="">Todos los grados</option>
-          {gradesOptions.map(g => (
-            <option key={g} value={g}>{gradeLabels[g] ?? g}</option>
-          ))}
+          {gradesOptions.map(g => <option key={g} value={g}>{gradeLabels[g] ?? g}</option>)}
         </select>
-        <select
-          value={estadoFilter}
-          onChange={e => setEstadoFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm"
-        >
+        <select value={estadoFilter} onChange={e => setEstadoFilter(e.target.value)} style={inputStyle}>
           <option value="">Todos</option>
           <option value="en_turno">En turno</option>
           <option value="no_turno">Fuera de turno</option>
         </select>
         <button
           onClick={() => { setSearch(''); setGradeFilter(''); setEstadoFilter('') }}
-          className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          style={{ height: 34, padding: "0 14px", background: "var(--red-163)", color: "#fff", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer" }}
         >
-          Buscar
+          Limpiar
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border overflow-x-auto">
-        <table className="w-full text-sm">
+      <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", overflowX: "auto" }}>
+        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
           <thead>
-            <tr className="border-b text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
-              <th className="px-4 py-3 w-10">#</th>
-              <th className="px-4 py-3">Efectivo</th>
-              <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('horas')}>
-                Horas {sortCol === 'horas' && (sortDir === 'desc' ? '↓' : '↑')}
-              </th>
-              <th className="px-4 py-3">Días asist.</th>
-              <th className="px-4 py-3">Guardias</th>
-              <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('emergencias')}>
-                Emergencias {sortCol === 'emergencias' && (sortDir === 'desc' ? '↓' : '↑')}
-              </th>
-              <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('alMando')}>
-                Al mando {sortCol === 'alMando' && (sortDir === 'desc' ? '↓' : '↑')}
-              </th>
-              <th className="px-4 py-3" />
+            <tr style={{ borderBottom: "1px solid var(--ink-line)" }}>
+              {['#', 'Efectivo', 'Estado', `Horas ${sortCol === 'horas' ? (sortDir === 'desc' ? '↓' : '↑') : ''}`, 'Días asist.', 'Guardias', `Emergencias ${sortCol === 'emergencias' ? (sortDir === 'desc' ? '↓' : '↑') : ''}`, `Al mando ${sortCol === 'alMando' ? (sortDir === 'desc' ? '↓' : '↑') : ''}`, ''].map((h, hi) => (
+                <th
+                  key={hi}
+                  onClick={() => hi === 3 ? handleSort('horas') : hi === 6 ? handleSort('emergencias') : hi === 7 ? handleSort('alMando') : undefined}
+                  style={{ padding: "10px 14px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--graphite)", textTransform: "uppercase", cursor: [3, 6, 7].includes(hi) ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((b, i) => (
-              <tr key={b.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-gray-400 font-mono">{i + 1}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold shrink-0">
-                      {initials(b.fullName)}
+              <tr key={b.id} style={{ borderBottom: "1px solid var(--ink-line-soft)" }}>
+                <td style={{ padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--graphite)" }}>{i + 1}</td>
+                <td style={{ padding: "10px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(220,38,38,0.12)", border: "1px solid var(--red-163)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--red-glow)" }}>{initials(b.fullName)}</span>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900 leading-tight">{b.fullName}</p>
-                      <p className="text-xs text-gray-400">{b.gradeLabel} · {b.codigoCgbvp ?? '—'}</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--bone)", lineHeight: 1.3 }}>{b.fullName}</p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--graphite)" }}>{b.gradeLabel} · {b.codigoCgbvp ?? '—'}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3">
+                <td style={{ padding: "10px 14px" }}>
                   {b.enTurno ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> En turno
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", fontWeight: 700, padding: "2px 8px", background: "rgba(16,185,129,0.10)", color: "var(--emerald-glow)", border: "1px solid rgba(16,185,129,0.25)" }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--emerald-glow)" }} /> EN TURNO
                     </span>
                   ) : (
-                    <span className="text-gray-300">—</span>
+                    <span style={{ color: "var(--graphite)", fontSize: 13 }}>—</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 min-w-[120px]">
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-red-500 rounded-full transition-all"
-                        style={{ width: `${Math.min((b.horas / maxHoras) * 100, 100)}%` }}
-                      />
+                <td style={{ padding: "10px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 120 }}>
+                    <div style={{ flex: 1, height: 3, background: "var(--ink-line)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ width: `${Math.min((b.horas / maxHoras) * 100, 100)}%`, height: "100%", background: "var(--red-163)", borderRadius: 2 }} />
                     </div>
-                    <span className="text-xs font-medium text-gray-700 w-8 text-right">{b.horas}h</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--bone)", minWidth: 32, textAlign: "right" }}>{b.horas}h</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-center">{b.diasAsistidos}</td>
-                <td className="px-4 py-3 text-center">{b.guardias}</td>
-                <td className="px-4 py-3 text-center">{b.emergencias}</td>
-                <td className="px-4 py-3 text-center">
+                <td style={{ padding: "10px 14px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--bone)" }}>{b.diasAsistidos}</td>
+                <td style={{ padding: "10px 14px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--bone)" }}>{b.guardias}</td>
+                <td style={{ padding: "10px 14px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--bone)" }}>{b.emergencias}</td>
+                <td style={{ padding: "10px 14px", textAlign: "center" }}>
                   {b.alMando > 0 ? (
-                    <span className="text-red-600 font-bold">{b.alMando}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--red-glow)" }}>{b.alMando}</span>
                   ) : (
-                    <span className="text-gray-300">—</span>
+                    <span style={{ color: "var(--graphite)" }}>—</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/bomberos/${b.id}`}
-                    className="text-red-600 hover:text-red-700 text-xs font-medium whitespace-nowrap"
-                  >
-                    Ver perfil →
+                <td style={{ padding: "10px 14px" }}>
+                  <Link href={`/bomberos/${b.id}`} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", color: "var(--brass)", textDecoration: "none", whiteSpace: "nowrap" }}>
+                    VER →
                   </Link>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={9} style={{ padding: "40px 14px", textAlign: "center", color: "var(--graphite)", fontSize: 13 }}>
                   No se encontraron bomberos con los filtros aplicados.
                 </td>
               </tr>

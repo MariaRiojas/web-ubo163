@@ -9,6 +9,10 @@ export const SECTION_ROLE_TYPES = [
   'jefe_seccion',
   'adjunto',
   'miembro',
+  // Cargos operativos no reglamentarios (no ligados a una sección del RIF)
+  // Se asocian a una pseudo-sección 'jefatura' en la BD.
+  'jefe_guardia_masculina',
+  'jefe_guardia_femenina',
 ] as const
 export type SectionRoleType = (typeof SECTION_ROLE_TYPES)[number]
 

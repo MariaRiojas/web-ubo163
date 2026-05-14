@@ -7,6 +7,16 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ──────────────────────────────────────────────────────────────────────
+  // output: 'standalone'
+  // Genera .next/standalone/ con un server.js minimalista + node_modules
+  // tree-shaken. Requerido para empaquetar Next en un zip de Lambda o en
+  // un contenedor pequeño sin arrastrar todo node_modules.
+  //
+  // Documentación: https://nextjs.org/docs/app/api-reference/next-config-js/output
+  // ──────────────────────────────────────────────────────────────────────
+  output: 'standalone',
+
   eslint: {
     ignoreDuringBuilds: true,
   },

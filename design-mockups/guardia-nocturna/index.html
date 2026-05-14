@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guardia Nocturna · UBO 163</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../inventario/style.css">
+<link rel="stylesheet" href="../sidebar-responsive/sidebar.css">
+<link rel="stylesheet" href="guardia.css">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="bg-glow bg-glow--top"></div>
+
+<button class="hamburger" id="hamburger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="shell">
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Colapsar menú lateral">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebarClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+
+    <div class="brand">
+      <div class="brand-shield"><img src="../inventario/escudo-163.svg" alt="" width="56" height="56"></div>
+      <div class="brand-text">
+        <div class="brand-name">Bomberos Ancón</div>
+        <div class="brand-meta"><span class="brand-number">CÍA. N.° 163</span><span class="brand-dot">·</span><span class="brand-subtitle">CGBVP</span></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-label">Personal</div>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12 L12 3 L21 12 M5 10 V20 H19 V10"/></svg><span>Inicio</span></a>
+        <a href="../mi-perfil/index.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Mi Perfil</span></a>
+        <a href="#" class="nav-item nav-item--active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Mi Guardia Nocturna</span><span class="nav-indicator"></span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg><span>Anuncios</span><span class="nav-badge">3</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Faena y Servicio</div>
+        <a href="../faena-servicio/index.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span>Inspecciones</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/></svg><span>Reportar incidencia</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span>Solicitudes</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Capacitación</div>
+        <a href="../capacitacion/index.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Mis cursos</span></a>
+        <a href="#" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Biblioteca</span></a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="user-text">
+        <div class="user-name" id="userName">RIOJAS MENDOZA, María</div>
+        <div class="user-role" id="userRole">Seccionario · A23118</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <header class="page-header">
+      <div class="doc-meta">
+        <div class="doc-reg">
+          <span class="doc-label">MÓDULO</span>
+          <span class="doc-value">GUARDIA NOCTURNA</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">DORMITORIO</span>
+          <span class="doc-value" id="dormLabel">FEMENINO · 6 CAMAS</span>
+        </div>
+        <div class="doc-sep"></div>
+        <div class="doc-reg">
+          <span class="doc-label">HORARIO</span>
+          <span class="doc-value">20:00 – 08:00</span>
+        </div>
+      </div>
+
+      <div class="page-title-wrap">
+        <h1 class="page-title">
+          <span class="page-title-main">Mi Guardia Nocturna</span>
+          <span class="page-title-sub">Reserve su cama con anticipación. Los efectivos con reserva tienen prioridad verificable por el Jefe de Guardia.</span>
+        </h1>
+      </div>
+    </header>
+
+    <!-- ═══════════════ SWITCHER DE VISTA ═══════════════ -->
+    <div class="view-switcher">
+      <span class="view-switcher-label">Vista de ejemplo:</span>
+      <button class="view-switch-btn view-switch-btn--active" data-view="efectivo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Vista del efectivo
+      </button>
+      <button class="view-switch-btn" data-view="jefe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Vista del Jefe de Guardia
+      </button>
+    </div>
+
+    <!-- ═══════════════ VISTA 1: EFECTIVO ═══════════════ -->
+    <section class="guardia-view" data-view="efectivo">
+
+      <!-- Resumen -->
+      <div class="guardia-stats">
+        <div class="guardia-stat-card guardia-stat-card--next">
+          <div class="guardia-stat-label">PRÓXIMA GUARDIA</div>
+          <div class="guardia-stat-value">
+            <span class="guardia-stat-value-num">Sáb</span>
+            <span class="guardia-stat-value-date mono">10 · MAY</span>
+          </div>
+          <div class="guardia-stat-detail">
+            <span class="guardia-detail-label">Cama reservada</span>
+            <span class="guardia-detail-value mono">N.° 5 · Camarote C · Inferior</span>
+          </div>
+        </div>
+
+        <div class="guardia-stat-card">
+          <div class="guardia-stat-label">ESTE MES</div>
+          <div class="guardia-stat-value">
+            <span class="guardia-stat-value-num">3</span>
+            <span class="guardia-stat-value-unit">guardias cumplidas</span>
+          </div>
+        </div>
+
+        <div class="guardia-stat-card">
+          <div class="guardia-stat-label">PENDIENTES</div>
+          <div class="guardia-stat-value">
+            <span class="guardia-stat-value-num">2</span>
+            <span class="guardia-stat-value-unit">reservas activas</span>
+          </div>
+        </div>
+
+        <div class="guardia-stat-card">
+          <div class="guardia-stat-label">HORAS ACREDITADAS</div>
+          <div class="guardia-stat-value">
+            <span class="guardia-stat-value-num">36</span>
+            <span class="guardia-stat-value-unit">horas · mayo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendario -->
+      <div class="guardia-main">
+
+        <div class="guardia-calendar-card">
+          <div class="guardia-card-header">
+            <div>
+              <h3 class="guardia-card-title">Disponibilidad del mes</h3>
+              <p class="guardia-card-sub">Seleccione una fecha para ver camas disponibles y reservar</p>
+            </div>
+            <div class="guardia-calendar-nav">
+              <button class="guardia-nav-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <span class="guardia-nav-month">Mayo · 2026</span>
+              <button class="guardia-nav-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="guardia-calendar">
+            <div class="guardia-calendar-dow">L</div>
+            <div class="guardia-calendar-dow">M</div>
+            <div class="guardia-calendar-dow">M</div>
+            <div class="guardia-calendar-dow">J</div>
+            <div class="guardia-calendar-dow">V</div>
+            <div class="guardia-calendar-dow">S</div>
+            <div class="guardia-calendar-dow">D</div>
+
+            <!-- padding: jue 1 may -->
+            <div class="cal-day cal-day--pad"></div>
+            <div class="cal-day cal-day--pad"></div>
+            <div class="cal-day cal-day--pad"></div>
+            <div class="cal-day cal-day--past">1</div>
+            <div class="cal-day cal-day--past cal-day--mine">
+              2
+              <span class="cal-day-dot"></span>
+            </div>
+            <div class="cal-day cal-day--past">3</div>
+            <div class="cal-day cal-day--past">4</div>
+
+            <div class="cal-day cal-day--past">5</div>
+            <div class="cal-day cal-day--past">6</div>
+            <div class="cal-day cal-day--today">7</div>
+            <div class="cal-day">8</div>
+            <div class="cal-day cal-day--available">9</div>
+            <div class="cal-day cal-day--selected cal-day--mine">
+              10
+              <span class="cal-day-dot"></span>
+            </div>
+            <div class="cal-day cal-day--full">11</div>
+
+            <div class="cal-day cal-day--available">12</div>
+            <div class="cal-day cal-day--available">13</div>
+            <div class="cal-day cal-day--available">14</div>
+            <div class="cal-day cal-day--mine">
+              15
+              <span class="cal-day-dot"></span>
+            </div>
+            <div class="cal-day cal-day--available">16</div>
+            <div class="cal-day cal-day--full">17</div>
+            <div class="cal-day cal-day--full">18</div>
+
+            <div class="cal-day cal-day--available">19</div>
+            <div class="cal-day cal-day--available">20</div>
+            <div class="cal-day cal-day--available">21</div>
+            <div class="cal-day cal-day--available">22</div>
+            <div class="cal-day cal-day--available">23</div>
+            <div class="cal-day cal-day--available">24</div>
+            <div class="cal-day cal-day--available">25</div>
+
+            <div class="cal-day cal-day--available">26</div>
+            <div class="cal-day cal-day--available">27</div>
+            <div class="cal-day cal-day--available">28</div>
+            <div class="cal-day cal-day--available">29</div>
+            <div class="cal-day cal-day--available">30</div>
+            <div class="cal-day cal-day--available">31</div>
+          </div>
+
+          <div class="guardia-calendar-legend">
+            <div class="legend-item">
+              <span class="legend-box legend-box--selected"></span>
+              <span>Seleccionada</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box legend-box--mine"></span>
+              <span>Mis reservas</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box legend-box--available"></span>
+              <span>Con cupo</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box legend-box--full"></span>
+              <span>Sin cupo</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box legend-box--past"></span>
+              <span>Pasada</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de camas -->
+        <div class="guardia-beds-panel">
+          <div class="config-card-bracket config-card-bracket--tl"></div>
+          <div class="config-card-bracket config-card-bracket--tr"></div>
+          <div class="config-card-bracket config-card-bracket--bl"></div>
+          <div class="config-card-bracket config-card-bracket--br"></div>
+
+          <div class="guardia-card-header">
+            <div>
+              <h3 class="guardia-card-title">Sábado 10 · Mayo · 2026</h3>
+              <p class="guardia-card-sub">Dormitorio Femenino · 2 de 6 camas reservadas</p>
+            </div>
+          </div>
+
+          <div class="beds-grid">
+
+            <!-- Camarote A -->
+            <div class="bunk">
+              <div class="bunk-label mono">Camarote A</div>
+              <div class="bunk-beds">
+                <button class="bed bed--available">
+                  <div class="bed-number mono">01</div>
+                  <div class="bed-position">Superior</div>
+                  <div class="bed-status-label">Disponible</div>
+                </button>
+                <button class="bed bed--available">
+                  <div class="bed-number mono">02</div>
+                  <div class="bed-position">Inferior</div>
+                  <div class="bed-status-label">Disponible</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Camarote B -->
+            <div class="bunk">
+              <div class="bunk-label mono">Camarote B</div>
+              <div class="bunk-beds">
+                <button class="bed bed--reserved" disabled>
+                  <div class="bed-number mono">03</div>
+                  <div class="bed-position">Superior</div>
+                  <div class="bed-status-label">Reservada</div>
+                  <div class="bed-reserved-by mono">TORRES L.</div>
+                </button>
+                <button class="bed bed--unavailable" disabled>
+                  <div class="bed-number mono">04</div>
+                  <div class="bed-position">Inferior</div>
+                  <div class="bed-status-label">Fuera de servicio</div>
+                  <div class="bed-reserved-by">Limpieza de colchón</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Camarote C -->
+            <div class="bunk">
+              <div class="bunk-label mono">Camarote C</div>
+              <div class="bunk-beds">
+                <button class="bed bed--available">
+                  <div class="bed-number mono">05</div>
+                  <div class="bed-position">Superior</div>
+                  <div class="bed-status-label">Disponible</div>
+                </button>
+                <button class="bed bed--selected">
+                  <div class="bed-selected-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><path d="M20 6 9 17l-5-5"/></svg>
+                    MI RESERVA
+                  </div>
+                  <div class="bed-number mono">06</div>
+                  <div class="bed-position">Inferior</div>
+                  <div class="bed-status-label">Seleccionada</div>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="guardia-beds-footer">
+            <div class="guardia-legend-inline">
+              <span class="legend-item"><span class="legend-dot legend-dot--available"></span>Disponible</span>
+              <span class="legend-item"><span class="legend-dot legend-dot--reserved"></span>Reservada</span>
+              <span class="legend-item"><span class="legend-dot legend-dot--unavailable"></span>Fuera de servicio</span>
+            </div>
+
+            <div class="guardia-actions">
+              <button class="btn btn--ghost">Cancelar reserva</button>
+              <button class="btn btn--primary">Confirmar reserva</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ VISTA 2: JEFE DE GUARDIA ═══════════════ -->
+    <section class="guardia-view" data-view="jefe" style="display:none">
+
+      <!-- Banner de cargo -->
+      <div class="jefe-banner">
+        <div class="jefe-banner-seal">JGF</div>
+        <div class="jefe-banner-body">
+          <div class="jefe-banner-label mono">CARGO ACTIVO</div>
+          <div class="jefe-banner-title">Jefa de Guardia Femenina</div>
+          <div class="jefe-banner-sub">Usted puede configurar camas, verificar reservas y marcar asistencia de las guardias del Dormitorio Femenino.</div>
+        </div>
+        <div class="jefe-banner-stats">
+          <div>
+            <div class="jefe-banner-stat-value mono">6</div>
+            <div class="jefe-banner-stat-label">camas totales</div>
+          </div>
+          <div>
+            <div class="jefe-banner-stat-value mono">4</div>
+            <div class="jefe-banner-stat-label">ocupación media</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuración de camas -->
+      <div class="jefe-panel">
+        <div class="jefe-panel-header">
+          <div>
+            <h3 class="jefe-panel-title">Configuración del dormitorio</h3>
+            <p class="jefe-panel-sub">Agregue o quite camas, marque indisponibilidades temporales. Los cambios se aplican a partir del día siguiente.</p>
+          </div>
+          <button class="btn btn--ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+            Agregar camarote
+          </button>
+        </div>
+
+        <div class="jefe-bunks-table">
+          <div class="jefe-bunk-row jefe-bunk-row--header">
+            <div>CAMAROTE</div>
+            <div>CAMA N.°</div>
+            <div>POSICIÓN</div>
+            <div>ESTADO</div>
+            <div>MOTIVO</div>
+            <div></div>
+          </div>
+
+          <div class="jefe-bunk-row">
+            <div class="mono jefe-bunk-label">A</div>
+            <div class="mono">01</div>
+            <div>Superior</div>
+            <div><span class="jefe-bed-status jefe-bed-status--ok">Disponible</span></div>
+            <div class="jefe-bunk-reason">—</div>
+            <div class="jefe-bunk-actions">
+              <button class="jefe-action-btn" title="Marcar indisponible">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="jefe-bunk-row">
+            <div class="mono jefe-bunk-label">A</div>
+            <div class="mono">02</div>
+            <div>Inferior</div>
+            <div><span class="jefe-bed-status jefe-bed-status--ok">Disponible</span></div>
+            <div class="jefe-bunk-reason">—</div>
+            <div class="jefe-bunk-actions">
+              <button class="jefe-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="jefe-bunk-row">
+            <div class="mono jefe-bunk-label">B</div>
+            <div class="mono">03</div>
+            <div>Superior</div>
+            <div><span class="jefe-bed-status jefe-bed-status--ok">Disponible</span></div>
+            <div class="jefe-bunk-reason">—</div>
+            <div class="jefe-bunk-actions">
+              <button class="jefe-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="jefe-bunk-row jefe-bunk-row--unavailable">
+            <div class="mono jefe-bunk-label">B</div>
+            <div class="mono">04</div>
+            <div>Inferior</div>
+            <div><span class="jefe-bed-status jefe-bed-status--out">Fuera de servicio</span></div>
+            <div class="jefe-bunk-reason">Limpieza profunda de colchón · Hasta 15 may</div>
+            <div class="jefe-bunk-actions">
+              <button class="jefe-action-btn jefe-action-btn--restore" title="Restaurar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><path d="M20 6 9 17l-5-5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="jefe-bunk-row">
+            <div class="mono jefe-bunk-label">C</div>
+            <div class="mono">05</div>
+            <div>Superior</div>
+            <div><span class="jefe-bed-status jefe-bed-status--ok">Disponible</span></div>
+            <div class="jefe-bunk-reason">—</div>
+            <div class="jefe-bunk-actions">
+              <button class="jefe-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="jefe-bunk-row">
+            <div class="mono jefe-bunk-label">C</div>
+            <div class="mono">06</div>
+            <div>Inferior</div>
+            <div><span class="jefe-bed-status jefe-bed-status--ok">Disponible</span></div>
+            <div class="jefe-bunk-reason">—</div>
+            <div class="jefe-bunk-actions">
+              <button class="jefe-action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><circle cx="12" cy="12" r="10"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reservas activas -->
+      <div class="jefe-panel">
+        <div class="jefe-panel-header">
+          <div>
+            <h3 class="jefe-panel-title">Reservas activas del dormitorio</h3>
+            <p class="jefe-panel-sub">Próximas guardias reservadas. Verifique asistencia al momento del check-in.</p>
+          </div>
+          <div class="jefe-panel-filter mono">Próximos 7 días</div>
+        </div>
+
+        <div class="jefe-reservas-list">
+
+          <div class="jefe-reserva-item">
+            <div class="jefe-reserva-date">
+              <div class="jefe-reserva-day mono">10</div>
+              <div class="jefe-reserva-month">MAY</div>
+            </div>
+            <div class="jefe-reserva-body">
+              <div class="jefe-reserva-name">Seccionario RIOJAS MENDOZA, María</div>
+              <div class="jefe-reserva-meta mono">A23118 · Cama 06 · Camarote C inferior</div>
+            </div>
+            <div class="jefe-reserva-status jefe-reserva-status--pending">PENDIENTE</div>
+          </div>
+
+          <div class="jefe-reserva-item">
+            <div class="jefe-reserva-date">
+              <div class="jefe-reserva-day mono">10</div>
+              <div class="jefe-reserva-month">MAY</div>
+            </div>
+            <div class="jefe-reserva-body">
+              <div class="jefe-reserva-name">Subteniente TORRES LÓPEZ, Andrea</div>
+              <div class="jefe-reserva-meta mono">A18432 · Cama 03 · Camarote B superior</div>
+            </div>
+            <div class="jefe-reserva-status jefe-reserva-status--pending">PENDIENTE</div>
+          </div>
+
+          <div class="jefe-reserva-item">
+            <div class="jefe-reserva-date">
+              <div class="jefe-reserva-day mono">12</div>
+              <div class="jefe-reserva-month">MAY</div>
+            </div>
+            <div class="jefe-reserva-body">
+              <div class="jefe-reserva-name">Teniente VÁSQUEZ CHÁVEZ, Rosa</div>
+              <div class="jefe-reserva-meta mono">A15009 · Cama 01 · Camarote A superior</div>
+            </div>
+            <div class="jefe-reserva-status jefe-reserva-status--pending">PENDIENTE</div>
+          </div>
+
+          <div class="jefe-reserva-item">
+            <div class="jefe-reserva-date jefe-reserva-date--past">
+              <div class="jefe-reserva-day mono">07</div>
+              <div class="jefe-reserva-month">MAY</div>
+            </div>
+            <div class="jefe-reserva-body">
+              <div class="jefe-reserva-name">Seccionaria MENDOZA ROJAS, Lucía</div>
+              <div class="jefe-reserva-meta mono">A21548 · Cama 05 · Camarote C superior</div>
+            </div>
+            <div class="jefe-reserva-status jefe-reserva-status--completed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M20 6 9 17l-5-5"/></svg>
+              CUMPLIDA
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <footer class="footer-motto">
+      <div class="motto-line"></div>
+      <div class="motto-text">Dios · Patria · Humanidad</div>
+      <div class="motto-line"></div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Switcher de vista
+  document.querySelectorAll('.view-switch-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      document.querySelectorAll('.view-switch-btn').forEach((b) => b.classList.remove('view-switch-btn--active'));
+      btn.classList.add('view-switch-btn--active');
+      document.querySelectorAll('.guardia-view').forEach((v) => {
+        v.style.display = v.dataset.view === view ? '' : 'none';
+      });
+
+      const userName = document.getElementById('userName');
+      const userRole = document.getElementById('userRole');
+      if (view === 'jefe') {
+        userName.textContent = 'TORRES LÓPEZ, Andrea';
+        userRole.textContent = 'Subteniente · Jefa Guardia Femenina';
+      } else {
+        userName.textContent = 'RIOJAS MENDOZA, María';
+        userRole.textContent = 'Seccionario · A23118';
+      }
+    });
+  });
+
+  // Sidebar
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const closeBtn = document.getElementById('sidebarClose');
+  const open = () => { sidebar.classList.add('sidebar--open'); backdrop.classList.add('sidebar-backdrop--visible'); };
+  const close = () => { sidebar.classList.remove('sidebar--open'); backdrop.classList.remove('sidebar-backdrop--visible'); };
+  hamburger?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+
+  const shell = document.querySelector('.shell');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const COLLAPSED_KEY = 'ubo163:sidebar:collapsed';
+  if (localStorage.getItem(COLLAPSED_KEY) === 'true') shell.classList.add('shell--sidebar-collapsed');
+  toggleBtn?.addEventListener('click', () => {
+    const collapsed = shell.classList.toggle('shell--sidebar-collapsed');
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? 'true' : 'false');
+  });
+</script>
+</body>
+</html>

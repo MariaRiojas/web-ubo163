@@ -31,12 +31,16 @@ export const GRADES = [
 export type Grade = (typeof GRADES)[number]
 
 export const PROFILE_STATUSES = [
+  'postulante',
+  'aspirante_en_curso',
   'activo',
   'reserva',
   'licencia',
   'retirado',
-  'aspirante_en_curso',
 ] as const
+
+export const GENDERS = ['masculino', 'femenino'] as const
+export type Gender = (typeof GENDERS)[number]
 export type ProfileStatus = (typeof PROFILE_STATUSES)[number]
 
 export const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
