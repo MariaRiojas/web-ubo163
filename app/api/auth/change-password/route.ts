@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
-import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import { users, profiles } from "@/lib/db/schema"
+import { ddb, TABLE, GetCommand, UpdateCommand, now } from "@/lib/db/dynamodb"
+import type { Profile } from "@/lib/db/schema/profiles"
+import type { User } from "@/lib/db/schema/users"
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -12,13 +12,11 @@ const schema = z.object({
 })
 
 export async function POST(request: Request) {
-  // Verificar sesión
   const session = await auth()
   if (!session?.user) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 })
   }
 
-  // Parsear body
   let body: unknown
   try {
     body = await request.json()
@@ -35,32 +33,33 @@ export async function POST(request: Request) {
   }
 
   const { currentPassword, newPassword } = parsed.data
+  const profileId = session.user.profileId as string
 
-  // Obtener el userId desde el perfil
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.id, session.user.profileId as string),
-  })
+  const profileRes = await ddb.send(new GetCommand({
+    TableName: TABLE.profiles,
+    Key: { profileId },
+  }))
+  const profile = profileRes.Item as Profile | undefined
 
   if (!profile?.userId) {
     return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 })
   }
 
-  // Obtener el hash actual
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, profile.userId),
-  })
+  const userRes = await ddb.send(new GetCommand({
+    TableName: TABLE.users,
+    Key: { userId: profile.userId },
+  }))
+  const user = userRes.Item as User | undefined
 
   if (!user) {
     return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
   }
 
-  // Verificar contraseña actual
   const isValid = await bcrypt.compare(currentPassword, user.passwordHash)
   if (!isValid) {
     return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 400 })
   }
 
-  // Evitar reutilizar la misma contraseña
   const isSame = await bcrypt.compare(newPassword, user.passwordHash)
   if (isSame) {
     return NextResponse.json(
@@ -69,12 +68,14 @@ export async function POST(request: Request) {
     )
   }
 
-  // Generar nuevo hash y guardar
   const newHash = await bcrypt.hash(newPassword, 12)
-  await db
-    .update(users)
-    .set({ passwordHash: newHash, updatedAt: new Date() })
-    .where(eq(users.id, profile.userId))
+
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.users,
+    Key: { userId: profile.userId },
+    UpdateExpression: "SET passwordHash = :h, updatedAt = :t",
+    ExpressionAttributeValues: { ":h": newHash, ":t": now() },
+  }))
 
   return NextResponse.json({ success: true })
 }

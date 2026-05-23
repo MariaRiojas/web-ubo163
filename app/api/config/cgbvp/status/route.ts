@@ -1,60 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, desc } from 'drizzle-orm'
 import { auth } from '@/lib/auth'
 import { hasPermission, type Permission } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
-import { cgbvpSyncConfig, cgbvpSyncAudit } from '@/lib/db/schema'
-import { companyConfig } from '@/company.config'
+import { ddb, TABLE, GetCommand, QueryCommand, now } from '@/lib/db/dynamodb'
+import type { CgbvpSyncConfig, CgbvpSyncAudit } from '@/lib/db/schema/cgbvp-sync'
 
 /**
  * GET /api/config/cgbvp/status
  *
- * Devuelve el estado actual de la sincronización con el intranet del CGBVP:
- *   - Si hay credenciales guardadas (y su versión enmascarada)
- *   - Última sincronización exitosa / errónea
- *   - Últimas 5 acciones de auditoría
- *
- * Requiere sesión + permiso company.manage.
+ * Devuelve el estado de sincronización con CGBVP:
+ * credenciales configuradas, última sync, últimas 10 acciones de auditoría.
  */
 export async function GET(_req: NextRequest) {
   const session = await auth()
   if (!session?.user) {
-    return NextResponse.json(
-      { error: 'Su sesión no está activa. Vuelva a ingresar.' },
-      { status: 401 },
-    )
+    return NextResponse.json({ error: 'Su sesión no está activa. Vuelva a ingresar.' }, { status: 401 })
   }
 
   const permissions = (session.user.permissions ?? []) as Permission[]
   if (!hasPermission(permissions, 'company.manage')) {
     return NextResponse.json(
-      {
-        error:
-          'Esta sección solo está disponible para el Primer Jefe y el Segundo Jefe de la compañía.',
-      },
-      { status: 403 },
+      { error: 'Esta sección solo está disponible para el Primer Jefe y el Segundo Jefe de la compañía.' },
+      { status: 403 }
     )
   }
 
-  const companyId = companyConfig.id
+  const [configRes, auditRes] = await Promise.all([
+    ddb.send(new GetCommand({
+      TableName: TABLE.cgbvpSync,
+      Key: { syncType: 'config', timestamp: 'LATEST' },
+    })),
+    ddb.send(new QueryCommand({
+      TableName: TABLE.cgbvpSync,
+      KeyConditionExpression: 'syncType = :t',
+      ExpressionAttributeValues: { ':t': 'audit' },
+      ScanIndexForward: false,
+      Limit: 10,
+    })),
+  ])
 
-  const config = await db.query.cgbvpSyncConfig.findFirst({
-    where: eq(cgbvpSyncConfig.companyId, companyId),
-    with: {
-      updatedByProfile: {
-        columns: { fullName: true, grade: true },
-      },
-    },
-  })
-
-  const recentAudit = await db.query.cgbvpSyncAudit.findMany({
-    where: eq(cgbvpSyncAudit.companyId, companyId),
-    orderBy: desc(cgbvpSyncAudit.createdAt),
-    limit: 10,
-  })
+  const config = configRes.Item as CgbvpSyncConfig | undefined
+  const recentAudit = (auditRes.Items ?? []) as CgbvpSyncAudit[]
 
   return NextResponse.json({
-    // Si no existe el registro, devolvemos un estado "nunca configurado"
     configured: !!config?.secretRef,
     maskedUsername: config?.maskedUsername ?? null,
     credentialsOwnerName: config?.credentialsOwnerName ?? null,
@@ -65,12 +52,7 @@ export async function GET(_req: NextRequest) {
     autoSyncEnabled: config?.autoSyncEnabled ?? false,
     successfulSyncCount: config?.successfulSyncCount ?? 0,
     consecutiveErrors: config?.consecutiveErrors ?? 0,
-    updatedBy: config?.updatedByProfile
-      ? {
-          name: config.updatedByProfile.fullName,
-          grade: config.updatedByProfile.grade,
-        }
-      : null,
+    updatedBy: config?.updatedBy ?? null,
     updatedAt: config?.updatedAt ?? null,
     recentActivity: recentAudit.map((a) => ({
       action: a.action,

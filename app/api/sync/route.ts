@@ -1,66 +1,157 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { profiles, cgbvpAttendance, cgbvpStatusHistory, emergencies, emergencyVehicles } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, QueryCommand, generateId, now } from '@/lib/db/dynamodb'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { Grade, ProfileStatus } from '@/lib/db/schema/profiles'
 
 const SYNC_SECRET = process.env.SCRAPPER_SYNC_SECRET || 'change-me'
 
-function auth(req: NextRequest) {
+function checkAuth(req: NextRequest) {
   return req.headers.get('x-sync-token') === SYNC_SECRET
 }
 
+/** Busca un perfil por codigoCgbvp via GSI */
+async function findProfileByCodigo(codigo: string): Promise<Profile | null> {
+  const res = await ddb.send(new QueryCommand({
+    TableName: TABLE.profiles,
+    IndexName: 'codigoCgbvp-index',
+    KeyConditionExpression: 'codigoCgbvp = :c',
+    ExpressionAttributeValues: { ':c': codigo },
+    Limit: 1,
+  }))
+  return (res.Items?.[0] as Profile | undefined) ?? null
+}
+
 export async function POST(req: NextRequest) {
-  if (!auth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { action, data } = await req.json()
 
   try {
     switch (action) {
       case 'upsert_bombero': {
         const fullName = `${data.apellidos}, ${data.nombres}`
-        const existing = await db.query.profiles.findFirst({ where: eq(profiles.codigoCgbvp, data.codigo) })
+        const grade = mapGrade(data.grado)
+        const existing = await findProfileByCodigo(data.codigo)
+
         if (existing) {
-          await db.update(profiles).set({ fullName, grade: mapGrade(data.grado), dni: data.dni || existing.dni, updatedAt: new Date() }).where(eq(profiles.id, existing.id))
+          await ddb.send(new UpdateCommand({
+            TableName: TABLE.profiles,
+            Key: { profileId: existing.profileId },
+            UpdateExpression: 'SET fullName = :n, grade = :g, dni = :d, updatedAt = :t',
+            ExpressionAttributeValues: {
+              ':n': fullName,
+              ':g': grade,
+              ':d': data.dni || existing.dni || null,
+              ':t': now(),
+            },
+          }))
         } else {
-          await db.insert(profiles).values({ codigoCgbvp: data.codigo, fullName, grade: mapGrade(data.grado), dni: data.dni, status: 'activo' })
+          await ddb.send(new PutCommand({
+            TableName: TABLE.profiles,
+            Item: {
+              profileId: generateId(),
+              codigoCgbvp: data.codigo,
+              fullName,
+              grade,
+              dni: data.dni || undefined,
+              status: 'activo' as ProfileStatus,
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          }))
         }
         return NextResponse.json({ ok: true })
       }
+
       case 'update_status': {
-        const profile = await db.query.profiles.findFirst({ where: eq(profiles.codigoCgbvp, data.codigo) })
+        const profile = await findProfileByCodigo(data.codigo)
         if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-        await db.update(profiles).set({ status: mapStatus(data.estado_nuevo), updatedAt: new Date() }).where(eq(profiles.id, profile.id))
-        await db.insert(cgbvpStatusHistory).values({ profileId: profile.id, estadoAnterior: data.estado_anterior, estadoNuevo: data.estado_nuevo, fuente: 'scraper' })
+
+        const newStatus = mapStatus(data.estado_nuevo) as ProfileStatus
+        await ddb.send(new UpdateCommand({
+          TableName: TABLE.profiles,
+          Key: { profileId: profile.profileId },
+          UpdateExpression: 'SET #s = :s, updatedAt = :t',
+          ExpressionAttributeNames: { '#s': 'status' },
+          ExpressionAttributeValues: { ':s': newStatus, ':t': now() },
+        }))
+
+        // Registrar historial de estado
+        await ddb.send(new PutCommand({
+          TableName: TABLE.cgbvpStatus,
+          Item: {
+            profileId: profile.profileId,
+            date: now(),
+            estadoAnterior: data.estado_anterior,
+            estadoNuevo: data.estado_nuevo,
+            fuente: 'scraper',
+            createdAt: now(),
+          },
+        }))
         return NextResponse.json({ ok: true })
       }
+
       case 'upsert_attendance': {
-        const profile = await db.query.profiles.findFirst({ where: eq(profiles.codigoCgbvp, data.codigo) })
+        const profile = await findProfileByCodigo(data.codigo)
         if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-        await db.insert(cgbvpAttendance).values({
-          profileId: profile.id, mes: data.mes, anio: data.anio,
-          diasAsistidos: data.dias_asistidos, diasGuardia: data.dias_guardia,
-          horasAcumuladas: data.horas_acumuladas, numEmergencias: data.num_emergencias,
-        }).onConflictDoUpdate({
-          target: [cgbvpAttendance.profileId, cgbvpAttendance.mes, cgbvpAttendance.anio],
-          set: { diasAsistidos: data.dias_asistidos, diasGuardia: data.dias_guardia, horasAcumuladas: data.horas_acumuladas, numEmergencias: data.num_emergencias, updatedAt: new Date() },
-        })
+
+        const dateKey = `${data.anio}-${String(data.mes).padStart(2, '0')}`
+        await ddb.send(new PutCommand({
+          TableName: TABLE.cgbvpAttendance,
+          Item: {
+            profileId: profile.profileId,
+            date: dateKey,
+            mes: data.mes,
+            anio: data.anio,
+            diasAsistidos: data.dias_asistidos,
+            diasGuardia: data.dias_guardia,
+            horasAcumuladas: data.horas_acumuladas,
+            numEmergencias: data.num_emergencias,
+            updatedAt: now(),
+          },
+        }))
         return NextResponse.json({ ok: true })
       }
+
       case 'upsert_emergency': {
-        const [emergency] = await db.insert(emergencies).values({
-          numeroParte: data.numero_parte, tipo: data.tipo, estado: data.estado,
-          fechaDespacho: data.fecha_despacho ? new Date(data.fecha_despacho) : null,
-          direccion: data.direccion, distrito: data.distrito,
-        }).onConflictDoUpdate({
-          target: emergencies.numeroParte,
-          set: { estado: data.estado, updatedAt: new Date() },
-        }).returning()
-        if (data.vehiculos) {
-          for (const v of data.vehiculos) {
-            await db.insert(emergencyVehicles).values({ emergencyId: emergency.id, codigoVehiculo: v.codigo, nombreVehiculo: v.nombre }).onConflictDoNothing()
-          }
-        }
-        return NextResponse.json({ ok: true, id: emergency.id })
+        const emergencyId = `EMG-${data.numero_parte}`
+        const date = data.fecha_despacho
+          ? data.fecha_despacho.slice(0, 10)
+          : new Date().toISOString().slice(0, 10)
+
+        // Obtener vehiculos existentes si queremos merge
+        const existing = await ddb.send(new GetCommand({
+          TableName: TABLE.emergencies,
+          Key: { emergencyId },
+        }))
+
+        const vehiculos = data.vehiculos
+          ? data.vehiculos.map((v: any) => ({
+              codigoVehiculo: v.codigo,
+              nombreVehiculo: v.nombre,
+            }))
+          : (existing.Item?.vehiculos ?? [])
+
+        await ddb.send(new PutCommand({
+          TableName: TABLE.emergencies,
+          Item: {
+            emergencyId,
+            numeroParte: data.numero_parte,
+            tipo: data.tipo,
+            estado: data.estado,
+            fechaDespacho: data.fecha_despacho ?? undefined,
+            date,
+            direccion: data.direccion,
+            distrito: data.distrito,
+            vehiculos,
+            createdAt: existing.Item?.createdAt ?? now(),
+            updatedAt: now(),
+          },
+        }))
+
+        return NextResponse.json({ ok: true, id: emergencyId })
       }
+
       default:
         return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 })
     }
@@ -69,11 +160,27 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function mapGrade(g: string): string {
-  const m: Record<string, string> = { 'ASPIRANTE': 'aspirante', 'SECCIONARIO': 'seccionario', 'SUB TENIENTE': 'subteniente', 'TENIENTE': 'teniente', 'CAPITAN': 'capitan', 'TENIENTE BRIGADIER': 'teniente_brigadier', 'BRIGADIER': 'brigadier', 'BRIGADIER MAYOR': 'brigadier_mayor', 'BRIGADIER GENERAL': 'brigadier_general' }
-  return m[g.toUpperCase()] || 'aspirante'
+function mapGrade(g: string): Grade {
+  const m: Record<string, Grade> = {
+    'ASPIRANTE': 'aspirante',
+    'SECCIONARIO': 'seccionario',
+    'SUB TENIENTE': 'subteniente',
+    'TENIENTE': 'teniente',
+    'CAPITAN': 'capitan',
+    'TENIENTE BRIGADIER': 'teniente_brigadier',
+    'BRIGADIER': 'brigadier',
+    'BRIGADIER MAYOR': 'brigadier_mayor',
+    'BRIGADIER GENERAL': 'brigadier_general',
+  }
+  return m[g.toUpperCase()] ?? 'aspirante'
 }
+
 function mapStatus(s: string): string {
-  const m: Record<string, string> = { 'ACTIVO': 'activo', 'RESERVA': 'reserva', 'LICENCIA': 'licencia', 'RETIRADO': 'retirado' }
-  return m[s.toUpperCase()] || 'activo'
+  const m: Record<string, string> = {
+    'ACTIVO': 'activo',
+    'RESERVA': 'reserva',
+    'LICENCIA': 'licencia',
+    'RETIRADO': 'retirado',
+  }
+  return m[s.toUpperCase()] ?? 'activo'
 }
