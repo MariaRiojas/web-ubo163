@@ -6,21 +6,19 @@ import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins'
-import * as iam from 'aws-cdk-lib/aws-iam'
-import * as sm from 'aws-cdk-lib/aws-secretsmanager'
-import * as rds from 'aws-cdk-lib/aws-rds'
 import * as logs from 'aws-cdk-lib/aws-logs'
+import * as sm from 'aws-cdk-lib/aws-secretsmanager'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import { Construct } from 'constructs'
 import { ProjectConfig, resourceName, bucketName, applyTags } from '../config'
 
 export interface ComputeAppStackProps extends cdk.StackProps {
   config: ProjectConfig
   mediaBucket: s3.Bucket
-  proxy: rds.DatabaseProxy
-  dbCredentialsSecret: sm.ISecret
   appSecrets: sm.Secret
   scraperSyncToken: sm.Secret
   sesSmtpCredentials: sm.Secret
+  dynamoTables: dynamodb.Table[]
 }
 
 /**
@@ -32,12 +30,10 @@ export interface ComputeAppStackProps extends cdk.StackProps {
  *
  * La Lambda usa Lambda Web Adapter (layer AWS oficial) para levantar el
  * servidor standalone de Next.js (.next/standalone/server.js) como un
- * proceso HTTP normal en el puerto 3000. El adapter traduce eventos
- * Lambda ↔ HTTP.
+ * proceso HTTP normal en el puerto 3000.
  *
- * IMPORTANTE: este stack asume que el build de Next.js ya fue generado
- * en ../../.next/standalone/ por `npm run build` en la raíz del repo.
- * Ver README.md del CDK para el flujo completo.
+ * Base de datos: DynamoDB — sin VPC, sin RDS Proxy.
+ * La Lambda conecta directamente a DynamoDB vía AWS SDK (HTTP).
  */
 export class ComputeAppStack extends cdk.Stack {
   public readonly distribution: cloudfront.Distribution
@@ -51,11 +47,10 @@ export class ComputeAppStack extends cdk.Stack {
     const {
       config,
       mediaBucket,
-      proxy,
-      dbCredentialsSecret,
       appSecrets,
       scraperSyncToken,
       sesSmtpCredentials,
+      dynamoTables,
     } = props
 
     const repoRoot = path.resolve(__dirname, '../../../..')
@@ -64,9 +59,7 @@ export class ComputeAppStack extends cdk.Stack {
     const publicDir = path.join(repoRoot, 'public')
     const runShScript = path.resolve(__dirname, '../../assets/run.sh')
 
-    // Validación temprana: el build de Next debe existir antes del deploy
     if (!fs.existsSync(standaloneDir)) {
-      // Warn pero no bloquea cdk synth — el error real aparece en deploy
       console.warn(
         `[ubo163] .next/standalone no existe en ${standaloneDir}. ` +
           `Ejecutá 'npm run build' en la raíz del repo antes de 'cdk deploy'.`
@@ -87,19 +80,13 @@ export class ComputeAppStack extends cdk.Stack {
 
     // ─────────────────────────────────────────────────────────────────────
     // Lambda function — Next.js SSR via Lambda Web Adapter
-    //
-    // Layer oficial de AWS: arn:aws:lambda:us-east-1:753240598075:layer:LambdaAdapterLayerX86:24
-    // (la versión más reciente se actualiza; referencia en:
-    //  https://github.com/awslabs/aws-lambda-web-adapter)
     // ─────────────────────────────────────────────────────────────────────
     const adapterLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,
       'WebAdapterLayer',
-      // us-east-1 x86_64
       'arn:aws:lambda:us-east-1:753240598075:layer:LambdaAdapterLayerX86:24'
     )
 
-    // Log group con retention corta (dev)
     const lambdaLogGroup = new logs.LogGroup(this, 'LambdaLogGroup', {
       logGroupName: `/aws/lambda/${resourceName(config, 'web')}`,
       retention: logs.RetentionDays.ONE_WEEK,
@@ -110,27 +97,16 @@ export class ComputeAppStack extends cdk.Stack {
       functionName: resourceName(config, 'web'),
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.X86_64,
-      handler: 'run.sh', // Lambda Web Adapter convención: script que arranca el server
-      // El código se arma en build time: .next/standalone + run.sh (copiado vía bundling)
+      handler: 'run.sh',
       code: lambda.Code.fromAsset(standaloneDir, {
         bundling: {
-          // Usamos local bundling para evitar Docker en el deploy.
-          // El hook copia run.sh al root del asset junto al server.js.
-          image: cdk.DockerImage.fromRegistry('alpine'), // fallback; no se usa
+          image: cdk.DockerImage.fromRegistry('alpine'),
           local: {
             tryBundle(outputDir: string) {
               try {
-                // Copia recursiva de .next/standalone/ → outputDir
                 copyRecursive(standaloneDir, outputDir)
-                // Copia run.sh al root del asset
                 fs.copyFileSync(runShScript, path.join(outputDir, 'run.sh'))
-                // Asegurar permisos ejecutables (Windows a veces pierde esto)
-                try {
-                  fs.chmodSync(path.join(outputDir, 'run.sh'), 0o755)
-                } catch {
-                  // chmod falla en Windows pero el permiso se reestablece
-                  // al empaquetar en Linux Lambda. No es bloqueante.
-                }
+                try { fs.chmodSync(path.join(outputDir, 'run.sh'), 0o755) } catch {}
                 return true
               } catch (e) {
                 console.error('Local bundling falló:', e)
@@ -146,66 +122,55 @@ export class ComputeAppStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       logGroup: lambdaLogGroup,
       environment: {
-        // Lambda Web Adapter config
+        // Lambda Web Adapter
         AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
         PORT: '3000',
-        AWS_LWA_INVOKE_MODE: 'response_stream', // soporta RSC streaming
-        AWS_LWA_READINESS_CHECK_PATH: '/api/health', // opcional, si existe
+        AWS_LWA_INVOKE_MODE: 'response_stream',
         RUST_LOG: 'info',
 
         // Next.js runtime
         NODE_ENV: 'production',
-        PORT_NUMBER: '3000',
 
-        // Las variables sensibles se resuelven en tiempo de inicio desde
-        // Secrets Manager — las Lambdas las leen usando el SDK dentro del
-        // código de Next.js (o via extension). Por ahora exponemos los
-        // ARNs y la app los lee on-demand.
-        //
-        // Alternativa más simple: inyectar algunos valores directo como
-        // referencias a secretos, lo cual CloudFormation resuelve en el
-        // momento del deploy y los guarda en la config de la función.
-        // Esto es aceptable para dev; en prod conviene rotar.
-        DB_SECRET_ARN: dbCredentialsSecret.secretArn,
-        APP_SECRET_ARN: appSecrets.secretArn,
-        SES_SMTP_SECRET_ARN: sesSmtpCredentials.secretArn,
-        SCRAPPER_SYNC_TOKEN_ARN: scraperSyncToken.secretArn,
+        // DynamoDB — el SDK usa las credenciales del rol de Lambda automáticamente
+        // Solo necesitamos el prefijo de tablas y la región
+        TABLE_PREFIX: config.resourcePrefix,
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
 
-        // Construcción de DATABASE_URL en runtime (la app la arma desde el secret)
-        DB_PROXY_ENDPOINT: proxy.endpoint,
-        DB_NAME: 'cuartel_crm',
-
-        // S3 para media
+        // S3 media
         S3_BUCKET: mediaBucket.bucketName,
         S3_REGION: config.region,
-        // S3_ENDPOINT NO se setea → AWS SDK usa el endpoint regional nativo
 
         // SES SMTP
         SMTP_HOST: `email-smtp.${config.region}.amazonaws.com`,
         SMTP_PORT: '587',
         SMTP_SECURE: 'false',
 
+        // Secrets Manager ARNs (la app los lee on-demand)
+        APP_SECRET_ARN: appSecrets.secretArn,
+        SES_SMTP_SECRET_ARN: sesSmtpCredentials.secretArn,
+        SCRAPPER_SYNC_TOKEN_ARN: scraperSyncToken.secretArn,
+
         // NextAuth
-        AUTH_URL: 'https://ubo163-dev.cloudfront.net', // se sobrescribe post-deploy con URL real
+        AUTH_URL: 'https://placeholder.cloudfront.net', // se actualiza post-deploy
         AUTH_TRUST_HOST: 'true',
       },
     })
 
-    // Permisos: leer secretos
-    dbCredentialsSecret.grantRead(this.lambdaFunction)
+    // Leer secretos desde Secrets Manager
     appSecrets.grantRead(this.lambdaFunction)
     scraperSyncToken.grantRead(this.lambdaFunction)
     sesSmtpCredentials.grantRead(this.lambdaFunction)
 
-    // Permisos: media bucket (read/write/delete bajo los keys que maneja la app)
+    // Media bucket (avatars, incidentes, inventario)
     mediaBucket.grantReadWrite(this.lambdaFunction)
     mediaBucket.grantDelete(this.lambdaFunction)
 
-    // Permiso para firmar URLs pre-firmadas (no requiere IAM extra,
-    // grantReadWrite incluye s3:PutObject/GetObject que son los que
-    // la pre-firma autoriza).
+    // DynamoDB — acceso de lectura/escritura a todas las tablas
+    for (const tbl of dynamoTables) {
+      tbl.grantReadWriteData(this.lambdaFunction)
+    }
 
-    // Function URL — CloudFront va a firmar requests con OAC
+    // Function URL — CloudFront enruta todas las requests dinámicas aquí
     const fnUrl = this.lambdaFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
@@ -214,13 +179,8 @@ export class ComputeAppStack extends cdk.Stack {
     // ─────────────────────────────────────────────────────────────────────
     // CloudFront distribution
     // ─────────────────────────────────────────────────────────────────────
-    const lambdaOrigin = new origins.FunctionUrlOrigin(fnUrl, {
-      // Fase B: agregar OAC para firmar requests
-    })
-
-    const staticOrigin = origins.S3BucketOrigin.withOriginAccessControl(
-      this.staticBucket
-    )
+    const lambdaOrigin = new origins.FunctionUrlOrigin(fnUrl)
+    const staticOrigin = origins.S3BucketOrigin.withOriginAccessControl(this.staticBucket)
 
     this.distribution = new cloudfront.Distribution(this, 'Distribution', {
       comment: `${config.resourcePrefix} — CUARTEL-CRM`,
@@ -256,13 +216,7 @@ export class ComputeAppStack extends cdk.Stack {
     })
 
     // ─────────────────────────────────────────────────────────────────────
-    // Deploy de assets estáticos al bucket
-    //
-    // Copiamos:
-    //   .next/static/  → s3://bucket/_next/static/
-    //   public/        → s3://bucket/static/
-    //
-    // Se invalida CloudFront en cada deploy para que sirva versión nueva.
+    // Deploy de assets estáticos
     // ─────────────────────────────────────────────────────────────────────
     new s3deploy.BucketDeployment(this, 'StaticAssets', {
       sources: [s3deploy.Source.asset(staticDir)],
@@ -300,23 +254,15 @@ export class ComputeAppStack extends cdk.Stack {
       value: `https://${this.distribution.distributionDomainName}`,
       description: 'URL pública de la app',
     })
-    new cdk.CfnOutput(this, 'LambdaArn', {
-      value: this.lambdaFunction.functionArn,
-    })
+    new cdk.CfnOutput(this, 'LambdaArn', { value: this.lambdaFunction.functionArn })
     new cdk.CfnOutput(this, 'LambdaFunctionUrl', {
       value: fnUrl.url,
-      description: 'Function URL (directo, sin CloudFront — solo debug)',
+      description: 'Function URL directa (solo debug)',
     })
-    new cdk.CfnOutput(this, 'StaticBucketName', {
-      value: this.staticBucket.bucketName,
-    })
+    new cdk.CfnOutput(this, 'StaticBucketName', { value: this.staticBucket.bucketName })
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Helper: copia recursiva de directorio (usado por local bundling).
-// Equivalente mínimo a `cp -R`; funciona en Windows, macOS y Linux.
-// ─────────────────────────────────────────────────────────────────────
 function copyRecursive(src: string, dest: string): void {
   fs.mkdirSync(dest, { recursive: true })
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -326,12 +272,7 @@ function copyRecursive(src: string, dest: string): void {
       copyRecursive(srcPath, destPath)
     } else if (entry.isSymbolicLink()) {
       const link = fs.readlinkSync(srcPath)
-      try {
-        fs.symlinkSync(link, destPath)
-      } catch {
-        // Fallback: copia el archivo al que apunta (Windows no siempre permite symlinks)
-        fs.copyFileSync(srcPath, destPath)
-      }
+      try { fs.symlinkSync(link, destPath) } catch { fs.copyFileSync(srcPath, destPath) }
     } else {
       fs.copyFileSync(srcPath, destPath)
     }

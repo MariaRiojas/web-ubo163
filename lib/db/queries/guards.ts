@@ -1,52 +1,65 @@
-import { eq, and, gte, lte } from 'drizzle-orm'
-import { db } from '../index'
-import { guardBeds, guardShifts } from '../schema'
+import { ddb, TABLE, QueryCommand, ScanCommand } from '@/lib/db/dynamodb'
+import type { GuardBed, GuardReservation } from '../schema/guard-nocturna'
 
-/** Camas con estado actual */
-export async function getAllBeds() {
-  return db.query.guardBeds.findMany({
-    orderBy: guardBeds.number,
-  })
+/** Todas las camas de todos los dormitorios */
+export async function getAllBeds(): Promise<GuardBed[]> {
+  const res = await ddb.send(new ScanCommand({ TableName: TABLE.guardBeds }))
+  const items = (res.Items ?? []) as GuardBed[]
+  return items.sort((a, b) => a.number - b.number)
 }
 
-/** Turnos de guardia por rango de fechas */
-export async function getShiftsByDateRange(from: string, to: string) {
-  return db.query.guardShifts.findMany({
-    where: and(
-      gte(guardShifts.date, from),
-      lte(guardShifts.date, to)
-    ),
-    with: {
-      profile: true,
-      bed: true,
-    },
-  })
+/** Reservas en un rango de fechas YYYY-MM-DD (scan con filtro lexicográfico) */
+export async function getReservationsByDateRange(
+  from: string,
+  to: string
+): Promise<GuardReservation[]> {
+  // `date` es palabra reservada DynamoDB
+  const res = await ddb.send(new ScanCommand({
+    TableName: TABLE.guardReservations,
+    FilterExpression: '#d BETWEEN :from AND :to',
+    ExpressionAttributeNames: { '#d': 'date' },
+    ExpressionAttributeValues: { ':from': from, ':to': to },
+  }))
+  return (res.Items ?? []) as GuardReservation[]
 }
 
-/** Turnos de un perfil específico */
-export async function getShiftsByProfile(profileId: string) {
-  return db.query.guardShifts.findMany({
-    where: eq(guardShifts.profileId, profileId),
-    with: { bed: true },
-    orderBy: guardShifts.date,
-  })
+/** Reservas de un perfil específico (via GSI profileId-index) */
+export async function getReservationsByProfile(profileId: string): Promise<GuardReservation[]> {
+  const res = await ddb.send(new QueryCommand({
+    TableName: TABLE.guardReservations,
+    IndexName: 'profileId-index',
+    KeyConditionExpression: 'profileId = :pid',
+    ExpressionAttributeValues: { ':pid': profileId },
+  }))
+  const items = (res.Items ?? []) as GuardReservation[]
+  return items.sort((a, b) => a.date.localeCompare(b.date))
 }
 
-/** Camas disponibles para una fecha */
-export async function getAvailableBeds(date: string) {
-  const occupiedShifts = await db.query.guardShifts.findMany({
-    where: and(
-      eq(guardShifts.date, date),
-      eq(guardShifts.status, 'reservada')
-    ),
-    columns: { bedId: true },
-  })
-  const occupiedIds = occupiedShifts.map((s) => s.bedId)
+/** Reservas activas para una fecha dada */
+export async function getReservationsByDate(date: string): Promise<GuardReservation[]> {
+  const res = await ddb.send(new QueryCommand({
+    TableName: TABLE.guardReservations,
+    KeyConditionExpression: '#d = :date',
+    ExpressionAttributeNames: { '#d': 'date' },
+    ExpressionAttributeValues: { ':date': date },
+  }))
+  return (res.Items ?? []) as GuardReservation[]
+}
 
-  const beds = await db.query.guardBeds.findMany({
-    where: eq(guardBeds.status, 'disponible'),
-    orderBy: guardBeds.number,
-  })
+/** Camas disponibles para una fecha: excluye las que ya tienen reserva activa */
+export async function getAvailableBeds(date: string): Promise<GuardBed[]> {
+  const [allBeds, reservations] = await Promise.all([
+    getAllBeds(),
+    getReservationsByDate(date),
+  ])
 
-  return beds.filter((b) => !occupiedIds.includes(b.id))
+  const occupiedBedIds = new Set(
+    reservations
+      .filter((r) => r.status === 'activa')
+      .map((r) => r.bedId)
+  )
+
+  return allBeds.filter(
+    (b) => b.status === 'disponible' && !occupiedBedIds.has(b.bedId)
+  )
 }

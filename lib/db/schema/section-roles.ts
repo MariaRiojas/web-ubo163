@@ -1,7 +1,9 @@
-import { pgTable, uuid, text, timestamp, boolean, unique } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
-import { profiles } from './profiles'
-import { sections } from './sections'
+/**
+ * Tabla DynamoDB: {PREFIX}-section-roles
+ * PK: profileId (String)
+ * SK: sectionId (String)
+ * GSI: sectionId-index (sectionId → profileId)
+ */
 
 export const SECTION_ROLE_TYPES = [
   'primer_jefe',
@@ -9,48 +11,18 @@ export const SECTION_ROLE_TYPES = [
   'jefe_seccion',
   'adjunto',
   'miembro',
-  // Cargos operativos no reglamentarios (no ligados a una sección del RIF)
-  // Se asocian a una pseudo-sección 'jefatura' en la BD.
   'jefe_guardia_masculina',
   'jefe_guardia_femenina',
 ] as const
 export type SectionRoleType = (typeof SECTION_ROLE_TYPES)[number]
 
-export const sectionRoles = pgTable(
-  'section_roles',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    profileId: uuid('profile_id')
-      .notNull()
-      .references(() => profiles.id, { onDelete: 'cascade' }),
-    sectionId: uuid('section_id')
-      .notNull()
-      .references(() => sections.id, { onDelete: 'cascade' }),
-    role: text('role').notNull(),         // SectionRoleType
-    assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow(),
-    assignedBy: uuid('assigned_by').references(() => profiles.id),
-    isActive: boolean('is_active').default(true),
-  },
-  (table) => ({
-    // Un perfil solo puede tener un rol activo por sección
-    uniqueActiveRole: unique().on(table.profileId, table.sectionId, table.isActive),
-  })
-)
+export interface SectionRole {
+  profileId: string       // PK
+  sectionId: string       // SK + GSI
+  role: SectionRoleType
+  isActive: boolean
+  assignedAt: string      // ISO 8601
+  assignedBy?: string     // profileId de quien asignó
+}
 
-export const sectionRolesRelations = relations(sectionRoles, ({ one }) => ({
-  profile: one(profiles, {
-    fields: [sectionRoles.profileId],
-    references: [profiles.id],
-  }),
-  section: one(sections, {
-    fields: [sectionRoles.sectionId],
-    references: [sections.id],
-  }),
-  assignedByProfile: one(profiles, {
-    fields: [sectionRoles.assignedBy],
-    references: [profiles.id],
-  }),
-}))
-
-export type SectionRole = typeof sectionRoles.$inferSelect
-export type NewSectionRole = typeof sectionRoles.$inferInsert
+export type NewSectionRole = SectionRole

@@ -1,65 +1,39 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  date,
-  boolean,
-  timestamp,
-} from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
-import { profiles } from './profiles'
+/**
+ * Tabla DynamoDB: {PREFIX}-content-calendar
+ * PK: eventId
+ * GSI: date-index (date → eventId)
+ */
 
-export const CONTENT_TYPES = [
-  'post',
-  'reel',
-  'video',
-  'story',
-  'carousel',
-] as const
+export const CONTENT_TYPES = ['post', 'reel', 'video', 'story', 'carousel'] as const
+export type ContentType = (typeof CONTENT_TYPES)[number]
 
 export const CONTENT_CATEGORIES = [
-  'aniversario',
-  'cumpleanos',
-  'fecha_especial',
-  'prevencion',
-  'emergencias',
-  'reclutamiento',
-  'reconocimiento',
-  'comunidad',
-  'institucional',
+  'aniversario', 'cumpleanos', 'fecha_especial', 'prevencion',
+  'emergencias', 'reclutamiento', 'reconocimiento', 'comunidad', 'institucional',
 ] as const
+export type ContentCategory = (typeof CONTENT_CATEGORIES)[number]
 
 export const CONTENT_STATUSES = [
-  'planificado',
-  'en_proceso',
-  'publicado',
-  'cancelado',
+  'planificado', 'en_proceso', 'publicado', 'cancelado',
 ] as const
+export type ContentStatus = (typeof CONTENT_STATUSES)[number]
 
-export const contentCalendar = pgTable('content_calendar', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  date: date('date').notNull(),
-  type: text('type'),
-  platform: text('platform').array(),        // ['facebook', 'instagram', 'tiktok']
-  category: text('category'),
-  status: text('status').default('planificado'),
-  assignedTo: uuid('assigned_to').references(() => profiles.id),
-  templateUrl: text('template_url'),         // Link a Canva u otro
-  mediaUrls: text('media_urls').array(),
-  caption: text('caption'),
-  notes: text('notes'),
-  isRecurring: boolean('is_recurring').default(false),
-  recurrenceRule: text('recurrence_rule'),   // Ej: 'YEARLY'
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+export interface ContentCalendarItem {
+  eventId: string      // PK
+  title: string
+  date: string         // YYYY-MM-DD (GSI: date-index)
+  type?: ContentType
+  platform?: string[]  // ['facebook', 'instagram', 'tiktok']
+  category?: ContentCategory
+  status?: ContentStatus
+  assignedTo?: string  // profileId
+  templateUrl?: string
+  mediaUrls?: string[]
+  caption?: string
+  notes?: string
+  isRecurring?: boolean
+  recurrenceRule?: string
+  createdAt: string    // ISO 8601
+}
 
-export const contentCalendarRelations = relations(contentCalendar, ({ one }) => ({
-  assignedToProfile: one(profiles, {
-    fields: [contentCalendar.assignedTo],
-    references: [profiles.id],
-  }),
-}))
-
-export type ContentCalendarItem = typeof contentCalendar.$inferSelect
-export type NewContentCalendarItem = typeof contentCalendar.$inferInsert
+export type NewContentCalendarItem = Omit<ContentCalendarItem, 'createdAt'>

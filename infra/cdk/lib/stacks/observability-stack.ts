@@ -1,27 +1,24 @@
 import * as cdk from 'aws-cdk-lib'
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
-import * as rds from 'aws-cdk-lib/aws-rds'
-import * as ecs from 'aws-cdk-lib/aws-ecs'
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
 import { Construct } from 'constructs'
 import { ProjectConfig, resourceName, applyTags } from '../config'
 
 export interface ObservabilityStackProps extends cdk.StackProps {
   config: ProjectConfig
-  lambdaFunction: lambda.Function
-  rdsInstance: rds.DatabaseInstance
-  ecsCluster: ecs.Cluster
+  webFunction: lambda.Function
+  scraperFunction: lambda.Function
   distribution: cloudfront.Distribution
 }
 
 /**
- * CloudWatch dashboard + alarmas básicas.
+ * CloudWatch dashboard + alarmas para arquitectura serverless.
  *
- * Alarmas (Fase A — mínimas):
- *   1. Lambda-Errors  > 5 errores en 5 min
- *   2. RDS-FreeStorage < 2 GB
- *   3. Scraper-TaskFailed — cualquier task ECS con exit != 0
+ * Alarmas:
+ *   1. Web-Lambda-Errors   > 5 errores en 5 min
+ *   2. Scraper-Lambda-Errors > 3 errores en 15 min
+ *   3. CloudFront-5xx      > 5% de tasa de error en 5 min
  */
 export class ObservabilityStack extends cdk.Stack {
   public readonly dashboard: cloudwatch.Dashboard
@@ -30,16 +27,16 @@ export class ObservabilityStack extends cdk.Stack {
     super(scope, id, props)
     applyTags(this, props.config)
 
-    const { config, lambdaFunction, rdsInstance, ecsCluster, distribution } = props
+    const { config, webFunction, scraperFunction, distribution } = props
 
     // ─────────────────────────────────────────────────────────────────────
     // Alarmas
     // ─────────────────────────────────────────────────────────────────────
 
-    const lambdaErrors = new cloudwatch.Alarm(this, 'LambdaErrorsAlarm', {
-      alarmName: resourceName(config, 'lambda-errors'),
+    const webErrors = new cloudwatch.Alarm(this, 'WebLambdaErrors', {
+      alarmName: resourceName(config, 'web-lambda-errors'),
       alarmDescription: 'Más de 5 errores en la Lambda Next.js en 5 min',
-      metric: lambdaFunction.metricErrors({
+      metric: webFunction.metricErrors({
         period: cdk.Duration.minutes(5),
         statistic: cloudwatch.Statistic.SUM,
       }),
@@ -49,37 +46,28 @@ export class ObservabilityStack extends cdk.Stack {
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     })
 
-    const rdsFreeStorage = new cloudwatch.Alarm(this, 'RdsFreeStorageAlarm', {
-      alarmName: resourceName(config, 'rds-free-storage'),
-      alarmDescription: 'RDS storage libre < 2 GB',
-      metric: rdsInstance.metricFreeStorageSpace({
+    const scraperErrors = new cloudwatch.Alarm(this, 'ScraperLambdaErrors', {
+      alarmName: resourceName(config, 'scraper-lambda-errors'),
+      alarmDescription: 'Más de 3 errores en la Lambda del scraper en 15 min',
+      metric: scraperFunction.metricErrors({
+        period: cdk.Duration.minutes(15),
+        statistic: cloudwatch.Statistic.SUM,
+      }),
+      threshold: 3,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    })
+
+    const cf5xx = new cloudwatch.Alarm(this, 'CloudFront5xx', {
+      alarmName: resourceName(config, 'cloudfront-5xx'),
+      alarmDescription: 'Tasa de errores 5xx en CloudFront > 5% en 5 min',
+      metric: distribution.metric5xxErrorRate({
         period: cdk.Duration.minutes(5),
         statistic: cloudwatch.Statistic.AVERAGE,
       }),
-      threshold: 2 * 1024 * 1024 * 1024, // 2 GB
-      evaluationPeriods: 2,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
-    })
-
-    // Alarma de scraper: usamos la métrica built-in de ECS sobre el cluster
-    // para detectar tasks que terminaron mal. Simplificamos con el métrico
-    // CPUUtilization > 0 durante al menos 15 min como proxy de "scraper corrió".
-    // Para detección real de fallos usamos la métrica TasksStopped con dimensión.
-    const scraperFailures = new cloudwatch.Alarm(this, 'ScraperFailuresAlarm', {
-      alarmName: resourceName(config, 'scraper-failures'),
-      alarmDescription:
-        'Tasks del scraper que terminan mal (aproximación: CPU > 95% sostenida, ' +
-        'o ausencia de logs por 30 min — revisar manualmente)',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ECS',
-        metricName: 'CPUUtilization',
-        dimensionsMap: { ClusterName: ecsCluster.clusterName },
-        statistic: cloudwatch.Statistic.MAXIMUM,
-        period: cdk.Duration.minutes(15),
-      }),
-      threshold: 95,
-      evaluationPeriods: 2,
+      threshold: 5,
+      evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     })
@@ -94,17 +82,17 @@ export class ObservabilityStack extends cdk.Stack {
 
     this.dashboard.addWidgets(
       new cloudwatch.GraphWidget({
-        title: 'Lambda — Invocations & Errors',
-        left: [lambdaFunction.metricInvocations({ statistic: cloudwatch.Statistic.SUM })],
-        right: [lambdaFunction.metricErrors({ statistic: cloudwatch.Statistic.SUM })],
+        title: 'Web Lambda — Invocaciones y Errores',
+        left: [webFunction.metricInvocations({ statistic: cloudwatch.Statistic.SUM })],
+        right: [webFunction.metricErrors({ statistic: cloudwatch.Statistic.SUM })],
         width: 12,
       }),
       new cloudwatch.GraphWidget({
-        title: 'Lambda — Duration (ms)',
+        title: 'Web Lambda — Duración (ms)',
         left: [
-          lambdaFunction.metricDuration({ statistic: 'p50' }),
-          lambdaFunction.metricDuration({ statistic: 'p95' }),
-          lambdaFunction.metricDuration({ statistic: 'p99' }),
+          webFunction.metricDuration({ statistic: 'p50' }),
+          webFunction.metricDuration({ statistic: 'p95' }),
+          webFunction.metricDuration({ statistic: 'p99' }),
         ],
         width: 12,
       })
@@ -112,18 +100,16 @@ export class ObservabilityStack extends cdk.Stack {
 
     this.dashboard.addWidgets(
       new cloudwatch.GraphWidget({
-        title: 'RDS — CPU & Connections',
-        left: [rdsInstance.metricCPUUtilization()],
-        right: [rdsInstance.metricDatabaseConnections()],
+        title: 'Scraper Lambda — Invocaciones y Errores',
+        left: [scraperFunction.metricInvocations({ statistic: cloudwatch.Statistic.SUM })],
+        right: [scraperFunction.metricErrors({ statistic: cloudwatch.Statistic.SUM })],
         width: 12,
       }),
       new cloudwatch.GraphWidget({
-        title: 'RDS — Free Storage (GB)',
+        title: 'Scraper Lambda — Duración (ms)',
         left: [
-          rdsInstance.metricFreeStorageSpace({
-            label: 'Free Storage',
-            statistic: cloudwatch.Statistic.AVERAGE,
-          }),
+          scraperFunction.metricDuration({ statistic: 'p50' }),
+          scraperFunction.metricDuration({ statistic: 'p95' }),
         ],
         width: 12,
       })
@@ -131,7 +117,7 @@ export class ObservabilityStack extends cdk.Stack {
 
     this.dashboard.addWidgets(
       new cloudwatch.GraphWidget({
-        title: 'CloudFront — Requests & Errors',
+        title: 'CloudFront — Requests y Errores',
         left: [distribution.metricRequests({ statistic: cloudwatch.Statistic.SUM })],
         right: [
           distribution.metric4xxErrorRate(),
@@ -140,23 +126,8 @@ export class ObservabilityStack extends cdk.Stack {
         width: 12,
       }),
       new cloudwatch.GraphWidget({
-        title: 'ECS Scraper — CPU & Memory',
-        left: [
-          new cloudwatch.Metric({
-            namespace: 'AWS/ECS',
-            metricName: 'CPUUtilization',
-            dimensionsMap: { ClusterName: ecsCluster.clusterName },
-            statistic: 'Average',
-          }),
-        ],
-        right: [
-          new cloudwatch.Metric({
-            namespace: 'AWS/ECS',
-            metricName: 'MemoryUtilization',
-            dimensionsMap: { ClusterName: ecsCluster.clusterName },
-            statistic: 'Average',
-          }),
-        ],
+        title: 'CloudFront — Cache Hit Rate',
+        left: [distribution.metricCacheHitRate({ statistic: cloudwatch.Statistic.AVERAGE })],
         width: 12,
       })
     )
@@ -164,14 +135,11 @@ export class ObservabilityStack extends cdk.Stack {
     this.dashboard.addWidgets(
       new cloudwatch.AlarmStatusWidget({
         title: 'Estado de alarmas',
-        alarms: [lambdaErrors, rdsFreeStorage, scraperFailures],
+        alarms: [webErrors, scraperErrors, cf5xx],
         width: 24,
       })
     )
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Outputs
-    // ─────────────────────────────────────────────────────────────────────
     new cdk.CfnOutput(this, 'DashboardUrl', {
       value: `https://${config.region}.console.aws.amazon.com/cloudwatch/home?region=${config.region}#dashboards:name=${this.dashboard.dashboardName}`,
     })

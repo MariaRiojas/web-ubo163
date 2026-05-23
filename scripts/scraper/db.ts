@@ -1,6 +1,5 @@
 /**
- * Re-exporta la instancia de Drizzle del proyecto principal.
- * Los scrapers usan el mismo pool y schema que la web.
+ * Re-exporta el cliente DynamoDB y los nombres de tablas para uso en los scrapers.
  */
-export { db } from '../../lib/db'
+export { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, QueryCommand, ScanCommand, generateId, now } from '../../lib/db/dynamodb'
 export * from '../../lib/db/schema'

@@ -1,15 +1,69 @@
 import type { NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-import { db } from '@/lib/db'
-import { users, profiles, sectionRoles } from '@/lib/db/schema'
+import { ddb, TABLE, GetCommand, QueryCommand, BatchGetCommand } from '@/lib/db/dynamodb'
+import type { User } from '@/lib/db/schema/users'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { SectionRole } from '@/lib/db/schema/section-roles'
+import type { Section } from '@/lib/db/schema/sections'
 import { resolvePermissions } from './permissions'
 import { loginSchema } from '@/lib/validations/auth'
 
+/** Busca un perfil por email o DNI via GSIs en paralelo */
+async function findProfileByCredential(username: string): Promise<Profile | null> {
+  const [byEmail, byDni] = await Promise.all([
+    ddb.send(new QueryCommand({
+      TableName: TABLE.profiles,
+      IndexName: 'email-index',
+      KeyConditionExpression: 'email = :v',
+      ExpressionAttributeValues: { ':v': username },
+      Limit: 1,
+    })),
+    ddb.send(new QueryCommand({
+      TableName: TABLE.profiles,
+      IndexName: 'dni-index',
+      KeyConditionExpression: 'dni = :v',
+      ExpressionAttributeValues: { ':v': username },
+      Limit: 1,
+    })),
+  ])
+
+  const item = byEmail.Items?.[0] ?? byDni.Items?.[0]
+  return (item as Profile | undefined) ?? null
+}
+
+/** Carga roles de sección del perfil y enriquece cada uno con su Section */
+async function loadRolesWithSections(profileId: string): Promise<(SectionRole & { section?: Section | null })[]> {
+  const rolesRes = await ddb.send(new QueryCommand({
+    TableName: TABLE.sectionRoles,
+    KeyConditionExpression: 'profileId = :pid',
+    ExpressionAttributeValues: { ':pid': profileId },
+  }))
+
+  const roles = (rolesRes.Items ?? []) as SectionRole[]
+  if (roles.length === 0) return []
+
+  // Cargar todas las secciones en un solo BatchGet
+  const uniqueSectionIds = [...new Set(roles.map((r) => r.sectionId))]
+  const batchRes = await ddb.send(new BatchGetCommand({
+    RequestItems: {
+      [TABLE.sections]: {
+        Keys: uniqueSectionIds.map((id) => ({ sectionId: id })),
+      },
+    },
+  }))
+
+  const sectionMap = new Map<string, Section>()
+  for (const item of batchRes.Responses?.[TABLE.sections] ?? []) {
+    const s = item as Section
+    sectionMap.set(s.sectionId, s)
+  }
+
+  return roles.map((r) => ({ ...r, section: sectionMap.get(r.sectionId) ?? null }))
+}
+
 export const authConfig: NextAuthConfig = {
   trustHost: true,
-  // Páginas personalizadas
   pages: {
     signIn: '/login',
     error: '/login',
@@ -28,68 +82,45 @@ export const authConfig: NextAuthConfig = {
         password: { label: 'Contraseña', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('[AUTH] Intentando autorizar:', credentials?.username)
         const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) {
-          console.log('[AUTH] Fallo de validación Zod:', parsed.error.format())
-          return null
-        }
+        if (!parsed.success) return null
 
         const { username, password } = parsed.data
-        console.log('[AUTH] Debug Pass:', password, 'Length:', password.length)
 
-        // Buscar por email o DNI como username
-        const profile = await db.query.profiles.findFirst({
-          where: (p, { or, eq }) =>
-            or(eq(p.email, username), eq(p.dni, username)),
-        })
-
+        const profile = await findProfileByCredential(username)
         if (!profile) {
-          console.log('[AUTH] Perfil no encontrado para:', username)
+          console.log('[AUTH] Perfil no encontrado:', username)
           return null
         }
-        
         if (!profile.userId) {
-          console.log('[AUTH] Perfil encontrado pero sin userId vinculado:', profile.email)
+          console.log('[AUTH] Perfil sin userId vinculado:', profile.email)
           return null
         }
 
-        // Verificar contraseña con bcrypt
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, profile.userId),
-        })
+        const userRes = await ddb.send(new GetCommand({
+          TableName: TABLE.users,
+          Key: { userId: profile.userId },
+        }))
+        const user = userRes.Item as User | undefined
         if (!user) {
-          console.log('[AUTH] Usuario no encontrado en tabla users para ID:', profile.userId)
+          console.log('[AUTH] Usuario no encontrado para userId:', profile.userId)
           return null
         }
 
-        console.log('[AUTH] Usuario encontrado:', user.email)
-        console.log('[AUTH] Hash en DB:', user.passwordHash)
-        
         const isValid = await bcrypt.compare(password, user.passwordHash)
-        console.log('[AUTH] ¿Contraseña válida?:', isValid)
-
         if (!isValid) {
-          console.log('[AUTH] Contraseña incorrecta para:', username)
+          console.log('[AUTH] Contraseña incorrecta:', username)
           return null
         }
 
-        console.log('[AUTH] Login exitoso:', username)
-
-        // Cargar roles para calcular permisos
-        const roles = await db.query.sectionRoles.findMany({
-          where: eq(sectionRoles.profileId, profile.id),
-          with: { section: true },
-        })
-
-        const permissions = resolvePermissions(profile, roles as any)
+        const roles = await loadRolesWithSections(profile.profileId)
+        const permissions = resolvePermissions(profile, roles)
 
         return {
-          id: profile.id,
+          id: profile.profileId,
           name: profile.fullName,
           email: profile.email ?? undefined,
-          // Datos extra en el token JWT
-          profileId: profile.id,
+          profileId: profile.profileId,
           grade: profile.grade,
           status: profile.status,
           permissions,
@@ -100,21 +131,19 @@ export const authConfig: NextAuthConfig = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // Primera vez: copiar datos del user al token
       if (user) {
         token.profileId = (user as any).profileId
-        token.grade = (user as any).grade
-        token.status = (user as any).status
+        token.grade    = (user as any).grade
+        token.status   = (user as any).status
         token.permissions = (user as any).permissions
       }
       return token
     },
     async session({ session, token }) {
-      // Exponer datos del token en la sesión del cliente
       if (token) {
-        session.user.profileId = token.profileId as string
-        session.user.grade = token.grade as string
-        session.user.status = token.status as string
+        session.user.profileId   = token.profileId as string
+        session.user.grade       = token.grade as string
+        session.user.status      = token.status as string
         session.user.permissions = token.permissions as import('./permissions').Permission[]
       }
       return session
@@ -122,10 +151,6 @@ export const authConfig: NextAuthConfig = {
   },
 }
 
-/**
- * Genera un hash bcrypt para una contraseña.
- * Usar en el seed o en el endpoint de cambio de contraseña.
- */
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)
 }

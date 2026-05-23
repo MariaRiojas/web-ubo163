@@ -1,51 +1,48 @@
-import {
-  pgTable, uuid, text, timestamp, jsonb,
-} from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
-import { profiles } from './profiles'
-import { sections } from './sections'
+/**
+ * Tabla DynamoDB: {PREFIX}-internal-requests
+ * PK: requestId
+ * GSI: toSectionId-createdAt-index
+ */
 
 export const REQUEST_TYPES = [
   'requerimiento', 'solicitud_retiro', 'reporte_averia',
   'solicitud_reporte', 'solicitud_compra', 'otro',
 ] as const
+export type InternalRequestType = (typeof REQUEST_TYPES)[number]
 
 export const REQUEST_STATUSES = [
   'pendiente', 'aprobada', 'en_proceso', 'completada', 'rechazada',
 ] as const
+export type InternalRequestStatus = (typeof REQUEST_STATUSES)[number]
 
-export const REQUEST_PRIORITIES = [
-  'baja', 'media', 'alta', 'urgente',
-] as const
+export const REQUEST_PRIORITIES = ['baja', 'media', 'alta', 'urgente'] as const
+export type InternalRequestPriority = (typeof REQUEST_PRIORITIES)[number]
 
-export const internalRequests = pgTable('internal_requests', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  code: text('code').unique().notNull(),
-  type: text('type').notNull().default('requerimiento'),
-  title: text('title').notNull(),
-  description: text('description'),
-  priority: text('priority').notNull().default('media'),
-  status: text('status').notNull().default('pendiente'),
-  fromSectionId: uuid('from_section_id').references(() => sections.id),
-  toSectionId: uuid('to_section_id').references(() => sections.id),
-  requestedBy: uuid('requested_by').notNull().references(() => profiles.id),
-  approvedBy: uuid('approved_by').references(() => profiles.id),
-  assignedTo: uuid('assigned_to').references(() => profiles.id),
-  items: jsonb('items').$type<{ name: string; quantity?: number; code?: string }[]>(),
-  attachments: text('attachments').array().default([]),
-  responseNotes: text('response_notes'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
-})
+export interface InternalRequestItem {
+  name: string
+  quantity?: number
+  code?: string
+}
 
-export const internalRequestsRelations = relations(internalRequests, ({ one }) => ({
-  fromSection: one(sections, { fields: [internalRequests.fromSectionId], references: [sections.id], relationName: 'fromSection' }),
-  toSection: one(sections, { fields: [internalRequests.toSectionId], references: [sections.id], relationName: 'toSection' }),
-  requester: one(profiles, { fields: [internalRequests.requestedBy], references: [profiles.id], relationName: 'requester' }),
-  approver: one(profiles, { fields: [internalRequests.approvedBy], references: [profiles.id], relationName: 'approver' }),
-  assignee: one(profiles, { fields: [internalRequests.assignedTo], references: [profiles.id], relationName: 'assignee' }),
-}))
+export interface InternalRequest {
+  requestId: string          // PK
+  code: string
+  type: InternalRequestType
+  title: string
+  description?: string
+  priority: InternalRequestPriority
+  status: InternalRequestStatus
+  fromSectionId?: string
+  toSectionId: string        // GSI: toSectionId-createdAt-index
+  requestedBy: string        // profileId
+  approvedBy?: string
+  assignedTo?: string
+  items?: InternalRequestItem[]
+  attachments?: string[]     // array de S3 keys
+  responseNotes?: string
+  createdAt: string          // ISO 8601
+  updatedAt: string
+  resolvedAt?: string
+}
 
-export type InternalRequest = typeof internalRequests.$inferSelect
-export type NewInternalRequest = typeof internalRequests.$inferInsert
+export type NewInternalRequest = Omit<InternalRequest, 'createdAt' | 'updatedAt'>

@@ -1,22 +1,13 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  varchar,
-  date,
-  timestamp,
-  boolean,
-} from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
-import { sectionRoles } from './section-roles'
-import { guardShifts } from './guard-shifts'
-import { serviceHours } from './service-hours'
-import { incidents } from './incidents'
-import { esbasProgress } from './esbas'
-import { cgbvpAttendance, cgbvpStatusHistory } from './cgbvp'
-import { emergencyCrewMembers } from './emergencies'
+/**
+ * Tabla DynamoDB: {PREFIX}-profiles
+ * PK: profileId (String, UUID)
+ * GSIs:
+ *   userId-index       (userId → profileId)
+ *   email-index        (email → profileId)
+ *   dni-index          (dni → profileId)
+ *   codigoCgbvp-index  (codigoCgbvp → profileId)
+ */
 
-// Jerarquía de grados CGBVP (NDR Ascensos)
 export const GRADES = [
   'aspirante',
   'seccionario',
@@ -38,49 +29,35 @@ export const PROFILE_STATUSES = [
   'licencia',
   'retirado',
 ] as const
+export type ProfileStatus = (typeof PROFILE_STATUSES)[number]
 
 export const GENDERS = ['masculino', 'femenino'] as const
 export type Gender = (typeof GENDERS)[number]
-export type ProfileStatus = (typeof PROFILE_STATUSES)[number]
 
 export const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
+export type BloodType = (typeof BLOOD_TYPES)[number]
 
-export const profiles = pgTable('profiles', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  /** FK a NextAuth users.id */
-  /** Código CGBVP del bombero (viene del scrapper) */
-  codigoCgbvp: varchar('codigo_cgbvp', { length: 20 }).unique(),
-  userId: text('user_id').unique(),
-  fullName: text('full_name').notNull(),
-  dni: varchar('dni', { length: 8 }).unique(),
-  grade: text('grade').notNull().default('aspirante'),
-  status: text('status').notNull().default('activo'),
-  gender: text('gender'),                              // 'masculino' | 'femenino'
-  phone: varchar('phone', { length: 20 }),
-  email: text('email'),
-  bloodType: varchar('blood_type', { length: 5 }),
-  birthDate: date('birth_date'),
-  joinDate: date('join_date'),
-  avatarUrl: text('avatar_url'),
-  specialties: text('specialties').array().default([]),
-  esbasPromotion: text('esbas_promotion'),             // Ej: "ESBAS-2024-II"
-  emergencyContactName: text('emergency_contact_name'),
-  emergencyContactPhone: text('emergency_contact_phone'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-})
+export interface Profile {
+  profileId: string              // PK
+  userId?: string                // GSI: userId-index (vinculo con users)
+  codigoCgbvp?: string          // GSI: codigoCgbvp-index
+  fullName: string
+  dni?: string                   // GSI: dni-index
+  grade: Grade
+  status: ProfileStatus
+  gender?: Gender
+  phone?: string
+  email?: string                 // GSI: email-index
+  bloodType?: BloodType
+  birthDate?: string             // YYYY-MM-DD
+  joinDate?: string              // YYYY-MM-DD
+  avatarUrl?: string
+  specialties?: string[]
+  esbasPromotion?: string        // Ej: "ESBAS-2024-II"
+  emergencyContactName?: string
+  emergencyContactPhone?: string
+  createdAt: string              // ISO 8601
+  updatedAt: string              // ISO 8601
+}
 
-export const profilesRelations = relations(profiles, ({ many }) => ({
-  sectionRoles: many(sectionRoles),
-  guardShifts: many(guardShifts),
-  serviceHours: many(serviceHours),
-  reportedIncidents: many(incidents, { relationName: 'reportedBy' }),
-  assignedIncidents: many(incidents, { relationName: 'assignedTo' }),
-  esbasProgress: many(esbasProgress),
-  cgbvpAttendance: many(cgbvpAttendance),
-  cgbvpStatusHistory: many(cgbvpStatusHistory),
-  emergencyCrewMembers: many(emergencyCrewMembers),
-}))
-
-export type Profile = typeof profiles.$inferSelect
-export type NewProfile = typeof profiles.$inferInsert
+export type NewProfile = Omit<Profile, 'createdAt' | 'updatedAt'>
