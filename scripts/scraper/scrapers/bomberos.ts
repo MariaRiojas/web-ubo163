@@ -8,8 +8,12 @@ import { ddb, TABLE, QueryCommand, PutCommand, UpdateCommand, generateId, now } 
 import type { Profile } from '../../../lib/db/schema/profiles'
 import { parseHtml, clean } from '../utils'
 import { log, sleep, getCookies } from '../browser'
+import type { HttpSession } from '../http-client'
 
 const URL = 'https://www.bomberosperu.gob.pe/extranet/DEPA/BOM/BOMBomLis.asp'
+
+/** Fetch de una página del padrón (decodifica latin1). Reusado por versión con y sin navegador. */
+type FetchPage = (url: string) => Promise<string>
 
 const GRADE_MAP: Record<string, string> = {
   'ASPIRANTE': 'aspirante',
@@ -59,12 +63,11 @@ async function findProfileByCodigo(codigo: string): Promise<Profile | null> {
   return (Items?.[0] as Profile | undefined) ?? null
 }
 
-export async function scrapeBomberos(page: Page) {
+/** Núcleo del scrape del padrón — recibe una función que baja el HTML de cada página. */
+async function runPadron(fetchPage: FetchPage) {
   log('Iniciando scrape de padrón de bomberos...')
 
-  await page.goto(URL, { waitUntil: 'networkidle2', timeout: 30000 })
-  await sleep(2000)
-  const html = await page.content()
+  const html = await fetchPage(URL)
   const $ = parseHtml(html)
 
   // Detectar paginación
@@ -77,9 +80,6 @@ export async function scrapeBomberos(page: Page) {
     totalPaginas = parseInt(m[1])
     totalRegistros = parseInt(m[2])
   }
-
-  const cookies = await getCookies(page)
-  const cookieStr = Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ')
 
   let total = 0
   let nuevos = 0
@@ -98,20 +98,17 @@ export async function scrapeBomberos(page: Page) {
         cboGrado: '', txtTotalPagina: String(totalPaginas),
         txtTotalRegistro: String(totalRegistros), cboPagina: String(pagina),
       })
+      pageHtml = ''
       for (let intento = 0; intento < 3; intento++) {
         try {
-          const res = await fetch(`${URL}?${params}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0', Referer: URL, Cookie: cookieStr },
-          })
-          const buf = await res.arrayBuffer()
-          pageHtml = new TextDecoder('latin1').decode(buf)
+          pageHtml = await fetchPage(`${URL}?${params}`)
           break
         } catch (e) {
           log(`  Timeout página ${pagina}, intento ${intento + 1}/3`)
           await sleep(10000)
         }
       }
-      if (!pageHtml!) {
+      if (!pageHtml) {
         log(`  Saltando página ${pagina}`)
         continue
       }
@@ -179,4 +176,23 @@ export async function scrapeBomberos(page: Page) {
   }
 
   log(`Bomberos: ${total} procesados | ${nuevos} nuevos`)
+}
+
+/** Versión con navegador (puppeteer): usa la sesión y cookies del Page. */
+export async function scrapeBomberos(page: Page) {
+  await page.goto(URL, { waitUntil: 'networkidle2', timeout: 30000 })
+  await sleep(2000)
+  const firstHtml = await page.content()
+  const cookies = await getCookies(page)
+  const cookieStr = Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ')
+  await runPadron(async (url) => {
+    if (url === URL) return firstHtml
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Referer: URL, Cookie: cookieStr } })
+    return new TextDecoder('latin1').decode(await res.arrayBuffer())
+  })
+}
+
+/** Versión SIN navegador (HTTP): usa la sesión de http-client. */
+export async function scrapeBomberosHttp(session: HttpSession) {
+  await runPadron((url) => session.fetchHtml(url))
 }
