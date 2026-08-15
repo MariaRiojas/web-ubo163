@@ -18,8 +18,18 @@ export async function initBrowser(): Promise<Page> {
     executablePath = await (chromium.default?.executablePath ?? chromium.executablePath)()
     args = [...(chromium.default?.args ?? chromium.args ?? []), '--single-process']
   } else {
-    // Local: usar chromium del sistema
-    executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser'
+    // Local: 1) usar PUPPETEER_EXECUTABLE_PATH si está definido;
+    //        2) si no, el Chromium que trae `puppeteer` (descargado con npm install);
+    //        3) último recurso, el chromium del sistema (Linux).
+    executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
+    if (!executablePath) {
+      try {
+        const pptr: any = await import('puppeteer')
+        const mod = pptr.default ?? pptr
+        if (typeof mod.executablePath === 'function') executablePath = mod.executablePath()
+      } catch { /* puppeteer full no disponible */ }
+    }
+    if (!executablePath) executablePath = '/usr/bin/chromium-browser'
   }
 
   browser = await puppeteer.launch({
