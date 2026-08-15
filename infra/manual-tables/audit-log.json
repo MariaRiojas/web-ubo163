@@ -1,0 +1,34 @@
+{
+  "TableName": "ubo163-dev-audit-log",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    { "AttributeName": "logId", "AttributeType": "S" },
+    { "AttributeName": "logPartition", "AttributeType": "S" },
+    { "AttributeName": "createdAt", "AttributeType": "S" },
+    { "AttributeName": "entityType", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "logId", "KeyType": "HASH" }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "timeline-index",
+      "KeySchema": [
+        { "AttributeName": "logPartition", "KeyType": "HASH" },
+        { "AttributeName": "createdAt", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    },
+    {
+      "IndexName": "entityType-createdAt-index",
+      "KeySchema": [
+        { "AttributeName": "entityType", "KeyType": "HASH" },
+        { "AttributeName": "createdAt", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ],
+  "Tags": [
+    { "Key": "aws-apn-id", "Value": "pc:3ane5a9qkvyu1sguzgkqxqkuv" }
+  ]
+}

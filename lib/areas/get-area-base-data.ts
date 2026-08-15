@@ -1,19 +1,13 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import {
-  sections,
-  sectionRoles,
-  profiles,
-  inventory,
-  incidents,
-  requests,
-} from '@/lib/db/schema'
-import { and, eq, desc, asc, or, sql } from 'drizzle-orm'
+import { ddb, TABLE, QueryCommand, ScanCommand, BatchGetCommand } from '@/lib/db/dynamodb'
+import type { Section } from '@/lib/db/schema/sections'
+import type { SectionRole } from '@/lib/db/schema/section-roles'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { InventoryItem } from '@/lib/db/schema/inventory'
+import type { Incident } from '@/lib/db/schema/incidents'
+import type { Request } from '@/lib/db/schema/requests'
+import type { InternalRequest } from '@/lib/db/schema/internal-requests'
 import type { AreaKey } from './get-areas-hub'
-
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS
-// ═══════════════════════════════════════════════════════════════════
 
 export interface AreaBasePerson {
   profileId: string
@@ -38,7 +32,7 @@ export interface AreaBaseInventoryRow {
   quantity: number
   expirationDate: string | null
   endOfLifeDate: string | null
-  assignedTo: string | null     // nombre del efectivo si aplica
+  assignedTo: string | null
 }
 
 export interface AreaBaseIncidentInbox {
@@ -51,7 +45,7 @@ export interface AreaBaseIncidentInbox {
   status: string
   reportedByName: string | null
   reportedByGrade: string | null
-  createdAt: Date
+  createdAt: string
 }
 
 export interface AreaBaseRequestInbox {
@@ -64,7 +58,20 @@ export interface AreaBaseRequestInbox {
   status: string
   createdByName: string | null
   createdByGrade: string | null
-  createdAt: Date
+  createdAt: string
+}
+
+export interface AreaBaseRequerimientoInbox {
+  id: string
+  code: string | null
+  type: string
+  title: string
+  description: string | null
+  priority: string
+  status: string
+  requestedByName: string | null
+  requestedByGrade: string | null
+  createdAt: string
 }
 
 export interface AreaBaseData {
@@ -75,21 +82,19 @@ export interface AreaBaseData {
   inventory: AreaBaseInventoryRow[]
   incidentsInbox: AreaBaseIncidentInbox[]
   requestsInbox: AreaBaseRequestInbox[]
+  requerimientosInbox: AreaBaseRequerimientoInbox[]
   stats: {
     personnelCount: number
     inventoryCount: number
     operativesCount: number
     damagedCount: number
-    expiredCount: number        // ítems vencidos
-    expiringSoonCount: number   // ítems que vencen en ≤30 días
+    expiredCount: number
+    expiringSoonCount: number
     openIncidentsCount: number
     openRequestsCount: number
+    openRequerimientosCount: number
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════
 
 const GRADE_LABELS_SHORT: Record<string, string> = {
   aspirante: 'Aspirante',
@@ -117,187 +122,270 @@ function mapRoleGroup(role: string): 'jefe' | 'adjunto' | 'miembro' {
   return 'miembro'
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// API PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════
+async function getSectionByKey(key: string): Promise<Section | null> {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.sections,
+    IndexName: 'key-index',
+    KeyConditionExpression: '#k = :key',
+    ExpressionAttributeNames: { '#k': 'key' },
+    ExpressionAttributeValues: { ':key': key },
+    Limit: 1,
+  }))
+  return (Items?.[0] ?? null) as Section | null
+}
 
 export async function getAreaBaseData(sectionKey: AreaKey): Promise<AreaBaseData> {
-  // ── Sección ──────────────────────────────────────────────────
-  const [section] = await db
-    .select()
-    .from(sections)
-    .where(eq(sections.key, sectionKey))
-    .limit(1)
-
-  const sectionId = section?.id ?? null
+  const section = await getSectionByKey(sectionKey)
+  const sectionId = section?.sectionId ?? null
   const sectionName = section?.name ?? sectionKey
 
-  // ── Personal ─────────────────────────────────────────────────
-  const personnelRows = sectionId
-    ? await db
-        .select({
-          role: sectionRoles,
-          profile: {
-            id: profiles.id,
-            fullName: profiles.fullName,
-            grade: profiles.grade,
-            codigoCgbvp: profiles.codigoCgbvp,
+  // The five inbox/personnel blocks are mutually independent; each performs its
+  // own query/scan followed by a profile BatchGet that depends on the IDs from
+  // that same block (so the two calls inside a block stay sequential). Running
+  // the blocks together collapses ~10 serial round-trips into 2 stages.
+  const [personnel, inventoryRows, incidentsInbox, requestsInbox, requerimientosInbox] = await Promise.all([
+    // Personnel via sectionId-index on sectionRoles
+    (async (): Promise<AreaBasePerson[]> => {
+      if (!sectionId) return []
+      const { Items: roleItems } = await ddb.send(new QueryCommand({
+        TableName: TABLE.sectionRoles,
+        IndexName: 'sectionId-index',
+        KeyConditionExpression: 'sectionId = :sid',
+        FilterExpression: 'isActive = :t',
+        ExpressionAttributeValues: { ':sid': sectionId, ':t': true },
+      }))
+      const roles = (roleItems ?? []) as SectionRole[]
+      if (roles.length === 0) return []
+
+      const { Responses } = await ddb.send(new BatchGetCommand({
+        RequestItems: {
+          [TABLE.profiles]: {
+            Keys: roles.map(r => ({ profileId: r.profileId })),
+            ProjectionExpression: 'profileId, fullName, grade, codigoCgbvp',
           },
-        })
-        .from(sectionRoles)
-        .innerJoin(profiles, eq(sectionRoles.profileId, profiles.id))
-        .where(
-          and(
-            eq(sectionRoles.sectionId, sectionId),
-            eq(sectionRoles.isActive, true),
-          ),
-        )
-    : []
+        },
+      }))
+      const profileMap = new Map<string, Profile>()
+      for (const p of Responses?.[TABLE.profiles] ?? []) {
+        profileMap.set(p.profileId as string, p as Profile)
+      }
 
-  const personnel: AreaBasePerson[] = personnelRows.map((r) => ({
-    profileId: r.profile.id,
-    fullName: r.profile.fullName,
-    grade: r.profile.grade,
-    gradeLabel: GRADE_LABELS_SHORT[r.profile.grade] ?? r.profile.grade,
-    codigoCgbvp: r.profile.codigoCgbvp,
-    role: mapRoleGroup(r.role.role),
-    roleLabel: ROLE_LABELS[r.role.role] ?? r.role.role,
-  }))
+      const people = roles.map(r => {
+        const p = profileMap.get(r.profileId)!
+        return {
+          profileId: r.profileId,
+          fullName: p?.fullName ?? '',
+          grade: p?.grade ?? '',
+          gradeLabel: GRADE_LABELS_SHORT[p?.grade ?? ''] ?? (p?.grade ?? ''),
+          codigoCgbvp: p?.codigoCgbvp ?? null,
+          role: mapRoleGroup(r.role),
+          roleLabel: ROLE_LABELS[r.role] ?? r.role,
+        }
+      }).filter(p => p.fullName)
 
-  const roleOrder = { jefe: 0, adjunto: 1, miembro: 2 } as const
-  personnel.sort((a, b) => {
-    const diff = roleOrder[a.role] - roleOrder[b.role]
-    if (diff !== 0) return diff
-    return a.fullName.localeCompare(b.fullName)
-  })
+      const roleOrder = { jefe: 0, adjunto: 1, miembro: 2 } as const
+      people.sort((a, b) => {
+        const diff = roleOrder[a.role] - roleOrder[b.role]
+        if (diff !== 0) return diff
+        return a.fullName.localeCompare(b.fullName)
+      })
+      return people
+    })(),
 
-  const jefeArea = personnel.find((p) => p.role === 'jefe') ?? null
+    // Inventory
+    (async (): Promise<AreaBaseInventoryRow[]> => {
+      if (!sectionId) return []
+      const { Items: invItems } = await ddb.send(new QueryCommand({
+        TableName: TABLE.inventory,
+        IndexName: 'sectionId-index',
+        KeyConditionExpression: 'sectionId = :sid',
+        ExpressionAttributeValues: { ':sid': sectionId },
+        Limit: 150,
+      }))
+      const invRaw = (invItems ?? []) as InventoryItem[]
+      invRaw.sort((a, b) => a.name.localeCompare(b.name))
 
-  // ── Inventario ───────────────────────────────────────────────
-  const inventoryRowsRaw = sectionId
-    ? await db
-        .select({
-          inv: inventory,
-          assignedName: profiles.fullName,
-        })
-        .from(inventory)
-        .leftJoin(profiles, eq(inventory.assignedProfileId, profiles.id))
-        .where(eq(inventory.sectionId, sectionId))
-        .orderBy(asc(inventory.name))
-        .limit(150)
-    : []
-
-  const inventoryRows: AreaBaseInventoryRow[] = inventoryRowsRaw.map((r) => ({
-    id: r.inv.id,
-    name: r.inv.name,
-    category: r.inv.category,
-    subcategory: r.inv.subcategory,
-    brand: r.inv.brand,
-    model: r.inv.model,
-    codigoCbp: r.inv.codigoCbp,
-    almacenReferencia: r.inv.almacenReferencia,
-    condition: r.inv.condition,
-    quantity: r.inv.quantity ?? 1,
-    expirationDate: r.inv.expirationDate,
-    endOfLifeDate: r.inv.endOfLifeDate,
-    assignedTo: r.assignedName,
-  }))
-
-  // ── Incidencias recibidas ────────────────────────────────────
-  const incidentsInboxRaw = sectionId
-    ? await db
-        .select({
-          inc: incidents,
-          reportedBy: {
-            fullName: profiles.fullName,
-            grade: profiles.grade,
+      const assignedIds = [...new Set(invRaw.filter(i => i.assignedProfileId).map(i => i.assignedProfileId!))]
+      const assignedNames = new Map<string, string>()
+      if (assignedIds.length > 0) {
+        const { Responses } = await ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.profiles]: {
+              Keys: assignedIds.map(pid => ({ profileId: pid })),
+              ProjectionExpression: 'profileId, fullName',
+            },
           },
-        })
-        .from(incidents)
-        .leftJoin(profiles, eq(incidents.reportedBy, profiles.id))
-        .where(eq(incidents.sectionId, sectionId))
-        .orderBy(desc(incidents.createdAt))
-        .limit(30)
-    : []
+        }))
+        for (const p of Responses?.[TABLE.profiles] ?? []) {
+          assignedNames.set(p.profileId as string, p.fullName as string)
+        }
+      }
 
-  const incidentsInbox: AreaBaseIncidentInbox[] = incidentsInboxRaw.map((r) => ({
-    id: r.inc.id,
-    code: r.inc.code,
-    title: r.inc.title,
-    description: r.inc.description,
-    category: r.inc.category,
-    priority: r.inc.priority,
-    status: r.inc.status,
-    reportedByName: r.reportedBy?.fullName ?? null,
-    reportedByGrade: r.reportedBy?.grade ?? null,
-    createdAt: r.inc.createdAt ?? new Date(),
-  }))
+      return invRaw.map(r => ({
+        id: r.itemId,
+        name: r.name,
+        category: r.category,
+        subcategory: r.subcategory ?? null,
+        brand: r.brand ?? null,
+        model: r.model ?? null,
+        codigoCbp: r.codigoCbp ?? null,
+        almacenReferencia: r.almacenReferencia ?? null,
+        condition: r.condition,
+        quantity: r.quantity ?? 1,
+        expirationDate: r.expirationDate ?? null,
+        endOfLifeDate: r.endOfLifeDate ?? null,
+        assignedTo: r.assignedProfileId ? (assignedNames.get(r.assignedProfileId) ?? null) : null,
+      }))
+    })(),
 
-  // ── Solicitudes recibidas ────────────────────────────────────
-  const requestsInboxRaw = sectionId
-    ? await db
-        .select({
-          req: requests,
-          creator: {
-            fullName: profiles.fullName,
-            grade: profiles.grade,
+    // Incidents inbox (by sectionId)
+    (async (): Promise<AreaBaseIncidentInbox[]> => {
+      if (!sectionId) return []
+      const { Items: incItems } = await ddb.send(new QueryCommand({
+        TableName: TABLE.incidents,
+        IndexName: 'sectionId-createdAt-index',
+        KeyConditionExpression: 'sectionId = :sid',
+        ExpressionAttributeValues: { ':sid': sectionId },
+        ScanIndexForward: false,
+        Limit: 30,
+      }))
+      const incRaw = (incItems ?? []) as Incident[]
+
+      const reporterIds = [...new Set(incRaw.filter(i => i.reportedBy).map(i => i.reportedBy!))]
+      const reporterMap = new Map<string, Profile>()
+      if (reporterIds.length > 0) {
+        const { Responses } = await ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.profiles]: {
+              Keys: reporterIds.map(pid => ({ profileId: pid })),
+              ProjectionExpression: 'profileId, fullName, grade',
+            },
           },
-        })
-        .from(requests)
-        .leftJoin(profiles, eq(requests.createdBy, profiles.id))
-        .where(eq(requests.targetSectionId, sectionId))
-        .orderBy(desc(requests.createdAt))
-        .limit(30)
-    : []
+        }))
+        for (const p of Responses?.[TABLE.profiles] ?? []) {
+          reporterMap.set(p.profileId as string, p as Profile)
+        }
+      }
 
-  const requestsInbox: AreaBaseRequestInbox[] = requestsInboxRaw.map((r) => ({
-    id: r.req.id,
-    code: r.req.code,
-    title: r.req.title,
-    description: r.req.description,
-    category: r.req.category,
-    priority: r.req.priority,
-    status: r.req.status,
-    createdByName: r.creator?.fullName ?? null,
-    createdByGrade: r.creator?.grade ?? null,
-    createdAt: r.req.createdAt ?? new Date(),
-  }))
+      return incRaw.map(r => ({
+        id: r.incidentId,
+        code: r.code ?? null,
+        title: r.title,
+        description: r.description,
+        category: r.category ?? null,
+        priority: r.priority,
+        status: r.status,
+        reportedByName: r.reportedBy ? (reporterMap.get(r.reportedBy)?.fullName ?? null) : null,
+        reportedByGrade: r.reportedBy ? (reporterMap.get(r.reportedBy)?.grade ?? null) : null,
+        createdAt: r.createdAt,
+      }))
+    })(),
 
-  // ── Stats ────────────────────────────────────────────────────
-  const now = new Date()
+    // Requests inbox (by targetSectionId = sectionId field)
+    (async (): Promise<AreaBaseRequestInbox[]> => {
+      if (!sectionId) return []
+      const { Items: reqItems } = await ddb.send(new QueryCommand({
+        TableName: TABLE.requests,
+        IndexName: 'sectionId-createdAt-index',
+        KeyConditionExpression: 'sectionId = :sid',
+        ExpressionAttributeValues: { ':sid': sectionId },
+        ScanIndexForward: false,
+        Limit: 30,
+      }))
+      const reqRaw = (reqItems ?? []) as Request[]
+
+      const creatorIds = [...new Set(reqRaw.filter(r => r.createdBy).map(r => r.createdBy!))]
+      const creatorMap = new Map<string, Profile>()
+      if (creatorIds.length > 0) {
+        const { Responses } = await ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.profiles]: {
+              Keys: creatorIds.map(pid => ({ profileId: pid })),
+              ProjectionExpression: 'profileId, fullName, grade',
+            },
+          },
+        }))
+        for (const p of Responses?.[TABLE.profiles] ?? []) {
+          creatorMap.set(p.profileId as string, p as Profile)
+        }
+      }
+
+      return reqRaw.map(r => ({
+        id: r.requestId,
+        code: r.code ?? null,
+        title: r.title,
+        description: r.description,
+        category: r.category,
+        priority: r.priority,
+        status: r.status,
+        createdByName: r.createdBy ? (creatorMap.get(r.createdBy)?.fullName ?? null) : null,
+        createdByGrade: r.createdBy ? (creatorMap.get(r.createdBy)?.grade ?? null) : null,
+        createdAt: r.createdAt,
+      }))
+    })(),
+
+    // Requerimientos inbox (TABLE.internalRequests, sin GSI declarado — Scan filtrado por toSectionId)
+    (async (): Promise<AreaBaseRequerimientoInbox[]> => {
+      if (!sectionId) return []
+      const { Items: reqItems } = await ddb.send(new ScanCommand({
+        TableName: TABLE.internalRequests,
+        FilterExpression: 'toSectionId = :sid',
+        ExpressionAttributeValues: { ':sid': sectionId },
+      }))
+      const reqRaw = (reqItems ?? []) as InternalRequest[]
+      reqRaw.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+
+      const requesterIds = [...new Set(reqRaw.filter(r => r.requestedBy).map(r => r.requestedBy))]
+      const requesterMap = new Map<string, Profile>()
+      if (requesterIds.length > 0) {
+        const { Responses } = await ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.profiles]: {
+              Keys: requesterIds.map(pid => ({ profileId: pid })),
+              ProjectionExpression: 'profileId, fullName, grade',
+            },
+          },
+        }))
+        for (const p of Responses?.[TABLE.profiles] ?? []) {
+          requesterMap.set(p.profileId as string, p as Profile)
+        }
+      }
+
+      return reqRaw.map(r => ({
+        id: r.requestId,
+        code: r.code ?? null,
+        type: r.type,
+        title: r.title,
+        description: r.description ?? null,
+        priority: r.priority,
+        status: r.status,
+        requestedByName: requesterMap.get(r.requestedBy)?.fullName ?? null,
+        requestedByGrade: requesterMap.get(r.requestedBy)?.grade ?? null,
+        createdAt: r.createdAt,
+      }))
+    })(),
+  ])
+
+  const jefeArea = personnel.find(p => p.role === 'jefe') ?? null
+
+  // Stats
+  const nowDate = new Date()
   const thirtyDaysFromNow = new Date()
-  thirtyDaysFromNow.setDate(now.getDate() + 30)
+  thirtyDaysFromNow.setDate(nowDate.getDate() + 30)
 
-  const operativesCount = inventoryRows.filter((i) => i.condition === 'operativo').length
-  const damagedCount = inventoryRows.filter(
-    (i) => ['dañado', 'danado', 'fuera_servicio'].includes(i.condition),
+  const operativesCount = inventoryRows.filter(i => i.condition === 'operativo').length
+  const damagedCount = inventoryRows.filter(i =>
+    ['dañado', 'danado', 'fuera_servicio'].includes(i.condition),
   ).length
-
-  const expiredCount = inventoryRows.filter((i) => {
+  const expiredCount = inventoryRows.filter(i => {
     if (!i.expirationDate) return false
-    return new Date(i.expirationDate) < now
+    return new Date(i.expirationDate) < nowDate
   }).length
-
-  const expiringSoonCount = inventoryRows.filter((i) => {
+  const expiringSoonCount = inventoryRows.filter(i => {
     if (!i.expirationDate) return false
     const exp = new Date(i.expirationDate)
-    return exp >= now && exp <= thirtyDaysFromNow
+    return exp >= nowDate && exp <= thirtyDaysFromNow
   }).length
-
-  const stats = {
-    personnelCount: personnel.length,
-    inventoryCount: inventoryRows.length,
-    operativesCount,
-    damagedCount,
-    expiredCount,
-    expiringSoonCount,
-    openIncidentsCount: incidentsInbox.filter(
-      (i) => ['pendiente', 'en_proceso'].includes(i.status),
-    ).length,
-    openRequestsCount: requestsInbox.filter(
-      (r) => ['pendiente', 'aprobada', 'en_proceso'].includes(r.status),
-    ).length,
-  }
 
   return {
     sectionId,
@@ -307,6 +395,17 @@ export async function getAreaBaseData(sectionKey: AreaKey): Promise<AreaBaseData
     inventory: inventoryRows,
     incidentsInbox,
     requestsInbox,
-    stats,
+    requerimientosInbox,
+    stats: {
+      personnelCount: personnel.length,
+      inventoryCount: inventoryRows.length,
+      operativesCount,
+      damagedCount,
+      expiredCount,
+      expiringSoonCount,
+      openIncidentsCount: incidentsInbox.filter(i => ['pendiente', 'en_proceso'].includes(i.status)).length,
+      openRequestsCount: requestsInbox.filter(r => ['pendiente', 'aprobada', 'en_proceso'].includes(r.status)).length,
+      openRequerimientosCount: requerimientosInbox.filter(r => ['pendiente', 'aprobada', 'en_proceso'].includes(r.status)).length,
+    },
   }
 }

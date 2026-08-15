@@ -1,3 +1,8 @@
+import { fileURLToPath } from 'node:url'
+import { dirname } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
 let userConfig = undefined
 try {
   userConfig = await import('./v0-user-next.config')
@@ -7,6 +12,22 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: [
+    '@aws-sdk/client-s3',
+    '@aws-sdk/s3-request-presigner',
+    '@aws-sdk/client-secrets-manager',
+    '@aws-sdk/client-lambda',
+    'bwip-js',
+  ],
+  // ──────────────────────────────────────────────────────────────────────
+  // outputFileTracingRoot — fijar la raíz del trazado de archivos al
+  // directorio del proyecto. Sin esto, Next 15.5+ infiere la raíz buscando
+  // el lockfile más cercano hacia arriba y encuentra un package-lock.json
+  // ajeno en C:\Users\User\, lo que anida el standalone bajo
+  // `Desktop/PERSONAL/Bomberos/web-ubo163/` y rompe el deploy del Lambda
+  // (server.js no queda en la raíz → "Cannot find module server.js").
+  // ──────────────────────────────────────────────────────────────────────
+  outputFileTracingRoot: __dirname,
   // ──────────────────────────────────────────────────────────────────────
   // output: 'standalone'
   // Genera .next/standalone/ con un server.js minimalista + node_modules
@@ -30,6 +51,9 @@ const nextConfig = {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
+    serverActions: {
+      allowedOrigins: ['d1bno1kyerz6hk.cloudfront.net'],
+    },
   },
 }
 

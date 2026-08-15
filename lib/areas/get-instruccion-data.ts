@@ -1,9 +1,7 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import {
-  courses, courseEnrollments, profiles,
-} from '@/lib/db/schema'
-import { and, eq, sql, desc, asc } from 'drizzle-orm'
+import { ddb, TABLE, ScanCommand, QueryCommand, GetCommand } from '@/lib/db/dynamodb'
+import type { Course, TrainingProgress } from '@/lib/db/schema/training'
+import type { Profile } from '@/lib/db/schema/profiles'
 
 export interface CourseStats {
   courseId: string
@@ -34,47 +32,53 @@ export interface InstruccionExtraData {
 }
 
 export async function getInstruccionExtraData(): Promise<InstruccionExtraData> {
-  // Cursos activos con conteos
-  const coursesRows = await db
-    .select({
-      course: courses,
-      enrollmentStatus: courseEnrollments.status,
-    })
-    .from(courses)
-    .leftJoin(courseEnrollments, eq(courseEnrollments.courseId, courses.id))
-    .where(eq(courses.active, true))
+  // All active courses
+  const { Items: courseItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.trainingCourses,
+    FilterExpression: 'active = :t',
+    ExpressionAttributeValues: { ':t': true },
+  }))
+  const allCourses = (courseItems ?? []) as Course[]
 
+  // All training progress (enrollments) — to count per course
+  // We scan the trainingProgress table (PK=profileId, SK=courseId)
+  const { Items: progItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.trainingProgress,
+    ProjectionExpression: 'courseId, #st',
+    ExpressionAttributeNames: { '#st': 'status' },
+  }))
+  const allProgress = (progItems ?? []) as TrainingProgress[]
+
+  // Aggregate by courseId
   const byCourse = new Map<string, CourseStats>()
-  for (const r of coursesRows) {
-    let stats = byCourse.get(r.course.id)
-    if (!stats) {
-      stats = {
-        courseId: r.course.id,
-        slug: r.course.slug,
-        title: r.course.title,
-        category: r.course.category,
-        durationHours: r.course.durationHours,
-        totalEnrolled: 0,
-        activeEnrolled: 0,
-        completedEnrolled: 0,
-      }
-      byCourse.set(r.course.id, stats)
-    }
-    if (r.enrollmentStatus) {
-      stats.totalEnrolled++
-      if (r.enrollmentStatus === 'activa') stats.activeEnrolled++
-      else if (r.enrollmentStatus === 'completada') stats.completedEnrolled++
-    }
+  for (const c of allCourses) {
+    byCourse.set(c.courseId, {
+      courseId: c.courseId,
+      slug: c.slug,
+      title: c.title,
+      category: c.category,
+      durationHours: c.durationHours ?? null,
+      totalEnrolled: 0,
+      activeEnrolled: 0,
+      completedEnrolled: 0,
+    })
+  }
+
+  for (const p of allProgress) {
+    const stats = byCourse.get(p.courseId)
+    if (!stats) continue
+    stats.totalEnrolled++
+    if (p.status === 'activa') stats.activeEnrolled++
+    else if (p.status === 'completada') stats.completedEnrolled++
   }
 
   const allStats = Array.from(byCourse.values())
-  const esbasStats = allStats.find((c) => c.category === 'esbas') ?? null
+  const esbasStats = allStats.find(c => c.category === 'esbas') ?? null
   const topCourses = allStats
-    .filter((c) => c.category !== 'esbas')
+    .filter(c => c.category !== 'esbas')
     .sort((a, b) => b.activeEnrolled - a.activeEnrolled)
     .slice(0, 8)
 
-  // Totales por categoría
   const totalsByCategory: Record<string, { total: number; active: number; completed: number }> = {}
   for (const c of allStats) {
     const cat = c.category
@@ -84,48 +88,46 @@ export async function getInstruccionExtraData(): Promise<InstruccionExtraData> {
     totalsByCategory[cat].completed += c.completedEnrolled
   }
 
-  // Aspirantes en ESBAS (status = aspirante_en_curso o que tienen enrollment en ESBAS)
+  // Aspirantes en ESBAS
   let aspirantesInEsbas: AspiranteInEsbas[] = []
   if (esbasStats) {
-    const aspirantesRows = await db
-      .select({
-        profileId: profiles.id,
-        fullName: profiles.fullName,
-        codigoCgbvp: profiles.codigoCgbvp,
-        status: profiles.status,
-        joinDate: profiles.joinDate,
-        enrollmentStatus: courseEnrollments.status,
-        finalGrade: courseEnrollments.finalGrade,
-      })
-      .from(profiles)
-      .leftJoin(
-        courseEnrollments,
-        and(
-          eq(courseEnrollments.profileId, profiles.id),
-          eq(courseEnrollments.courseId, esbasStats.courseId),
-        ),
-      )
-      .where(
-        sql`${profiles.status} IN ('postulante', 'aspirante_en_curso')`,
-      )
-      .orderBy(asc(profiles.fullName))
-      .limit(50)
+    const { Items: aspItems } = await ddb.send(new ScanCommand({
+      TableName: TABLE.profiles,
+      FilterExpression: '#st IN (:p, :a)',
+      ExpressionAttributeNames: { '#st': 'status' },
+      ExpressionAttributeValues: { ':p': 'postulante', ':a': 'aspirante_en_curso' },
+      Limit: 50,
+    }))
+    const aspirantes = (aspItems ?? []) as Profile[]
+    aspirantes.sort((a, b) => a.fullName.localeCompare(b.fullName))
 
-    aspirantesInEsbas = aspirantesRows.map((r) => ({
-      profileId: r.profileId,
-      fullName: r.fullName,
-      codigoCgbvp: r.codigoCgbvp,
-      status: r.status,
-      joinDate: r.joinDate,
-      enrollmentStatus: r.enrollmentStatus,
-      finalGrade: r.finalGrade,
+    // Get their ESBAS enrollments
+    const enrollmentMap = new Map<string, { status: string; finalGrade: string | null }>()
+    for (const asp of aspirantes) {
+      const { Item } = await ddb.send(new GetCommand({
+        TableName: TABLE.trainingProgress,
+        Key: { profileId: asp.profileId, courseId: esbasStats.courseId },
+        ProjectionExpression: '#st, finalGrade',
+        ExpressionAttributeNames: { '#st': 'status' },
+      }))
+      if (Item) {
+        enrollmentMap.set(asp.profileId, {
+          status: (Item as TrainingProgress).status,
+          finalGrade: (Item as TrainingProgress).finalGrade ?? null,
+        })
+      }
+    }
+
+    aspirantesInEsbas = aspirantes.map(p => ({
+      profileId: p.profileId,
+      fullName: p.fullName,
+      codigoCgbvp: p.codigoCgbvp ?? null,
+      status: p.status,
+      joinDate: p.joinDate ?? null,
+      enrollmentStatus: enrollmentMap.get(p.profileId)?.status ?? null,
+      finalGrade: enrollmentMap.get(p.profileId)?.finalGrade ?? null,
     }))
   }
 
-  return {
-    esbasStats,
-    topCourses,
-    aspirantesInEsbas,
-    totalsByCategory,
-  }
+  return { esbasStats, topCourses, aspirantesInEsbas, totalsByCategory }
 }

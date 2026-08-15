@@ -2,7 +2,7 @@
  * Scraper de emergencias SGO Norte — equivalente a emergencias.py
  * Scrapea sgonorte.bomberosperu.gob.pe/24horas (no requiere login).
  */
-import { db, emergencies, emergencyVehicles } from '../db'
+import { ddb, TABLE, GetCommand, PutCommand, now } from '../db'
 import { parseHtml, clean, parseFecha } from '../utils'
 import { log } from '../browser'
 
@@ -14,7 +14,8 @@ export async function scrapeEmergenciasSGO() {
     const html = await res.text()
     const $ = parseHtml(html)
 
-    let nuevas = 0, actualizadas = 0
+    let procesadas = 0
+    const promises: Promise<void>[] = []
 
     $('table tbody tr').each((_, fila) => {
       const tds = $(fila).find('td')
@@ -29,29 +30,43 @@ export async function scrapeEmergenciasSGO() {
       const estado = badge.length ? clean(badge.text()) : clean($(tds[4]).text())
       const maquinas = $(tds[5]).find('li').map((_, li) => clean($(li).text())).get().filter(Boolean)
 
-      // Fire-and-forget async inside each
-      void (async () => {
-        const [emergency] = await db.insert(emergencies).values({
-          numeroParte, tipo, estado, fechaDespacho: fechaDt,
-        }).onConflictDoUpdate({
-          target: emergencies.numeroParte,
-          set: { estado, tipo, updatedAt: new Date() },
-        }).returning()
+      const emergencyId = `EMG-${numeroParte}`
+      const fechaDespacho = fechaDt ? fechaDt.toISOString() : undefined
+      const date = fechaDt ? fechaDt.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
 
-        for (const cod of maquinas) {
-          await db.insert(emergencyVehicles).values({
-            emergencyId: emergency.id, codigoVehiculo: cod, nombreVehiculo: cod,
-          }).onConflictDoNothing()
-        }
+      promises.push((async () => {
+        const { Item: existing } = await ddb.send(new GetCommand({
+          TableName: TABLE.emergencies,
+          Key: { emergencyId },
+        }))
 
-        // Can't easily track new vs updated with Drizzle onConflict, just count
-        nuevas++
-      })()
+        const existingVehiculos: { codigoVehiculo: string; nombreVehiculo?: string }[] = existing?.vehiculos ?? []
+        const existingCodigos = new Set(existingVehiculos.map((v: any) => v.codigoVehiculo))
+        const newVehiculos = [
+          ...existingVehiculos,
+          ...maquinas.filter((cod) => !existingCodigos.has(cod)).map((cod) => ({ codigoVehiculo: cod, nombreVehiculo: cod })),
+        ]
+
+        await ddb.send(new PutCommand({
+          TableName: TABLE.emergencies,
+          Item: {
+            emergencyId,
+            numeroParte,
+            tipo: tipo || undefined,
+            estado: estado || undefined,
+            ...(fechaDespacho ? { fechaDespacho } : {}),
+            date,
+            vehiculos: newVehiculos,
+            createdAt: existing?.createdAt ?? now(),
+            updatedAt: now(),
+          },
+        }))
+        procesadas++
+      })())
     })
 
-    // Wait a tick for async operations
-    await new Promise((r) => setTimeout(r, 1000))
-    log(`SGO Norte — ${nuevas} procesadas`)
+    await Promise.all(promises)
+    log(`SGO Norte — ${procesadas} procesadas`)
   } catch (e) {
     log(`ERROR SGO Norte: ${e}`)
   }

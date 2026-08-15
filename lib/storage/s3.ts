@@ -20,21 +20,17 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 // ── Singleton del cliente ─────────────────────────────────────────
 
 function createS3Client(): S3Client {
-  const endpoint = process.env.S3_ENDPOINT
-  const region   = process.env.S3_REGION ?? "us-east-1"
+  const endpoint        = process.env.S3_ENDPOINT
+  const region          = process.env.S3_REGION ?? "us-east-1"
+  const accessKeyId     = process.env.S3_ACCESS_KEY
+  const secretAccessKey = process.env.S3_SECRET_KEY
 
   return new S3Client({
     region,
-    ...(endpoint
-      ? {
-          endpoint,
-          forcePathStyle: true, // necesario para MinIO y R2
-        }
-      : {}),
-    credentials: {
-      accessKeyId:     process.env.S3_ACCESS_KEY ?? "",
-      secretAccessKey: process.env.S3_SECRET_KEY ?? "",
-    },
+    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+    // Credenciales explícitas solo en dev local (MinIO).
+    // En Lambda, sin credenciales → SDK usa el IAM role automáticamente.
+    ...(accessKeyId && secretAccessKey ? { credentials: { accessKeyId, secretAccessKey } } : {}),
   })
 }
 
@@ -146,4 +142,14 @@ export function incidentAttachmentKey(
 /** Genera una key para documentos de inventario */
 export function inventoryDocKey(itemId: string, filename: string): string {
   return `inventory/${itemId}/${filename}`
+}
+
+/** Genera una key para documentos de biblioteca institucional */
+export function libraryDocKey(docId: string, filename: string): string {
+  return `library/${docId}/${filename}`
+}
+
+/** Genera una key para materiales de cursos (videos S3, PDFs de lecciones) */
+export function courseMaterialKey(courseId: string, lessonId: string, filename: string): string {
+  return `courses/${courseId}/${lessonId}/${filename}`
 }

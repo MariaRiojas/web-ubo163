@@ -73,7 +73,7 @@ export function InspeccionesTab({ data }: { data: FaenaData }) {
       ) : (
         <div className="machine-grid">
           {machinesToInspect.map((card) => (
-            <MachineCardUI key={card.machine.id} card={card} />
+            <MachineCardUI key={card.machine.machineId} card={card} />
           ))}
         </div>
       )}
@@ -157,7 +157,7 @@ function MachineCardUI({ card }: { card: MachineInspectionCard }) {
             <Check className="w-3.5 h-3.5" strokeWidth={2} />
             <span>
               Verificada
-              {card.lastCompletedAt && ` ${formatHourLabel(card.lastCompletedAt)}`}
+              {card.lastCompletedAt && ` ${formatHourLabel(new Date(card.lastCompletedAt))}`}
               {` por ${shortName(card.lastCompletedBy)}`}
             </span>
           </div>

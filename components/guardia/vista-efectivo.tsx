@@ -58,7 +58,7 @@ export function VistaEfectivo({ data }: { data: GuardiaData }) {
   const mineOnSelected = useMemo(() => {
     for (const bunk of data.dormitory.bunks) {
       for (const bed of bunk.beds) {
-        if (bed.isMine && bed.bed.id && bed.reservation && selectedDate === data.selectedDate) {
+        if (bed.isMine && bed.bed.bedId && bed.reservation && selectedDate === data.selectedDate) {
           return bed
         }
       }
@@ -78,11 +78,11 @@ export function VistaEfectivo({ data }: { data: GuardiaData }) {
     if (bed.reservation && !bed.isMine) return
     if (bed.isMine) {
       // Click en mi reserva → seleccionada para cancelar
-      setSelectedBedId(bed.bed.id)
+      setSelectedBedId(bed.bed.bedId)
       return
     }
     // Seleccionar para reservar
-    setSelectedBedId(bed.bed.id)
+    setSelectedBedId(bed.bed.bedId)
   }
 
   const handleConfirm = () => {
@@ -91,12 +91,23 @@ export function VistaEfectivo({ data }: { data: GuardiaData }) {
       return
     }
     startTransition(async () => {
-      const res = await reserveBed({ bedId: selectedBedId, date: selectedDate })
+      // Find bunkId and dormId for the selected bed
+      let bunkId = ''
+      for (const bunk of data.dormitory.bunks) {
+        const found = bunk.beds.find(b => b.bed.bedId === selectedBedId)
+        if (found) { bunkId = bunk.bunkId; break }
+      }
+      const res = await fetch('/api/guard/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bedId: selectedBedId, bunkId, dormId: data.dormitory.id, date: selectedDate }),
+      }).then(r => r.json())
       if (!res.ok) {
-        toast.error(res.error)
+        toast.error(res.error || 'Error al reservar')
       } else {
         toast.success('Reserva confirmada')
         setSelectedBedId(null)
+        window.location.href = `/guardia-nocturna?date=${selectedDate}`
       }
     })
   }
@@ -244,8 +255,7 @@ export function VistaEfectivo({ data }: { data: GuardiaData }) {
                   className={cls}
                   onClick={() => {
                     if (isPastDay) return
-                    setSelectedDate(iso)
-                    setSelectedBedId(null)
+                    window.location.href = `/guardia-nocturna?date=${iso}`
                   }}
                   disabled={isPastDay}
                   type="button"
@@ -309,9 +319,9 @@ export function VistaEfectivo({ data }: { data: GuardiaData }) {
                   <div className="bunk-beds">
                     {bunk.beds.map((bed) => (
                       <BedButton
-                        key={bed.bed.id}
+                        key={bed.bed.bedId}
                         bed={bed}
-                        isSelected={selectedBedId === bed.bed.id}
+                        isSelected={selectedBedId === bed.bed.bedId}
                         disabled={isPast || pending}
                         onClick={() => handleBedClick(bed)}
                       />
@@ -325,9 +335,9 @@ export function VistaEfectivo({ data }: { data: GuardiaData }) {
                   <div className="bunk-beds">
                     {data.dormitory.looseBeds.map((bed) => (
                       <BedButton
-                        key={bed.bed.id}
+                        key={bed.bed.bedId}
                         bed={bed}
-                        isSelected={selectedBedId === bed.bed.id}
+                        isSelected={selectedBedId === bed.bed.bedId}
                         disabled={isPast || pending}
                         onClick={() => handleBedClick(bed)}
                       />

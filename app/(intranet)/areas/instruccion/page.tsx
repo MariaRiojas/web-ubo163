@@ -21,6 +21,8 @@ export default async function AreaInstruccionPage() {
   const courseCount = extra.esbasStats
     ? extra.esbasStats.totalEnrolled + extra.topCourses.reduce((a, c) => a + c.totalEnrolled, 0)
     : extra.topCourses.reduce((a, c) => a + c.totalEnrolled, 0)
+  const perms = (session.user.permissions ?? []) as string[]
+  const canManageInbox = perms.some(p => p.startsWith('area.') && p.endsWith('.manage'))
 
   return (
     <div className="max-w-[1400px]">
@@ -28,10 +30,11 @@ export default async function AreaInstruccionPage() {
 
       <AreaBaseClient
         data={data}
+        canManageInbox={canManageInbox}
         customPanel={{
           key: 'cursos',
           label: 'Cursos y formación',
-          icon: GraduationCap,
+          icon: <GraduationCap className="w-3.5 h-3.5" strokeWidth={1.8} />,
           count: courseCount,
           node: <InstruccionPanel extra={extra} />,
         }}

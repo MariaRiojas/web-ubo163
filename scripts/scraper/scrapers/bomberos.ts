@@ -1,30 +1,62 @@
 /**
  * Scraper del padrón de bomberos — equivalente a bomberos.py
  * Scrapea la lista completa de bomberos de la compañía desde la extranet CGBVP
- * y hace upsert en la tabla profiles via Drizzle.
+ * y hace upsert en la tabla profiles via DynamoDB.
  */
 import type { Page } from 'puppeteer'
-import { db, profiles } from '../db'
-import { eq } from 'drizzle-orm'
+import { ddb, TABLE, QueryCommand, PutCommand, UpdateCommand, generateId, now } from '../db'
+import type { Profile } from '../../../lib/db/schema/profiles'
 import { parseHtml, clean } from '../utils'
 import { log, sleep, getCookies } from '../browser'
 
 const URL = 'https://www.bomberosperu.gob.pe/extranet/DEPA/BOM/BOMBomLis.asp'
 
 const GRADE_MAP: Record<string, string> = {
-  ASPIRANTE: 'aspirante',
-  SECCIONARIO: 'seccionario',
+  'ASPIRANTE': 'aspirante',
+  'SECCIONARIO': 'seccionario',
   'SUB TENIENTE': 'subteniente',
-  TENIENTE: 'teniente',
-  CAPITAN: 'capitan',
+  'SUBTENIENTE': 'subteniente',
+  'SUBTENIENTE CBP': 'subteniente',
+  'TENIENTE': 'teniente',
+  'TENIENTE CBP': 'teniente',
+  'CAPITAN': 'capitan',
+  'CAPITÁN': 'capitan',
+  'CAPITAN CBP': 'capitan',
+  'CAPITÁN CBP': 'capitan',
   'TENIENTE BRIGADIER': 'teniente_brigadier',
-  BRIGADIER: 'brigadier',
+  'TENIENTE BRIGADIER CBP': 'teniente_brigadier',
+  'BRIGADIER': 'brigadier',
+  'BRIGADIER CBP': 'brigadier',
   'BRIGADIER MAYOR': 'brigadier_mayor',
+  'BRIGADIER MAYOR CBP': 'brigadier_mayor',
   'BRIGADIER GENERAL': 'brigadier_general',
+  'BRIGADIER GENERAL CBP': 'brigadier_general',
 }
 
 function mapGrade(g: string): string {
-  return GRADE_MAP[g.toUpperCase()] || 'aspirante'
+  const normalized = g.toUpperCase().trim()
+  // Intento directo
+  if (GRADE_MAP[normalized]) return GRADE_MAP[normalized]
+  // Intento sin tildes
+  const sinTildes = normalized.replace(/[ÁÉÍÓÚ]/g, (c) => ({ 'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U' }[c] || c))
+  if (GRADE_MAP[sinTildes]) return GRADE_MAP[sinTildes]
+  // Intento sin "CBP"
+  const sinCbp = normalized.replace(/\s*CBP\s*$/, '').trim()
+  if (GRADE_MAP[sinCbp]) return GRADE_MAP[sinCbp]
+  // Si tiene código, no es aspirante
+  console.log(`[WARN] Grado no mapeado: "${g}" — asignando seccionario por defecto`)
+  return 'seccionario'
+}
+
+async function findProfileByCodigo(codigo: string): Promise<Profile | null> {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.profiles,
+    IndexName: 'codigoCgbvp-index',
+    KeyConditionExpression: 'codigoCgbvp = :c',
+    ExpressionAttributeValues: { ':c': codigo },
+    Limit: 1,
+  }))
+  return (Items?.[0] as Profile | undefined) ?? null
 }
 
 export async function scrapeBomberos(page: Page) {
@@ -108,18 +140,36 @@ export async function scrapeBomberos(page: Page) {
       const fullName = `${apellidos}, ${nombres}`
       const grade = mapGrade(grado)
 
-      const existing = await db.query.profiles.findFirst({
-        where: eq(profiles.codigoCgbvp, codigo),
-      })
+      const existing = await findProfileByCodigo(codigo)
 
       if (existing) {
-        await db.update(profiles).set({
-          fullName, grade, dni: dni || existing.dni, updatedAt: new Date(),
-        }).where(eq(profiles.id, existing.id))
+        const dniValue = dni || existing.dni || undefined
+        const updateExpr = dniValue
+          ? 'SET fullName = :n, grade = :g, dni = :d, updatedAt = :t'
+          : 'SET fullName = :n, grade = :g, updatedAt = :t'
+        const exprValues: Record<string, any> = { ':n': fullName, ':g': grade, ':t': now() }
+        if (dniValue) exprValues[':d'] = dniValue
+
+        await ddb.send(new UpdateCommand({
+          TableName: TABLE.profiles,
+          Key: { profileId: existing.profileId },
+          UpdateExpression: updateExpr,
+          ExpressionAttributeValues: exprValues,
+        }))
       } else {
-        await db.insert(profiles).values({
-          codigoCgbvp: codigo, fullName, grade, dni, status: 'activo',
-        })
+        await ddb.send(new PutCommand({
+          TableName: TABLE.profiles,
+          Item: {
+            profileId: generateId(),
+            codigoCgbvp: codigo,
+            fullName,
+            grade,
+            ...(dni ? { dni } : {}),
+            status: 'activo',
+            createdAt: now(),
+            updatedAt: now(),
+          },
+        }))
         nuevos++
       }
       total++

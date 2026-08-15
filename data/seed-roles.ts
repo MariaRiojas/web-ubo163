@@ -5,15 +5,13 @@
  *   1. Crea las 7 secciones reglamentarias (jefatura + 6 secciones de línea/asesoramiento)
  *   2. Asigna cargos de jefatura a Torres (primer_jefe) y Ramírez (segundo_jefe)
  *
- * Idempotente — usa onConflictDoNothing en secciones y upsert en roles.
+ * Idempotente — usa PutCommand con condition expression en secciones.
  * Ejecutar con: npm run db:seed:roles
  *
  * IMPORTANTE: Requiere que los perfiles ya existan (npm run db:seed:operativo primero).
  */
 
-import { db } from '../lib/db'
-import { sections, sectionRoles, profiles } from '../lib/db/schema'
-import { and, eq } from 'drizzle-orm'
+import { ddb, TABLE, QueryCommand, PutCommand, UpdateCommand, generateId, now } from '../lib/db/dynamodb'
 
 const SECTIONS_DATA = [
   {
@@ -81,44 +79,46 @@ const SECTIONS_DATA = [
   },
 ]
 
+async function findSectionByKey(key: string) {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.sections,
+    IndexName: 'key-index',
+    KeyConditionExpression: '#k = :k',
+    ExpressionAttributeNames: { '#k': 'key' },
+    ExpressionAttributeValues: { ':k': key },
+    Limit: 1,
+  }))
+  return (Items?.[0] as any) ?? null
+}
+
+async function findProfileByEmail(email: string) {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.profiles,
+    IndexName: 'email-index',
+    KeyConditionExpression: 'email = :e',
+    ExpressionAttributeValues: { ':e': email },
+    Limit: 1,
+  }))
+  return (Items?.[0] as any) ?? null
+}
+
 async function upsertJefaturaRole(
   profileId: string,
   sectionId: string,
   role: 'primer_jefe' | 'segundo_jefe',
   label: string
 ) {
-  // Look for any existing row (active or not) for this profile+section
-  const existing = await db
-    .select()
-    .from(sectionRoles)
-    .where(
-      and(
-        eq(sectionRoles.profileId, profileId),
-        eq(sectionRoles.sectionId, sectionId)
-      )
-    )
-    .limit(1)
-
-  if (existing.length > 0) {
-    await db
-      .update(sectionRoles)
-      .set({ role, isActive: true })
-      .where(
-        and(
-          eq(sectionRoles.profileId, profileId),
-          eq(sectionRoles.sectionId, sectionId)
-        )
-      )
-    console.log(`  ✓ ${label} actualizado como ${role.toUpperCase().replace('_', ' ')}`)
-  } else {
-    await db.insert(sectionRoles).values({
+  await ddb.send(new PutCommand({
+    TableName: TABLE.sectionRoles,
+    Item: {
       profileId,
       sectionId,
       role,
       isActive: true,
-    })
-    console.log(`  ✓ ${label} asignado como ${role.toUpperCase().replace('_', ' ')}`)
-  }
+      assignedAt: now(),
+    },
+  }))
+  console.log(`  ✓ ${label} asignado como ${role.toUpperCase().replace('_', ' ')}`)
 }
 
 async function main() {
@@ -127,20 +127,32 @@ async function main() {
   // ── 1. Crear secciones ─────────────────────────────────────────────
   console.log('📋 Creando secciones reglamentarias...')
   for (const s of SECTIONS_DATA) {
-    await db
-      .insert(sections)
-      .values(s)
-      .onConflictDoNothing({ target: sections.key })
+    const existing = await findSectionByKey(s.key)
+    if (!existing) {
+      await ddb.send(new PutCommand({
+        TableName: TABLE.sections,
+        Item: {
+          sectionId: generateId(),
+          ...s,
+        },
+      }))
+    } else {
+      // Update displayOrder and description if changed
+      await ddb.send(new UpdateCommand({
+        TableName: TABLE.sections,
+        Key: { sectionId: existing.sectionId },
+        UpdateExpression: 'SET displayOrder = :do, description = :desc',
+        ExpressionAttributeValues: {
+          ':do': s.displayOrder,
+          ':desc': s.description,
+        },
+      }))
+    }
   }
   console.log(`  ✓ ${SECTIONS_DATA.length} secciones (idempotente)`)
 
-  // Cargar la sección jefatura para obtener su ID
-  const [jefaturaSection] = await db
-    .select()
-    .from(sections)
-    .where(eq(sections.key, 'jefatura'))
-    .limit(1)
-
+  // Obtener sección jefatura
+  const jefaturaSection = await findSectionByKey('jefatura')
   if (!jefaturaSection) {
     console.error('❌ No se pudo encontrar la sección jefatura después de insertarla.')
     process.exit(1)
@@ -149,13 +161,8 @@ async function main() {
   // ── 2. Encontrar perfiles de prueba ────────────────────────────────
   console.log('\n👤 Buscando perfiles de prueba...')
 
-  const torresPerfil = await db.query.profiles.findFirst({
-    where: (p, { eq }) => eq(p.email, 'torres@cia999.pe'),
-  })
-
-  const ramirezPerfil = await db.query.profiles.findFirst({
-    where: (p, { eq }) => eq(p.email, 'ramirez@cia999.pe'),
-  })
+  const torresPerfil = await findProfileByEmail('torres@cia999.pe')
+  const ramirezPerfil = await findProfileByEmail('ramirez@cia999.pe')
 
   if (!torresPerfil) {
     console.warn('  ⚠️  Perfil de Torres no encontrado — omitiendo asignación de Primer Jefe')
@@ -174,11 +181,11 @@ async function main() {
   console.log('\n🎖️  Asignando encargatura de Jefatura...')
 
   if (torresPerfil) {
-    await upsertJefaturaRole(torresPerfil.id, jefaturaSection.id, 'primer_jefe', 'Torres')
+    await upsertJefaturaRole(torresPerfil.profileId, jefaturaSection.sectionId, 'primer_jefe', 'Torres')
   }
 
   if (ramirezPerfil) {
-    await upsertJefaturaRole(ramirezPerfil.id, jefaturaSection.id, 'segundo_jefe', 'Ramírez')
+    await upsertJefaturaRole(ramirezPerfil.profileId, jefaturaSection.sectionId, 'segundo_jefe', 'Ramírez')
   }
 
   console.log('\n✅ Seed de roles completado.')

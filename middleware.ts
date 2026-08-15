@@ -9,6 +9,8 @@ const PROTECTED_PREFIXES = [
   '/configuracion', '/jefatura',
   '/operatividad', '/estadisticas', '/partes-emergencia',
   '/bomberos', '/asistencias', '/analisis',
+  '/areas', '/faena', '/capacitacion', '/biblioteca', '/anuncios',
+  '/auditoria',
 ]
 
 function isProtectedRoute(pathname: string): boolean {

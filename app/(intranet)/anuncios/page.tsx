@@ -1,8 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { db } from '@/lib/db'
-import { profiles, sections } from '@/lib/db/schema'
-import { eq, and, inArray, asc } from 'drizzle-orm'
+import { ddb, TABLE, ScanCommand } from '@/lib/db/dynamodb'
 import { getAnunciosData } from '@/lib/anuncios/get-anuncios-data'
 import { AnunciosClient } from '@/components/anuncios/anuncios-client'
 import type { Permission } from '@/lib/auth/permissions'
@@ -22,27 +20,14 @@ export default async function AnunciosPage() {
   const data = await getAnunciosData(session.user.profileId, capabilities)
 
   // Traer catálogo de secciones y efectivos (para composer de directos)
-  const [sectionList, profileList] = await Promise.all([
-    db
-      .select({ id: sections.id, key: sections.key, name: sections.name })
-      .from(sections)
-      .orderBy(asc(sections.displayOrder), asc(sections.name)),
+  const [sectionsRes, profilesRes] = await Promise.all([
+    ddb.send(new ScanCommand({ TableName: TABLE.sections, ProjectionExpression: 'sectionId, #k, #n', ExpressionAttributeNames: { '#k': 'key', '#n': 'name' } })),
     capabilities.canCreate
-      ? db
-          .select({
-            id: profiles.id,
-            fullName: profiles.fullName,
-            grade: profiles.grade,
-            codigoCgbvp: profiles.codigoCgbvp,
-          })
-          .from(profiles)
-          .where(
-            inArray(profiles.status, ['activo', 'aspirante_en_curso', 'postulante', 'reserva']),
-          )
-          .orderBy(asc(profiles.fullName))
-          .limit(500)
-      : Promise.resolve([]),
+      ? ddb.send(new ScanCommand({ TableName: TABLE.profiles, ProjectionExpression: 'profileId, fullName, grade, codigoCgbvp, #s', ExpressionAttributeNames: { '#s': 'status' }, FilterExpression: '#s IN (:a,:b,:c,:d)', ExpressionAttributeValues: { ':a': 'activo', ':b': 'aspirante_en_curso', ':c': 'postulante', ':d': 'reserva' } }))
+      : Promise.resolve({ Items: [] }),
   ])
+  const sectionList = (sectionsRes.Items ?? []).map((s: any) => ({ id: s.sectionId, key: s.key, name: s.name }))
+  const profileList = (profilesRes.Items ?? []).map((p: any) => ({ id: p.profileId, fullName: p.fullName, grade: p.grade, codigoCgbvp: p.codigoCgbvp }))
 
   return (
     <div className="max-w-[1400px]">

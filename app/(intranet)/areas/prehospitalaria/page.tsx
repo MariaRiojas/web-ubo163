@@ -20,6 +20,8 @@ export default async function AreaPrehospitalariaPage() {
 
   const alertCount = extra.stats.expiredCount + extra.stats.expiringSoonCount
     + extra.stats.maintenanceOverdueCount
+  const perms = (session.user.permissions ?? []) as string[]
+  const canManageInbox = perms.some(p => p.startsWith('area.') && p.endsWith('.manage'))
 
   return (
     <div className="max-w-[1400px]">
@@ -27,10 +29,11 @@ export default async function AreaPrehospitalariaPage() {
 
       <AreaBaseClient
         data={data}
+        canManageInbox={canManageInbox}
         customPanel={{
           key: 'medical',
           label: 'Equipos y medicamentos',
-          icon: Stethoscope,
+          icon: <Stethoscope className="w-3.5 h-3.5" strokeWidth={1.8} />,
           count: alertCount > 0 ? alertCount : extra.stats.total,
           node: <PrehospitalariaPanel extra={extra} />,
         }}

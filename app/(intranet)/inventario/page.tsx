@@ -1,13 +1,16 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { PageHeader } from "@/components/intranet/page-header"
 import { InventarioClient } from "./inventario-client"
-import { Package } from "lucide-react"
 import type { Permission } from "@/lib/auth/permissions"
+import { getAllInventoryItems, resolveSection } from "@/lib/inventario/get-items"
+
+export const dynamic = 'force-dynamic'
 
 export type InventoryCategory =
   | 'epp' | 'herramienta' | 'vehiculo' | 'comunicacion'
   | 'medico' | 'rescate' | 'hazmat' | 'insumo' | 'mobiliario'
+  | 'insumo_medico'
+  | (string & {})
 
 export type InventoryCondition =
   | 'operativo' | 'mantenimiento' | 'baja' | 'pendiente_revision'
@@ -19,6 +22,9 @@ export interface InventoryItem {
   section: string
   sectionKey: string
   serialNumber: string | null
+  brand: string | null
+  model: string | null
+  inbpCode: string | null
   quantity: number
   condition: InventoryCondition
   location: string | null
@@ -28,8 +34,11 @@ export interface InventoryItem {
   notes: string | null
 }
 
+type MockBase = Omit<InventoryItem, 'brand' | 'model' | 'inbpCode'>
+function mockItem(m: MockBase): InventoryItem { return { brand: null, model: null, inbpCode: null, ...m } }
+
 // Mock data — en producción: await db.query.inventory.findMany({ with: { section: true, assignedToProfile: true } })
-const MOCK_INVENTORY: InventoryItem[] = [
+const MOCK_INVENTORY: InventoryItem[] = ([
   // VEHÍCULOS — Sección Máquinas
   { id: 'inv-01', name: 'Unidad Autobomba 163-01', category: 'vehiculo', section: 'Máquinas', sectionKey: 'maquinas', serialNumber: 'ABT-163-01', quantity: 1, condition: 'operativo', location: 'Bahía 1', lastMaintenance: '2026-03-15', nextMaintenance: '2026-06-15', assignedTo: null, notes: 'Revisión técnica vigente hasta julio 2026' },
   { id: 'inv-02', name: 'Unidad Rescate 163-02', category: 'vehiculo', section: 'Máquinas', sectionKey: 'maquinas', serialNumber: 'URS-163-02', quantity: 1, condition: 'mantenimiento', location: 'Bahía 2', lastMaintenance: '2026-04-01', nextMaintenance: '2026-04-20', assignedTo: null, notes: 'Cambio de frenos en proceso' },
@@ -54,7 +63,7 @@ const MOCK_INVENTORY: InventoryItem[] = [
   // INSUMOS
   { id: 'inv-17', name: 'Espuma AFFF 6%', category: 'insumo', section: 'Servicios Generales', sectionKey: 'servicios_generales', serialNumber: null, quantity: 20, condition: 'operativo', location: 'Almacén General', lastMaintenance: null, nextMaintenance: '2026-12-01', assignedTo: null, notes: 'Stock mínimo: 10 bidones' },
   { id: 'inv-18', name: 'Mascarillas N95', category: 'insumo', section: 'Servicios Generales', sectionKey: 'servicios_generales', serialNumber: null, quantity: 100, condition: 'operativo', location: 'Almacén General', lastMaintenance: null, nextMaintenance: null, assignedTo: null, notes: 'Stock para 3 meses' },
-]
+] as MockBase[]).map(mockItem)
 
 export default async function InventarioPage() {
   const session = await auth()
@@ -64,32 +73,41 @@ export default async function InventarioPage() {
   const canManage = permissions.includes('inventory.manage')
   const currentUserName = session.user.name ?? ''
 
-  // Items asignados al usuario actual
-  const myItems = MOCK_INVENTORY.filter(i => i.assignedTo === currentUserName)
-
-  // Items que necesitan atención próxima (mantenimiento en < 30 días o condición no operativo)
-  const today = new Date()
-  const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-  const maintenanceItems = MOCK_INVENTORY.filter(i => {
-    if (i.condition !== 'operativo') return true
-    if (!i.nextMaintenance) return false
-    return new Date(i.nextMaintenance) <= thirtyDaysFromNow
-  })
+  // Intentar datos reales de DynamoDB; usar mock como fallback de desarrollo
+  let allItems: InventoryItem[]
+  try {
+    const dbItems = await getAllInventoryItems()
+    allItems = dbItems.length > 0
+      ? dbItems.map(i => {
+          const sec = resolveSection(i.sectionId)
+          return {
+            id: i.itemId,
+            name: i.name,
+            category: i.category as InventoryCategory,
+            section: sec.name,
+            sectionKey: sec.key,
+            serialNumber: i.serialNumber ?? null,
+            brand: i.brand ?? null,
+            model: i.model ?? null,
+            inbpCode: i.inbpCode ?? null,
+            quantity: i.quantity,
+            condition: (i.condition as InventoryCondition) ?? 'operativo',
+            location: i.ubicacionInterna ?? i.almacenTipo ?? null,
+            lastMaintenance: null,
+            nextMaintenance: null,
+            assignedTo: null,
+            notes: i.notes ?? null,
+          } satisfies InventoryItem
+        })
+      : MOCK_INVENTORY
+  } catch {
+    allItems = MOCK_INVENTORY
+  }
 
   return (
-    <div>
-      <PageHeader
-        icon={Package}
-        title="Inventario"
-        description="Control de equipos, vehículos y materiales por sección"
-      />
-      <InventarioClient
-        items={MOCK_INVENTORY}
-        myItems={myItems}
-        maintenanceItems={maintenanceItems}
-        canManage={canManage}
-        currentUserName={currentUserName}
-      />
-    </div>
+    <InventarioClient
+      items={allItems}
+      canManage={canManage}
+    />
   )
 }

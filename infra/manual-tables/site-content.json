@@ -1,0 +1,13 @@
+{
+  "TableName": "ubo163-dev-site-content",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    { "AttributeName": "contentKey", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "contentKey", "KeyType": "HASH" }
+  ],
+  "Tags": [
+    { "Key": "aws-apn-id", "Value": "pc:3ane5a9qkvyu1sguzgkqxqkuv" }
+  ]
+}

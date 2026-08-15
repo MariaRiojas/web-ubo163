@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'node:crypto'
 import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, QueryCommand, generateId, now } from '@/lib/db/dynamodb'
 import type { Profile } from '@/lib/db/schema/profiles'
 import type { Grade, ProfileStatus } from '@/lib/db/schema/profiles'
@@ -6,7 +7,15 @@ import type { Grade, ProfileStatus } from '@/lib/db/schema/profiles'
 const SYNC_SECRET = process.env.SCRAPPER_SYNC_SECRET || 'change-me'
 
 function checkAuth(req: NextRequest) {
-  return req.headers.get('x-sync-token') === SYNC_SECRET
+  const headerToken = req.headers.get('x-sync-token')
+  if (!headerToken) return false
+
+  const headerBuf = Buffer.from(headerToken)
+  const secretBuf = Buffer.from(SYNC_SECRET)
+
+  if (headerBuf.length !== secretBuf.length) return false
+
+  return timingSafeEqual(headerBuf, secretBuf)
 }
 
 /** Busca un perfil por codigoCgbvp via GSI */

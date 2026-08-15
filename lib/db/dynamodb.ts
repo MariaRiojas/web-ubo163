@@ -88,6 +88,19 @@ export const TABLE = {
   announcements:          `${PREFIX}-announcements`,
   contentCalendar:        `${PREFIX}-content-calendar`,
   ics:                    `${PREFIX}-ics`,
+  trainingCohorts:        `${PREFIX}-training-cohorts`,
+  trainingEvaluations:    `${PREFIX}-training-evaluations`,
+  trainingEnrollments:    `${PREFIX}-training-enrollments`,
+  libraryDocuments:       `${PREFIX}-library-documents`,
+  inventoryMovements:     `${PREFIX}-inventory-movements`,
+  // Nuevas (2026-08) — crear vía CLI/consola con identidad fuera del SCP:
+  admissionApplications:  `${PREFIX}-admission-applications`,
+  auditLog:               `${PREFIX}-audit-log`,
+  siteContent:            `${PREFIX}-site-content`,
+  aspiranteEvaluaciones:  `${PREFIX}-aspirante-evaluaciones`,
+  aspiranteTramites:      `${PREFIX}-aspirante-tramites`,
+  instructionAttendance:  `${PREFIX}-instruction-attendance`,
+  machineInspections:     `${PREFIX}-machine-inspections`,
 } as const
 
 export type TableName = (typeof TABLE)[keyof typeof TABLE]

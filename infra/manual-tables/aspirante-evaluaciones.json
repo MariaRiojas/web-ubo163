@@ -1,0 +1,25 @@
+{
+  "TableName": "ubo163-dev-aspirante-evaluaciones",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    { "AttributeName": "evalId", "AttributeType": "S" },
+    { "AttributeName": "aspiranteId", "AttributeType": "S" },
+    { "AttributeName": "createdAt", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "evalId", "KeyType": "HASH" }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "aspiranteId-createdAt-index",
+      "KeySchema": [
+        { "AttributeName": "aspiranteId", "KeyType": "HASH" },
+        { "AttributeName": "createdAt", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ],
+  "Tags": [
+    { "Key": "aws-apn-id", "Value": "pc:3ane5a9qkvyu1sguzgkqxqkuv" }
+  ]
+}

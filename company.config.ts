@@ -36,8 +36,10 @@ export const companyConfig = {
     department: "Lima",
     province: "Lima",
     district: "Ancón",
-    address: "Av. Principal S/N, Ancón",
-    coordinates: { lat: -11.7746, lng: -77.1185 },
+    address: "Av. José Paredes Roncal 755, Ancón",
+    // Punto GPS de la estación (geocerco de asistencia). Derivado del Plus Code
+    // 6RHH+33 Ancón (full 57W46RHH+33) → Loreto 779, Ancón, Lima 15123.
+    coordinates: { lat: -11.772312, lng: -77.172313 },
     timezone: "America/Lima",
   },
 
@@ -45,8 +47,8 @@ export const companyConfig = {
   // CONTACTO
   // ================================================================
   contact: {
-    phone: "116",
-    emergency: "911",
+    phone: "(01) 552-1368",
+    emergency: "116",
     email: "contacto@bomberos163.pe",
     website: "https://bomberos163.pe",
   },

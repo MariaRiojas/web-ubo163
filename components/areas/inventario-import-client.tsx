@@ -74,12 +74,20 @@ export function InventarioImportClient({ areaKey, onClose, onSuccess }: Props) {
 
     setImporting(true)
     try {
-      const res = await importInventoryRowsAction(areaKey, validRows)
-      if (res.success) {
-        toast.success(`Se importaron ${res.count} ítems correctamente`)
+      const res = await fetch('/api/inventory/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          areaKey,
+          items: validRows.map((r: any) => r.data),
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success(`Se importaron ${data.count} ítems correctamente`)
         onSuccess()
       } else {
-        throw new Error(res.error)
+        throw new Error(data.error || 'Error al importar')
       }
     } catch (error: any) {
       toast.error('Error al importar: ' + error.message)

@@ -166,11 +166,18 @@ function LibraryItemFull({ doc }: { doc: LibraryCardData }) {
   const sizeStr = formatFileSize(doc.fileSizeBytes)
   const mimeStr = formatMimeType(doc.mimeType)
 
+  async function handleOpen(e: React.MouseEvent) {
+    e.preventDefault()
+    const res = await fetch(`/api/library/${doc.id}`)
+    if (!res.ok) return
+    const { url } = await res.json()
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <a
-      href={`/api/library/${doc.id}`}
-      target="_blank"
-      rel="noopener noreferrer"
+      href="#"
+      onClick={handleOpen}
       className="cap-library-item"
     >
       <div className="cap-library-icon">
@@ -197,7 +204,7 @@ function LibraryItemFull({ doc }: { doc: LibraryCardData }) {
         <div className="cap-library-meta">
           {mimeStr}
           {sizeStr && ` · ${sizeStr}`}
-          {` · ${formatUploadMonth(doc.uploadedAt)}`}
+          {` · ${formatUploadMonth(new Date(doc.uploadedAt))}`}
         </div>
       </div>
       <div className="cap-library-action">

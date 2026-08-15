@@ -1,8 +1,11 @@
 import { auth } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Construction } from 'lucide-react'
+import { ArrowLeft, Construction, AlertTriangle, FileText, Send } from 'lucide-react'
 import { AREAS_META, type AreaKey } from '@/lib/areas/get-areas-hub'
+import { getAreaBaseData } from '@/lib/areas/get-area-base-data'
+import { BandejaIncidenciasStandalone, BandejaSolicitudesStandalone } from '@/components/areas/bandeja-standalone'
+import { BandejaRequerimientosStandalone } from '@/components/areas/bandeja-requerimientos'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +40,7 @@ const SUBPAGE_LABELS: Record<string, string> = {
   ceremonias:            'Gestión de Ceremonias',
   'bandeja-incidencias': 'Bandeja de Incidencias',
   'bandeja-solicitudes': 'Bandeja de Solicitudes',
+  requerimientos:        'Bandeja de Requerimientos',
   personal:              'Personal de la Sección',
 }
 
@@ -71,6 +75,7 @@ const SUBPAGE_FEATURES: Record<string, string[]> = {
   ceremonias:            ['Gestión de paradas y desfiles', 'Lista de asistentes por ceremonia', 'Material y logística ceremonial'],
   'bandeja-incidencias': ['Incidencias recibidas del personal', 'Asignar a responsable y hacer seguimiento', 'Cambio de estado con notificaciones automáticas'],
   'bandeja-solicitudes': ['Solicitudes formales recibidas', 'Aprobar, rechazar o derivar', 'Historial de solicitudes gestionadas'],
+  requerimientos:        ['Requerimientos formales de compra o servicio entre secciones', 'Aprobar, rechazar o marcar en proceso', 'Historial de requerimientos gestionados'],
   personal:              ['Efectivos con cargo en esta sección', 'Jefe, adjuntos y miembros', 'Historial de asignaciones de cargo'],
 }
 
@@ -111,12 +116,74 @@ export default async function AreaSubpagePage({
 
   const meta = AREAS_META[areaKey]
   const subpageLabel = SUBPAGE_LABELS[subpage] ?? subpage.replace(/-/g, ' ')
-  const features = SUBPAGE_FEATURES[subpage] ?? ['Funcionalidad planificada para próximas versiones']
   const areaSlug = AREA_KEY_TO_SLUG[areaKey]
+  const heroClass = meta.type === 'asesoramiento' ? 'area-hero area-hero--asesoramiento' : 'area-hero'
 
-  const heroClass = meta.type === 'asesoramiento'
-    ? 'area-hero area-hero--asesoramiento'
-    : 'area-hero'
+  const isBandeja = subpage === 'bandeja-incidencias' || subpage === 'bandeja-solicitudes' || subpage === 'requerimientos'
+
+  // ─── Bandeja pages: fetch real data and render ────────────────────
+  if (isBandeja) {
+    const data = await getAreaBaseData(areaKey)
+    const perms = (session.user.permissions ?? []) as string[]
+    const canManage = perms.some(p => p.startsWith('area.') && p.endsWith('.manage'))
+
+    const isSolicitudes = subpage === 'bandeja-solicitudes'
+    const isRequerimientos = subpage === 'requerimientos'
+    const Icon = isRequerimientos ? Send : isSolicitudes ? FileText : AlertTriangle
+    const count = isRequerimientos
+      ? data.requerimientosInbox.length
+      : isSolicitudes ? data.requestsInbox.length : data.incidentsInbox.length
+    const openCount = isRequerimientos
+      ? data.stats.openRequerimientosCount
+      : isSolicitudes ? data.stats.openRequestsCount : data.stats.openIncidentsCount
+
+    return (
+      <div className="max-w-[1400px]">
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link
+            href={`/areas/${areaSlug}`}
+            className="btn btn--ghost btn--sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+          >
+            <ArrowLeft className="w-3 h-3" strokeWidth={1.8} />
+            Volver al tablero
+          </Link>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--graphite)' }}>·</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--steel)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {subpageLabel}
+          </span>
+        </div>
+
+        <header className={heroClass}>
+          <div className="area-hero-seal">{meta.seal}</div>
+          <div className="area-hero-body">
+            <div className="area-hero-ref">{meta.normativeRef}</div>
+            <h1 className="area-hero-title">{meta.name}</h1>
+            <p className="area-hero-desc">{subpageLabel}</p>
+          </div>
+          <div className="area-hero-jefe">
+            <span className="area-hero-jefe-label">TOTAL RECIBIDAS</span>
+            <span className="area-hero-jefe-name mono" style={{ fontSize: 28 }}>{count}</span>
+            {openCount > 0 && (
+              <span style={{ fontSize: 11, color: 'var(--flame)', fontFamily: 'var(--font-mono)' }}>
+                {openCount} pendiente{openCount === 1 ? '' : 's'}
+              </span>
+            )}
+          </div>
+        </header>
+
+        {isRequerimientos
+          ? <BandejaRequerimientosStandalone requerimientos={data.requerimientosInbox} canManage={canManage} />
+          : isSolicitudes
+            ? <BandejaSolicitudesStandalone requests={data.requestsInbox} canManage={canManage} />
+            : <BandejaIncidenciasStandalone incidents={data.incidentsInbox} canManage={canManage} />
+        }
+      </div>
+    )
+  }
+
+  // ─── Construction placeholder for all other sub-pages ────────────
+  const features = SUBPAGE_FEATURES[subpage] ?? ['Funcionalidad planificada para próximas versiones']
 
   return (
     <div className="max-w-[1400px]">

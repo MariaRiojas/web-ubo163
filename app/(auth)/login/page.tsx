@@ -4,13 +4,8 @@ import type React from "react"
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Shield, Flame, Lock, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Link from "next/link"
+import { Lock, AlertCircle, ArrowLeft, Loader2 } from "lucide-react"
 import { companyConfig } from "@/company.config"
 
 export default function LoginPage() {
@@ -25,11 +20,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
 
-    const result = await signIn("credentials", {
-      username,
-      password,
-      redirect: false,
-    })
+    const result = await signIn("credentials", { username, password, redirect: false })
 
     if (result?.error) {
       setError("Usuario o contraseña incorrectos")
@@ -40,115 +31,96 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className={`min-h-screen bg-gradient-to-br ${companyConfig.theme.gradientFrom} via-red-700 ${companyConfig.theme.gradientTo} flex items-center justify-center p-4 relative overflow-hidden`}>
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
-      <div className="absolute top-20 left-20 w-72 h-72 bg-red-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" />
-      <div className="absolute bottom-20 right-20 w-72 h-72 bg-amber-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style={{ animationDelay: '1s' }} />
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "11px 14px", fontSize: 14,
+    background: "var(--ink-black)", border: "1px solid var(--ink-line)",
+    color: "var(--bone)", borderRadius: 2, outline: "none",
+    fontFamily: "var(--font-sans, inherit)",
+  }
+  const labelStyle: React.CSSProperties = {
+    display: "block", fontFamily: "var(--font-mono)", fontSize: 10,
+    letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--steel)", marginBottom: 8,
+  }
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="relative transform transition-transform duration-300 hover:scale-110 group">
-              <Shield className="h-20 w-20 text-white drop-shadow-2xl" />
-              <Flame className="h-8 w-8 text-amber-300 absolute -right-2 -bottom-2 animate-pulse drop-shadow-lg" />
-            </div>
+  return (
+    <div className="intranet-theme" style={{ minHeight: "100vh", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      {/* Fondo institucional: grid + glow tenue */}
+      <div className="bg-grid" style={{ position: "absolute", inset: 0, opacity: 0.5, pointerEvents: "none" }} />
+      <div className="bg-glow-red" style={{ position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)", width: 600, height: 400, pointerEvents: "none" }} />
+
+      <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
+        {/* Sello + título */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/escudo-163.png" alt="Escudo Compañía N.° 163" width={84} height={84}
+              style={{ width: 84, height: 84, objectFit: "contain" }} />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">{companyConfig.shortName}</h1>
-          <p className="text-red-100 text-lg drop-shadow">Intranet — Acceso Seguro</p>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--brass)", marginBottom: 10 }}>
+            Sistema Interno · Acceso Restringido
+          </div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 30, lineHeight: 1.1, color: "var(--bone)", marginBottom: 6 }}>
+            {companyConfig.shortName}
+          </h1>
+          <p style={{ fontSize: 13, color: "var(--steel)" }}>Intranet de la Compañía</p>
         </div>
 
-        <Card className="border-0 shadow-2xl glass-strong backdrop-blur-xl text-white">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-white">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center text-red-100">
-              Ingrese sus credenciales para acceder al sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4 bg-red-900/50 border-red-700 text-white backdrop-blur-sm">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error de Autenticación</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <form onSubmit={handleLogin}>
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username" className="text-white font-medium">
-                    Usuario (DNI o email)
-                  </Label>
-                  <Input
-                    id="username"
-                    placeholder="Ingrese su DNI o email"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    autoComplete="username"
-                    className="bg-white/20 border-white/30 text-white placeholder:text-red-200/60 backdrop-blur-sm focus:bg-white/30 focus:border-red-300 transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-white font-medium">
-                      Contraseña
-                    </Label>
-                    <Link href="#" className="text-sm text-red-200 hover:text-white transition-colors">
-                      ¿Olvidó su contraseña?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Ingrese su contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    className="bg-white/20 border-white/30 text-white placeholder:text-red-200/60 backdrop-blur-sm focus:bg-white/30 focus:border-red-300 transition-all"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mt-2"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Accediendo...
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <Lock className="mr-2 h-4 w-4" />
-                      Acceder al Sistema
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-center text-sm text-red-100">
-              <Link href="/" className="text-white hover:text-red-200 transition-colors font-medium underline decoration-dotted">
-                ← Volver al sitio público
-              </Link>
+        {/* Tarjeta */}
+        <div style={{ background: "var(--ink-deep)", border: "1px solid var(--ink-line)", borderRadius: 3, padding: "28px 26px" }}>
+          {error && (
+            <div style={{
+              display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 18,
+              padding: "10px 12px", background: "rgba(220,38,38,0.08)",
+              border: "1px solid rgba(220,38,38,0.3)", borderRadius: 2,
+              fontSize: 13, color: "var(--red-glow, #F87171)",
+            }}>
+              <AlertCircle className="w-4 h-4" strokeWidth={1.8} style={{ flexShrink: 0, marginTop: 1 }} />
+              {error}
             </div>
-            <div className="text-center text-xs text-red-200/80 border-t border-white/20 pt-4 w-full">
-              <p>Sistema de gestión interna</p>
-              <p className="mt-1">{companyConfig.name}</p>
-            </div>
-          </CardFooter>
-        </Card>
+          )}
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-red-100 glass px-4 py-3 rounded-lg backdrop-blur-sm">
-            <Lock className="inline h-4 w-4 mr-2" />
-            Acceso restringido solo para personal autorizado
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="username" style={labelStyle}>Usuario (DNI o correo)</label>
+              <input
+                id="username" value={username} onChange={(e) => setUsername(e.target.value)}
+                required autoComplete="username" placeholder="Ingrese su DNI o correo"
+                style={inputStyle}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "var(--brass)")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--ink-line)")}
+              />
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <label htmlFor="password" style={labelStyle}>Contraseña</label>
+              <input
+                id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                required autoComplete="current-password" placeholder="Ingrese su contraseña"
+                style={inputStyle}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "var(--brass)")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--ink-line)")}
+              />
+            </div>
+
+            <button type="submit" className="btn btn--primary" disabled={isLoading}
+              style={{ width: "100%", justifyContent: "center", padding: "12px" }}>
+              {isLoading
+                ? <><Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.8} /> Accediendo…</>
+                : <><Lock className="w-4 h-4" strokeWidth={1.8} /> Acceder al sistema</>}
+            </button>
+          </form>
+        </div>
+
+        {/* Pie */}
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <Link href="/" className="btn btn--ghost btn--sm"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+            <ArrowLeft className="w-3 h-3" strokeWidth={1.8} />
+            Volver al sitio público
+          </Link>
+          <p style={{ marginTop: 16, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--graphite)", lineHeight: 1.7 }}>
+            {companyConfig.name}<br />
+            Acceso solo para personal autorizado
           </p>
         </div>
       </div>

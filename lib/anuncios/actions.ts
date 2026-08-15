@@ -1,21 +1,10 @@
 "use server"
 
-import { db } from '@/lib/db'
-import {
-  announcements,
-  announcementReads,
-  sectionRoles,
-  sections,
-  profiles,
-} from '@/lib/db/schema'
+import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, DeleteCommand, QueryCommand, ScanCommand, generateId, now } from '@/lib/db/dynamodb'
+import type { Announcement } from '@/lib/db/schema/announcements'
 import { auth } from '@/lib/auth'
-import { and, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import type { Permission } from '@/lib/auth/permissions'
-
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS
-// ═══════════════════════════════════════════════════════════════════
 
 export interface CreateDraftInput {
   title: string
@@ -29,7 +18,6 @@ export interface CreateDraftInput {
   directToProfileId?: string | null
   expiresAt?: string | null
   isPinned?: boolean
-  /** Si es true, se envía directamente a aprobación al crear */
   submitForApproval?: boolean
 }
 
@@ -39,278 +27,227 @@ export interface CreateDraftInput {
 
 export async function createAnnouncementDraft(input: CreateDraftInput) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
   const permissions = (session.user.permissions as Permission[]) ?? []
   if (!permissions.includes('announcements.create_draft')) {
     return { ok: false as const, error: 'No tiene permisos para crear anuncios' }
   }
-
   if (!input.title.trim() || !input.content.trim()) {
     return { ok: false as const, error: 'Título y contenido son obligatorios' }
   }
 
-  // Validar audiencia
   const hasAnyAudience =
     !!input.directToProfileId ||
     input.audienceAllBomberos ||
     input.audienceAspirantes ||
     input.audiencePostulantes ||
     (input.audienceGrades && input.audienceGrades.length > 0)
-  if (!hasAnyAudience) {
-    return {
-      ok: false as const,
-      error: 'Debe seleccionar al menos una audiencia',
-    }
-  }
+  if (!hasAnyAudience) return { ok: false as const, error: 'Debe seleccionar al menos una audiencia' }
 
-  // Si es directo a una persona, los otros filtros no se aplican
   const isDirect = !!input.directToProfileId
   if (isDirect) {
-    const targetProfile = await db.query.profiles.findFirst({
-      where: eq(profiles.id, input.directToProfileId!),
-    })
-    if (!targetProfile) {
-      return { ok: false as const, error: 'Destinatario no encontrado' }
-    }
+    const { Item } = await ddb.send(new GetCommand({
+      TableName: TABLE.profiles,
+      Key: { profileId: input.directToProfileId },
+    }))
+    if (!Item) return { ok: false as const, error: 'Destinatario no encontrado' }
   }
 
-  // Determinar originSection
-  let originSectionId: string | null = null
-  if (input.originSectionId) {
-    const section = await db.query.sections.findFirst({
-      where: eq(sections.id, input.originSectionId),
-    })
-    if (!section) {
-      return { ok: false as const, error: 'Sección origen inválida' }
-    }
-    originSectionId = section.id
-  } else {
-    // Detectar sección del autor — tomamos la primera donde tenga rol jefe activo
-    const roles = await db
-      .select({ sectionId: sectionRoles.sectionId })
-      .from(sectionRoles)
-      .where(
-        and(
-          eq(sectionRoles.profileId, session.user.profileId),
-          eq(sectionRoles.isActive, true),
-        ),
-      )
-      .limit(1)
-    originSectionId = roles[0]?.sectionId ?? null
+  // Detect origin section from profile's roles
+  let originSectionId: string | null = input.originSectionId ?? null
+  if (!originSectionId) {
+    const { Items } = await ddb.send(new QueryCommand({
+      TableName: TABLE.sectionRoles,
+      KeyConditionExpression: 'profileId = :pid',
+      FilterExpression: 'isActive = :t',
+      ExpressionAttributeValues: { ':pid': session.user.profileId, ':t': true },
+      Limit: 1,
+    }))
+    originSectionId = (Items?.[0] as any)?.sectionId ?? null
   }
 
   const initialStatus = input.submitForApproval ? 'pendiente_aprobacion' : 'borrador'
+  const ts = now()
+  const announcementId = generateId()
 
-  const [created] = await db
-    .insert(announcements)
-    .values({
-      title: input.title.trim(),
-      content: input.content.trim(),
-      priority: input.priority,
-      status: initialStatus,
-      authorId: session.user.profileId,
-      originSectionId,
-      audienceAllBomberos: isDirect ? false : input.audienceAllBomberos,
-      audienceGrades: isDirect ? [] : input.audienceGrades,
-      audienceAspirantes: isDirect ? false : input.audienceAspirantes,
-      audiencePostulantes: isDirect ? false : input.audiencePostulantes,
-      directToProfileId: input.directToProfileId ?? null,
-      expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-      isPinned: input.isPinned ?? false,
-    })
-    .returning({ id: announcements.id })
+  const item: Announcement = {
+    announcementId,
+    title: input.title.trim(),
+    content: input.content.trim(),
+    priority: input.priority,
+    status: initialStatus as any,
+    authorId: session.user.profileId,
+    ...(originSectionId ? { originSectionId } : {}),
+    audienceAllBomberos: isDirect ? false : input.audienceAllBomberos,
+    audienceGrades: isDirect ? [] : input.audienceGrades,
+    audienceAspirantes: isDirect ? false : input.audienceAspirantes,
+    audiencePostulantes: isDirect ? false : input.audiencePostulantes,
+    ...(input.directToProfileId ? { directToProfileId: input.directToProfileId } : {}),
+    ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}),
+    isPinned: input.isPinned ?? false,
+    reads: [],
+    createdAt: ts,
+    updatedAt: ts,
+  }
+
+  await ddb.send(new PutCommand({ TableName: TABLE.announcements, Item: item }))
 
   revalidatePath('/anuncios')
-  return { ok: true as const, id: created.id, status: initialStatus }
+  return { ok: true as const, id: announcementId, status: initialStatus }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// EDITAR BORRADOR PROPIO
+// EDITAR BORRADOR
 // ═══════════════════════════════════════════════════════════════════
 
-export async function updateAnnouncementDraft(
-  id: string,
-  input: CreateDraftInput,
-) {
+export async function updateAnnouncementDraft(id: string, input: CreateDraftInput) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  const existing = await db.query.announcements.findFirst({
-    where: eq(announcements.id, id),
-  })
-  if (!existing) return { ok: false as const, error: 'Anuncio no encontrado' }
-  if (existing.authorId !== session.user.profileId) {
-    return { ok: false as const, error: 'No es el autor' }
-  }
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+  const existing = Item as Announcement
+  if (existing.authorId !== session.user.profileId) return { ok: false as const, error: 'No es el autor' }
   if (!['borrador', 'rechazado'].includes(existing.status)) {
-    return {
-      ok: false as const,
-      error: 'Solo se pueden editar borradores o anuncios rechazados',
-    }
+    return { ok: false as const, error: 'Solo se pueden editar borradores o anuncios rechazados' }
   }
 
   const isDirect = !!input.directToProfileId
   const newStatus = input.submitForApproval ? 'pendiente_aprobacion' : 'borrador'
 
-  await db
-    .update(announcements)
-    .set({
-      title: input.title.trim(),
-      content: input.content.trim(),
-      priority: input.priority,
-      status: newStatus,
-      originSectionId: input.originSectionId ?? existing.originSectionId,
-      audienceAllBomberos: isDirect ? false : input.audienceAllBomberos,
-      audienceGrades: isDirect ? [] : input.audienceGrades,
-      audienceAspirantes: isDirect ? false : input.audienceAspirantes,
-      audiencePostulantes: isDirect ? false : input.audiencePostulantes,
-      directToProfileId: input.directToProfileId ?? null,
-      expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-      isPinned: input.isPinned ?? false,
-      // Si se re-envía después de rechazo, limpiamos review
-      reviewedBy: input.submitForApproval ? null : existing.reviewedBy,
-      reviewedAt: input.submitForApproval ? null : existing.reviewedAt,
-      reviewNotes: input.submitForApproval ? null : existing.reviewNotes,
-      updatedAt: new Date(),
-    })
-    .where(eq(announcements.id, id))
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+    UpdateExpression: `SET title = :t, content = :c, priority = :p, #st = :ns,
+      audienceAllBomberos = :ab, audienceGrades = :ag,
+      audienceAspirantes = :aa, audiencePostulantes = :aq,
+      isPinned = :ip, updatedAt = :ua
+      ${isDirect ? ', directToProfileId = :dp' : ', directToProfileId = :null'}
+      ${input.expiresAt ? ', expiresAt = :ea' : ''}
+      ${input.submitForApproval ? ' REMOVE reviewedBy, reviewedAt, reviewNotes' : ''}`,
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: {
+      ':t': input.title.trim(),
+      ':c': input.content.trim(),
+      ':p': input.priority,
+      ':ns': newStatus,
+      ':ab': isDirect ? false : input.audienceAllBomberos,
+      ':ag': isDirect ? [] : input.audienceGrades,
+      ':aa': isDirect ? false : input.audienceAspirantes,
+      ':aq': isDirect ? false : input.audiencePostulantes,
+      ':ip': input.isPinned ?? false,
+      ':ua': now(),
+      ':null': null,
+      ...(isDirect ? { ':dp': input.directToProfileId } : {}),
+      ...(input.expiresAt ? { ':ea': input.expiresAt } : {}),
+    },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const, status: newStatus }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ENVIAR A APROBACIÓN (draft → pendiente)
+// ENVIAR A APROBACIÓN
 // ═══════════════════════════════════════════════════════════════════
 
 export async function submitForApproval(id: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  const existing = await db.query.announcements.findFirst({
-    where: eq(announcements.id, id),
-  })
-  if (!existing) return { ok: false as const, error: 'Anuncio no encontrado' }
-  if (existing.authorId !== session.user.profileId) {
-    return { ok: false as const, error: 'No es el autor' }
-  }
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+  const existing = Item as Announcement
+  if (existing.authorId !== session.user.profileId) return { ok: false as const, error: 'No es el autor' }
   if (!['borrador', 'rechazado'].includes(existing.status)) {
-    return {
-      ok: false as const,
-      error: 'Solo se pueden enviar borradores o rechazados',
-    }
+    return { ok: false as const, error: 'Solo se pueden enviar borradores o rechazados' }
   }
 
-  await db
-    .update(announcements)
-    .set({
-      status: 'pendiente_aprobacion',
-      reviewedBy: null,
-      reviewedAt: null,
-      reviewNotes: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(announcements.id, id))
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+    UpdateExpression: 'SET #st = :s, updatedAt = :ua REMOVE reviewedBy, reviewedAt, reviewNotes',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':s': 'pendiente_aprobacion', ':ua': now() },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// APROBAR (Primer Jefe)
+// APROBAR
 // ═══════════════════════════════════════════════════════════════════
 
 export async function approveAnnouncement(id: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
   const permissions = (session.user.permissions as Permission[]) ?? []
   if (!permissions.includes('announcements.publish')) {
-    return {
-      ok: false as const,
-      error: 'Solo el Primer Jefe puede aprobar anuncios',
-    }
+    return { ok: false as const, error: 'Solo el Primer Jefe puede aprobar anuncios' }
   }
 
-  const existing = await db.query.announcements.findFirst({
-    where: eq(announcements.id, id),
-  })
-  if (!existing) return { ok: false as const, error: 'Anuncio no encontrado' }
-  if (existing.status !== 'pendiente_aprobacion') {
-    return {
-      ok: false as const,
-      error: 'Solo se pueden aprobar anuncios pendientes',
-    }
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+  if ((Item as Announcement).status !== 'pendiente_aprobacion') {
+    return { ok: false as const, error: 'Solo se pueden aprobar anuncios pendientes' }
   }
 
-  const now = new Date()
-  await db
-    .update(announcements)
-    .set({
-      status: 'aprobado',
-      reviewedBy: session.user.profileId,
-      reviewedAt: now,
-      reviewNotes: null,
-      publishedAt: now,
-      updatedAt: now,
-    })
-    .where(eq(announcements.id, id))
+  const ts = now()
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+    UpdateExpression: 'SET #st = :s, reviewedBy = :rb, reviewedAt = :ra, publishedAt = :pa, updatedAt = :ua REMOVE reviewNotes',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':s': 'aprobado', ':rb': session.user.profileId, ':ra': ts, ':pa': ts, ':ua': ts },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// RECHAZAR (Primer Jefe)
+// RECHAZAR
 // ═══════════════════════════════════════════════════════════════════
 
 export async function rejectAnnouncement(id: string, reason: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
   const permissions = (session.user.permissions as Permission[]) ?? []
   if (!permissions.includes('announcements.publish')) {
-    return {
-      ok: false as const,
-      error: 'Solo el Primer Jefe puede rechazar anuncios',
-    }
+    return { ok: false as const, error: 'Solo el Primer Jefe puede rechazar anuncios' }
   }
-  if (!reason.trim()) {
-    return { ok: false as const, error: 'Debe indicar un motivo de rechazo' }
+  if (!reason.trim()) return { ok: false as const, error: 'Debe indicar un motivo de rechazo' }
+
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+  if ((Item as Announcement).status !== 'pendiente_aprobacion') {
+    return { ok: false as const, error: 'Solo se pueden rechazar anuncios pendientes' }
   }
 
-  const existing = await db.query.announcements.findFirst({
-    where: eq(announcements.id, id),
-  })
-  if (!existing) return { ok: false as const, error: 'Anuncio no encontrado' }
-  if (existing.status !== 'pendiente_aprobacion') {
-    return {
-      ok: false as const,
-      error: 'Solo se pueden rechazar anuncios pendientes',
-    }
-  }
-
-  await db
-    .update(announcements)
-    .set({
-      status: 'rechazado',
-      reviewedBy: session.user.profileId,
-      reviewedAt: new Date(),
-      reviewNotes: reason.trim(),
-      updatedAt: new Date(),
-    })
-    .where(eq(announcements.id, id))
+  const ts = now()
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+    UpdateExpression: 'SET #st = :s, reviewedBy = :rb, reviewedAt = :ra, reviewNotes = :rn, updatedAt = :ua',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':s': 'rechazado', ':rb': session.user.profileId, ':ra': ts, ':rn': reason.trim(), ':ua': ts },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const }
@@ -322,42 +259,46 @@ export async function rejectAnnouncement(id: string, reason: string) {
 
 export async function markAnnouncementAsRead(announcementId: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
+  const profileId = session.user.profileId
+
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId },
+    ProjectionExpression: 'reads',
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+
+  if (((Item as any).reads ?? []).includes(profileId)) {
+    return { ok: true as const, alreadyRead: true as const }
   }
 
-  // Verificar si ya fue leído
-  const existing = await db.query.announcementReads.findFirst({
-    where: and(
-      eq(announcementReads.announcementId, announcementId),
-      eq(announcementReads.profileId, session.user.profileId),
-    ),
-  })
-  if (existing) return { ok: true as const, alreadyRead: true as const }
-
-  await db.insert(announcementReads).values({
-    announcementId,
-    profileId: session.user.profileId,
-  })
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId },
+    UpdateExpression: 'SET reads = list_append(if_not_exists(reads, :empty), :pid)',
+    ExpressionAttributeValues: { ':empty': [], ':pid': [profileId] },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ARCHIVAR PROPIO
+// ARCHIVAR
 // ═══════════════════════════════════════════════════════════════════
 
 export async function archiveMyAnnouncement(id: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  const existing = await db.query.announcements.findFirst({
-    where: eq(announcements.id, id),
-  })
-  if (!existing) return { ok: false as const, error: 'Anuncio no encontrado' }
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+  const existing = Item as Announcement
+
   if (existing.authorId !== session.user.profileId) {
     const permissions = (session.user.permissions as Permission[]) ?? []
     if (!permissions.includes('announcements.publish')) {
@@ -365,40 +306,41 @@ export async function archiveMyAnnouncement(id: string) {
     }
   }
 
-  await db
-    .update(announcements)
-    .set({ status: 'archivado', updatedAt: new Date() })
-    .where(eq(announcements.id, id))
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+    UpdateExpression: 'SET #st = :s, updatedAt = :ua',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':s': 'archivado', ':ua': now() },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ELIMINAR BORRADOR PROPIO
+// ELIMINAR BORRADOR
 // ═══════════════════════════════════════════════════════════════════
 
 export async function deleteMyDraft(id: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  const existing = await db.query.announcements.findFirst({
-    where: eq(announcements.id, id),
-  })
-  if (!existing) return { ok: false as const, error: 'Anuncio no encontrado' }
-  if (existing.authorId !== session.user.profileId) {
-    return { ok: false as const, error: 'No es el autor' }
-  }
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
+  if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
+  const existing = Item as Announcement
+  if (existing.authorId !== session.user.profileId) return { ok: false as const, error: 'No es el autor' }
   if (!['borrador', 'rechazado'].includes(existing.status)) {
-    return {
-      ok: false as const,
-      error: 'Solo se pueden eliminar borradores o rechazados',
-    }
+    return { ok: false as const, error: 'Solo se pueden eliminar borradores o rechazados' }
   }
 
-  await db.delete(announcements).where(eq(announcements.id, id))
+  await ddb.send(new DeleteCommand({
+    TableName: TABLE.announcements,
+    Key: { announcementId: id },
+  }))
 
   revalidatePath('/anuncios')
   return { ok: true as const }

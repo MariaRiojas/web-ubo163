@@ -47,3 +47,6 @@ scripts/scraper/__pycache__/
 pgdata/
 miniodata/
 mailpitdata/
+
+# backups locales (no versionar)
+_backups/

@@ -122,10 +122,9 @@ export class ComputeAppStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       logGroup: lambdaLogGroup,
       environment: {
-        // Lambda Web Adapter
+        // Lambda Web Adapter — buffered mode preserves Content-Type from Next.js
         AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
         PORT: '3000',
-        AWS_LWA_INVOKE_MODE: 'response_stream',
         RUST_LOG: 'info',
 
         // Next.js runtime
@@ -150,8 +149,8 @@ export class ComputeAppStack extends cdk.Stack {
         SES_SMTP_SECRET_ARN: sesSmtpCredentials.secretArn,
         SCRAPPER_SYNC_TOKEN_ARN: scraperSyncToken.secretArn,
 
-        // NextAuth
-        AUTH_URL: 'https://placeholder.cloudfront.net', // se actualiza post-deploy
+        // NextAuth — AUTH_SECRET se inyecta manualmente o via post-deploy script
+        AUTH_URL: 'https://placeholder.cloudfront.net', // se reemplaza abajo post-distribución
         AUTH_TRUST_HOST: 'true',
       },
     })
@@ -173,7 +172,7 @@ export class ComputeAppStack extends cdk.Stack {
     // Function URL — CloudFront enruta todas las requests dinámicas aquí
     const fnUrl = this.lambdaFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
-      invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
+      invokeMode: lambda.InvokeMode.BUFFERED,
     })
 
     // ─────────────────────────────────────────────────────────────────────
@@ -189,7 +188,14 @@ export class ComputeAppStack extends cdk.Stack {
         origin: lambdaOrigin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+        // Policy custom `ubo163-honor-origin-cc` (creada 2026-07-21): honra el
+        // Cache-Control del origen (páginas prerenderizadas con s-maxage se
+        // cachean en el edge; dinámicas con no-store nunca). CRÍTICO: su
+        // HeadersConfig es `none` — la managed UseOriginCacheControlHeaders
+        // reenvía `Host` y el origen Lambda Function URL responde 403.
+        cachePolicy: cloudfront.CachePolicy.fromCachePolicyId(
+          this, 'HonorOriginCacheControl', '2e7f6d6c-fb68-4346-ac4b-c2c384eed0ea',
+        ),
         originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
         responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         compress: true,

@@ -120,7 +120,7 @@ function IncidentCardUI({ incident }: { incident: IncidentCard }) {
           )}
           <div className="incident-meta-item">
             <span className="incident-meta-label">REPORTADA</span>
-            <span className="mono">{timeAgo(incident.createdAt)}</span>
+            <span className="mono">{timeAgo(new Date(incident.createdAt))}</span>
           </div>
           <div className="incident-meta-item">
             <span className="incident-meta-label">PRIORIDAD</span>
@@ -131,7 +131,7 @@ function IncidentCardUI({ incident }: { incident: IncidentCard }) {
           {incident.resolvedAt && (
             <div className="incident-meta-item">
               <span className="incident-meta-label">CERRADA</span>
-              <span className="mono">{timeAgo(incident.resolvedAt)}</span>
+              <span className="mono">{timeAgo(new Date(incident.resolvedAt))}</span>
             </div>
           )}
         </div>

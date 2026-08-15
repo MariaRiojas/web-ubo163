@@ -1,10 +1,6 @@
 import { redirect } from 'next/navigation'
 
-/**
- * Ruta legacy con drift respecto al schema v2 de emergencies.
- * La vista detallada de partes de emergencia se reconstruirá en una entrega
- * futura; por ahora redirigimos al módulo de Reportes.
- */
+/** El registro de partes ahora es una pestaña del módulo «Emergencias» (Comando). */
 export default function PartesEmergenciaLegacy() {
-  redirect('/reportes')
+  redirect('/emergencias')
 }

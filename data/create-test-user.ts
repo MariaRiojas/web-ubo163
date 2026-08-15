@@ -2,11 +2,8 @@
  * Script de uso único para crear usuarios de prueba en dev.
  * Ejecutar con: npx tsx --env-file=.env.local data/create-test-user.ts
  */
-import { db } from '@/lib/db'
-import { users, profiles } from '@/lib/db/schema'
-import { eq, or } from 'drizzle-orm'
+import { ddb, TABLE, QueryCommand, PutCommand, UpdateCommand, generateId, now } from '../lib/db/dynamodb'
 import bcrypt from 'bcryptjs'
-import { randomUUID } from 'crypto'
 
 const TEST_USERS = [
   { email: 'torres@cia999.pe', password: '12345678', label: 'Brigadier Torres (top grade)' },
@@ -15,39 +12,64 @@ const TEST_USERS = [
   { email: 'gonzalez@cia999.pe', password: '12345678', label: 'Aspirante González' },
 ]
 
+async function findProfileByEmail(email: string) {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.profiles,
+    IndexName: 'email-index',
+    KeyConditionExpression: 'email = :e',
+    ExpressionAttributeValues: { ':e': email },
+    Limit: 1,
+  }))
+  return (Items?.[0] as any) ?? null
+}
+
+async function findUserByEmail(email: string) {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.users,
+    IndexName: 'email-index',
+    KeyConditionExpression: 'email = :e',
+    ExpressionAttributeValues: { ':e': email },
+    Limit: 1,
+  }))
+  return (Items?.[0] as any) ?? null
+}
+
 async function main() {
   console.log('🔐 Creando usuarios de prueba...\n')
 
   for (const u of TEST_USERS) {
-    // Buscar perfil por email
-    const profile = await db.query.profiles.findFirst({
-      where: (p, { eq }) => eq(p.email, u.email),
-    })
+    const profile = await findProfileByEmail(u.email)
 
     if (!profile) {
       console.log(`  ⚠️  Perfil no encontrado para ${u.email} — saltando`)
       continue
     }
 
-    // Si ya tiene userId, usar ese; si no, generar uno
-    const userId = profile.userId ?? randomUUID()
+    const existingUser = await findUserByEmail(u.email)
+    const userId = existingUser?.userId ?? profile.userId ?? generateId()
     const passwordHash = await bcrypt.hash(u.password, 12)
+    const ts = now()
 
     // Upsert usuario
-    await db
-      .insert(users)
-      .values({ id: userId, email: u.email, passwordHash })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: { passwordHash, updatedAt: new Date() },
-      })
+    await ddb.send(new PutCommand({
+      TableName: TABLE.users,
+      Item: {
+        userId,
+        email: u.email,
+        passwordHash,
+        createdAt: existingUser?.createdAt ?? ts,
+        updatedAt: ts,
+      },
+    }))
 
     // Vincular userId al perfil si no lo tiene
     if (!profile.userId) {
-      await db
-        .update(profiles)
-        .set({ userId })
-        .where(eq(profiles.id, profile.id))
+      await ddb.send(new UpdateCommand({
+        TableName: TABLE.profiles,
+        Key: { profileId: profile.profileId },
+        UpdateExpression: 'SET userId = :uid, updatedAt = :t',
+        ExpressionAttributeValues: { ':uid': userId, ':t': ts },
+      }))
     }
 
     console.log(`  ✓ ${u.label} — ${u.email} / ${u.password}`)

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
 import { auth } from '@/lib/auth'
 import { hasPermission, type Permission } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
-import { profiles, hiredDrivers, inventory } from '@/lib/db/schema'
+import { ddb, TABLE, ScanCommand, QueryCommand, PutCommand, UpdateCommand, generateId, now } from '@/lib/db/dynamodb'
+import type { InventoryItem } from '@/lib/db/schema/inventory'
 import { parseImport } from '@/lib/inventory/excel'
 import {
   validateRow,
@@ -21,16 +20,12 @@ import {
  *   Acepta:
  *     - multipart/form-data con campo "file" (el xlsx subido por el usuario)
  *     - application/json con { rows: Array<{ rowIndex, data }> } (edición del preview)
- *   Valida cada fila y devuelve:
- *     {
- *       rows: [{ rowIndex, data, valid, issues: [{field, message, level}] }],
- *       summary: { total, valid, invalid, warnings }
- *     }
+ *   Valida cada fila y devuelve rows con issues.
  *   NO escribe nada en BD.
  *
  * ─ mode=commit ─
  *   Acepta solo JSON con { rows: [...] } ya editadas.
- *   Revalida (no confía en el cliente), hace bulk insert en transacción.
+ *   Revalida (no confía en el cliente), hace upsert por codigoCbp.
  *   Devuelve { imported, ids, errors, summary }.
  *
  * Requiere inventory.manage.
@@ -97,7 +92,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // ─── Construir contexto de validación (una sola vez, batch) ───
+  // ─── Construir contexto de validación ─────────────────────────
   const ctx = await buildValidationContext()
 
   // ─── Validar todas las filas ──────────────────────────────────
@@ -115,9 +110,8 @@ export async function POST(req: NextRequest) {
   const summary = buildSummary(results)
 
   if (mode === 'validate') {
-    // Modo validación: devolvemos todo tal cual (sin escribir)
     return NextResponse.json({
-      rows: results.map(({ normalized, ...rest }) => rest), // omitimos normalized (pesado)
+      rows: results.map(({ normalized, ...rest }) => rest),
       summary,
     })
   }
@@ -134,121 +128,130 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Batch insert en transacción
   const toInsert = results.filter((r) => r.normalized !== null)
   const insertedIds: string[] = []
   const errors: Array<{ rowIndex: number; message: string }> = []
 
-  try {
-    const profileId = (session.user as any).profileId as string | undefined
+  const profileId = (session.user as any).profileId as string | undefined
 
-    await db.transaction(async (tx) => {
-      for (const r of toInsert) {
-        const n = r.normalized!
+  // Construir mapa codigoCbp → itemId para upserts eficientes
+  const codigoCbpMap = await buildCodigoCbpMap()
 
-        // Resolver assignedProfileId / assignedHiredDriverId desde el código
-        let assignedProfileId: string | null = null
-        let assignedHiredDriverId: number | null = null
+  for (const r of toInsert) {
+    const n = r.normalized!
 
-        if (n.assignedCodigo) {
-          const code = n.assignedCodigo
-          if (/^R\d{5}$/.test(code)) {
-            const hd = await tx.query.hiredDrivers.findFirst({
-              where: eq(hiredDrivers.codigoCgbvp, code),
-              columns: { id: true },
-            })
-            if (hd) assignedHiredDriverId = hd.id
-          } else {
-            // A##### o DNI de 8 dígitos → profiles
-            const p = await tx.query.profiles.findFirst({
-              where: (pp, { or, eq }) =>
-                or(eq(pp.codigoCgbvp, code), eq(pp.dni, code)),
-              columns: { id: true },
-            })
-            if (p) assignedProfileId = p.id
-          }
-        }
-
-        try {
-          const [inserted] = await tx
-            .insert(inventory)
-            .values({
-              name: n.name,
-              category: n.category,
-              subcategory: n.subcategory,
-              brand: n.brand,
-              model: n.model,
-              manufactureYear: n.manufactureYear,
-              codigoCbp: n.codigoCbp,
-              numeroSerie: n.numeroSerie,
-              numeroSecuencia: n.numeroSecuencia,
-              codigoBarrasQr: n.codigoBarrasQr,
-              almacenTipo: n.almacenTipo,
-              almacenReferencia: n.almacenReferencia,
-              ubicacionInterna: n.ubicacionInterna,
-              assignedCodigo: n.assignedCodigo,
-              assignedProfileId,
-              assignedHiredDriverId,
-              quantity: n.quantity,
-              unitMeasure: n.unitMeasure,
-              condition: n.condition,
-              requiresMaintenance: n.requiresMaintenance ?? false,
-              lastMaintenanceDate: n.lastMaintenanceDate,
-              nextMaintenanceDate: n.nextMaintenanceDate,
-              maintenanceIntervalMonths: n.maintenanceIntervalMonths,
-              expirationDate: n.expirationDate,
-              requiresCertification: n.requiresCertification ?? false,
-              lastCertificationDate: n.lastCertificationDate,
-              nextCertificationDate: n.nextCertificationDate,
-              usefulLifeMonths: n.usefulLifeMonths,
-              endOfLifeDate: n.endOfLifeDate,
-              lote: n.lote,
-              purchaseDate: n.purchaseDate,
-              supplier: n.supplier,
-              referenceValue: n.referenceValue ? String(n.referenceValue) : null,
-              notes: n.notes,
-              createdBy: profileId ?? null,
-            })
-            .onConflictDoUpdate({
-              target: inventory.codigoCbp,
-              set: {
-                name: n.name,
-                category: n.category,
-                subcategory: n.subcategory,
-                brand: n.brand,
-                model: n.model,
-                condition: n.condition,
-                almacenTipo: n.almacenTipo,
-                almacenReferencia: n.almacenReferencia,
-                ubicacionInterna: n.ubicacionInterna,
-                quantity: n.quantity,
-                updatedAt: new Date(),
-              },
-            })
-            .returning({ id: inventory.id })
-          if (inserted) insertedIds.push(inserted.id)
-        } catch (err: any) {
-          errors.push({
-            rowIndex: r.rowIndex,
-            message: err?.message ?? 'Error al insertar',
-          })
-          throw err // rollback total
+    // Resolver assignedProfileId desde el código (hiredDrivers no migrado a DynamoDB)
+    let assignedProfileId: string | undefined
+    if (n.assignedCodigo) {
+      const code = n.assignedCodigo
+      // Solo resolvemos perfiles (A##### o DNI)
+      if (!/^R\d{5}$/.test(code)) {
+        const { Items: pItems } = await ddb.send(new QueryCommand({
+          TableName: TABLE.profiles,
+          IndexName: 'codigoCgbvp-index',
+          KeyConditionExpression: 'codigoCgbvp = :c',
+          ExpressionAttributeValues: { ':c': code },
+          Limit: 1,
+        }))
+        if (pItems && pItems.length > 0) {
+          assignedProfileId = (pItems[0] as any).profileId as string
         }
       }
-    })
-  } catch (err: any) {
-    // Si cae la transacción, devolvemos los errores acumulados
-    if (errors.length === 0) {
-      errors.push({ rowIndex: 0, message: err?.message ?? 'Transacción falló' })
     }
+
+    try {
+      const existingItemId = n.codigoCbp ? codigoCbpMap.get(n.codigoCbp) : undefined
+
+      if (existingItemId) {
+        // Update existing
+        await ddb.send(new UpdateCommand({
+          TableName: TABLE.inventory,
+          Key: { itemId: existingItemId },
+          UpdateExpression: 'SET #n = :n, category = :cat, subcategory = :sub, brand = :br, model = :mo, condition = :cond, almacenTipo = :at, almacenReferencia = :ar, ubicacionInterna = :ui, quantity = :q, updatedAt = :t',
+          ExpressionAttributeNames: { '#n': 'name' },
+          ExpressionAttributeValues: {
+            ':n': n.name,
+            ':cat': n.category,
+            ':sub': n.subcategory ?? null,
+            ':br': n.brand ?? null,
+            ':mo': n.model ?? null,
+            ':cond': n.condition,
+            ':at': n.almacenTipo,
+            ':ar': n.almacenReferencia ?? null,
+            ':ui': n.ubicacionInterna ?? null,
+            ':q': n.quantity,
+            ':t': now(),
+          },
+        }))
+        insertedIds.push(existingItemId)
+      } else {
+        // Insert new
+        const itemId = generateId()
+        const ts = now()
+        const item: InventoryItem = {
+          itemId,
+          name: n.name,
+          category: n.category,
+          subcategory: n.subcategory,
+          brand: n.brand,
+          model: n.model,
+          manufactureYear: n.manufactureYear,
+          codigoCbp: n.codigoCbp,
+          numeroSerie: n.numeroSerie,
+          numeroSecuencia: n.numeroSecuencia,
+          codigoBarrasQr: n.codigoBarrasQr,
+          almacenTipo: n.almacenTipo,
+          almacenReferencia: n.almacenReferencia,
+          ubicacionInterna: n.ubicacionInterna,
+          assignedCodigo: n.assignedCodigo,
+          assignedProfileId,
+          quantity: n.quantity,
+          unitMeasure: n.unitMeasure,
+          condition: n.condition,
+          requiresMaintenance: n.requiresMaintenance ?? false,
+          lastMaintenanceDate: n.lastMaintenanceDate,
+          nextMaintenanceDate: n.nextMaintenanceDate,
+          maintenanceIntervalMonths: n.maintenanceIntervalMonths,
+          expirationDate: n.expirationDate,
+          requiresCertification: n.requiresCertification ?? false,
+          lastCertificationDate: n.lastCertificationDate,
+          nextCertificationDate: n.nextCertificationDate,
+          usefulLifeMonths: n.usefulLifeMonths,
+          endOfLifeDate: n.endOfLifeDate,
+          lote: n.lote,
+          purchaseDate: n.purchaseDate,
+          supplier: n.supplier,
+          referenceValue: n.referenceValue ? String(n.referenceValue) : undefined,
+          notes: n.notes,
+          createdBy: profileId,
+          createdAt: ts,
+          updatedAt: ts,
+        }
+
+        await ddb.send(new PutCommand({
+          TableName: TABLE.inventory,
+          Item: item,
+        }))
+        insertedIds.push(itemId)
+        if (n.codigoCbp) codigoCbpMap.set(n.codigoCbp, itemId)
+      }
+    } catch (err: any) {
+      errors.push({
+        rowIndex: r.rowIndex,
+        message: err?.message ?? 'Error al insertar',
+      })
+    }
+  }
+
+  if (errors.length > 0) {
     return NextResponse.json(
       {
-        error: 'No se pudo completar el import',
-        imported: 0,
-        ids: [],
+        error: `${errors.length} filas fallaron`,
+        imported: insertedIds.length,
+        ids: insertedIds,
         errors,
       },
-      { status: 500 }
+      { status: 207 }
     )
   }
 
@@ -271,14 +274,10 @@ async function readRowsFromRequest(req: NextRequest): Promise<RowInput[]> {
     const form = await req.formData()
     const file = form.get('file') as File | null
     if (!file) throw new Error('Falta el campo "file" en el formulario')
-
-    // Validar tipo/tamaño
     if (file.size === 0) throw new Error('Archivo vacío')
     if (file.size > 10 * 1024 * 1024) throw new Error('Archivo mayor a 10 MB')
-
     const arrayBuffer = await file.arrayBuffer()
-    const rows = await parseImport(Buffer.from(arrayBuffer))
-    return rows
+    return parseImport(Buffer.from(arrayBuffer))
   }
 
   if (contentType.includes('application/json')) {
@@ -296,33 +295,53 @@ async function readRowsFromRequest(req: NextRequest): Promise<RowInput[]> {
 }
 
 async function buildValidationContext(): Promise<ValidationContext> {
-  // Traer en batch (una sola query por tabla)
-  const [allProfiles, allDrivers, existing] = await Promise.all([
-    db.query.profiles.findMany({
-      columns: { codigoCgbvp: true, dni: true },
-    }),
-    db.query.hiredDrivers.findMany({
-      columns: { codigoCgbvp: true },
-    }),
-    db.query.inventory.findMany({
-      columns: { codigoCbp: true },
-    }),
+  // Scan profiles y inventory (hiredDrivers no existe en DynamoDB, se retorna vacío)
+  const [profilesResult, inventoryResult] = await Promise.all([
+    ddb.send(new ScanCommand({
+      TableName: TABLE.profiles,
+      ProjectionExpression: 'codigoCgbvp, dni',
+    })),
+    ddb.send(new ScanCommand({
+      TableName: TABLE.inventory,
+      ProjectionExpression: 'codigoCbp',
+    })),
   ])
+
+  const allProfiles = profilesResult.Items ?? []
+  const existing = inventoryResult.Items ?? []
 
   return {
     validProfileCodes: new Set(
-      allProfiles.map((p) => p.codigoCgbvp).filter((c): c is string => !!c)
+      allProfiles.map((p) => p.codigoCgbvp as string | undefined).filter((c): c is string => !!c)
     ),
     validProfileDnis: new Set(
-      allProfiles.map((p) => p.dni).filter((d): d is string => !!d)
+      allProfiles.map((p) => p.dni as string | undefined).filter((d): d is string => !!d)
     ),
-    validHiredDriverCodes: new Set(
-      allDrivers.map((d) => d.codigoCgbvp).filter((c): c is string => !!c)
-    ),
+    validHiredDriverCodes: new Set<string>(), // hiredDrivers no migrado a DynamoDB
     existingCodigosCbp: new Set(
-      existing.map((i) => i.codigoCbp).filter((c): c is string => !!c)
+      existing.map((i) => i.codigoCbp as string | undefined).filter((c): c is string => !!c)
     ),
   }
+}
+
+/** Construye mapa codigoCbp → itemId para detectar items existentes en commit */
+async function buildCodigoCbpMap(): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  let lastKey: Record<string, unknown> | undefined
+
+  do {
+    const res = await ddb.send(new ScanCommand({
+      TableName: TABLE.inventory,
+      ProjectionExpression: 'itemId, codigoCbp',
+      ExclusiveStartKey: lastKey,
+    }))
+    for (const item of res.Items ?? []) {
+      if (item.codigoCbp) map.set(item.codigoCbp as string, item.itemId as string)
+    }
+    lastKey = res.LastEvaluatedKey as Record<string, unknown> | undefined
+  } while (lastKey)
+
+  return map
 }
 
 function buildSummary(results: RowResult[]) {

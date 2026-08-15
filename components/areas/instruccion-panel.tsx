@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { GraduationCap, BookOpen, Users, ExternalLink } from 'lucide-react'
+import { GraduationCap, BookOpen, Users, ExternalLink, Library, Clapperboard } from 'lucide-react'
 import type {
   CourseStats, AspiranteInEsbas, InstruccionExtraData,
 } from '@/lib/areas/get-instruccion-data'
@@ -15,6 +15,25 @@ const STATUS_LABELS: Record<string, string> = {
 export function InstruccionPanel({ extra }: { extra: InstruccionExtraData }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Accesos directos */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <Link href="/capacitacion" style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+          background: 'var(--ink-black)', border: '1px solid var(--brass-deep)',
+          borderRadius: 3, textDecoration: 'none', color: 'var(--bone)', fontSize: 13,
+        }}>
+          <Clapperboard className="w-4 h-4" strokeWidth={1.6} style={{ color: 'var(--brass)' }} />
+          Gestionar cursos
+        </Link>
+        <Link href="/areas/instruccion/biblioteca" style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+          background: 'var(--ink-black)', border: '1px solid var(--ink-line)',
+          borderRadius: 3, textDecoration: 'none', color: 'var(--bone)', fontSize: 13,
+        }}>
+          <Library className="w-4 h-4" strokeWidth={1.6} style={{ color: 'var(--steel)' }} />
+          Gestionar biblioteca
+        </Link>
+      </div>
       {/* ESBAS */}
       {extra.esbasStats && (
         <section>

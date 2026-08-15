@@ -1,0 +1,25 @@
+{
+  "TableName": "ubo163-dev-admission-applications",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    { "AttributeName": "applicationId", "AttributeType": "S" },
+    { "AttributeName": "cohortId", "AttributeType": "S" },
+    { "AttributeName": "createdAt", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "applicationId", "KeyType": "HASH" }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "cohortId-createdAt-index",
+      "KeySchema": [
+        { "AttributeName": "cohortId", "KeyType": "HASH" },
+        { "AttributeName": "createdAt", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ],
+  "Tags": [
+    { "Key": "aws-apn-id", "Value": "pc:3ane5a9qkvyu1sguzgkqxqkuv" }
+  ]
+}

@@ -1,471 +1,219 @@
-"use client";
+"use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-
-import {
-  CheckCircle2,
-  Clock,
-  GraduationCap,
-  Heart,
-  Shield,
-  Users,
-  FileText,
-  Calendar,
-  Award,
-  ArrowRight
-} from "lucide-react"
 import { useState } from "react"
+import { CheckCircle2, ArrowRight, FileText, UserCheck, GraduationCap, Shield, Clock, Heart, Flame } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { companyConfig } from "@/company.config"
+import { PostulacionForm } from "@/components/admision/postulacion-form"
+import { SiteText } from "@/components/site-content/site-text"
 
 export default function AdmisionPage() {
-  const [formSubmitted, setFormSubmitted] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeStep, setActiveStep] = useState(0)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    // Simular envío del formulario
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setFormSubmitted(true)
-
-      // Resetear después de 5 segundos
-      setTimeout(() => {
-        setFormSubmitted(false)
-        const form = e.target as HTMLFormElement
-        form.reset()
-      }, 5000)
-    }, 1500)
-  }
-
-  // Requisitos de admisión
-  const requisitos = [
+  const pasos = [
     {
-      icon: Calendar,
-      titulo: "Edad",
-      descripcion: "Tener entre 18 y 40 años de edad",
-      color: "bg-red-500",
+      icon: FileText,
+      titulo: "Postulación",
+      desc: "Presenta tu solicitud con los documentos requeridos en nuestra sede o a través del formulario de contacto.",
+      detalles: ["DNI vigente (mayor de 18 años)", "Certificado de antecedentes penales", "Certificado médico de aptitud física", "2 fotos tamaño pasaporte"],
     },
     {
-      icon: Heart,
-      titulo: "Salud",
-      descripcion: "Gozar de buena salud física y mental",
-      color: "bg-red-600",
+      icon: UserCheck,
+      titulo: "Evaluación",
+      desc: "Proceso de evaluación que incluye entrevista personal, prueba psicológica y examen de aptitud física.",
+      detalles: ["Entrevista con la Jefatura", "Evaluación psicológica", "Prueba de aptitud física", "Verificación de antecedentes"],
     },
     {
       icon: GraduationCap,
-      titulo: "Educación",
-      descripcion: "Educación secundaria completa como mínimo",
-      color: "bg-red-700",
-    },
-    {
-      icon: Users,
-      titulo: "Disponibilidad",
-      descripcion: "Disponibilidad de tiempo para capacitación y guardias",
-      color: "bg-red-800",
+      titulo: "Formación",
+      desc: "Período de instrucción como Aspirante donde aprenderás las bases del servicio bomberil.",
+      detalles: ["Curso de Escuela Básica (ESBA)", "Entrenamiento físico intensivo", "Prácticas en campo", "Duración: 6 meses aprox."],
     },
     {
       icon: Shield,
-      titulo: "Antecedentes",
-      descripcion: "No tener antecedentes penales ni policiales",
-      color: "bg-red-900",
-    },
-    {
-      icon: FileText,
-      titulo: "Documentación",
-      descripcion: "Presentar documentación completa y vigente",
-      color: "bg-amber-600",
+      titulo: "Incorporación",
+      desc: "Al aprobar la ESBA, te incorporas como Bombero Alumno activo de la Compañía Nº 163.",
+      detalles: ["Juramento de honor", "Asignación de compañía", "Entrega de equipo personal", "Inicio de servicio activo"],
     },
   ]
 
-  // Proceso de admisión
-  const proceso = [
-    {
-      paso: "1",
-      titulo: "Postulación",
-      descripcion: "Completa el formulario de postulación en línea con tus datos personales y motivación.",
-      tiempo: "15 min",
-    },
-    {
-      paso: "2",
-      titulo: "Entrevista Personal",
-      descripcion: "Entrevista con el comité de admisión para conocer tu motivación y compromiso.",
-      tiempo: "30 min",
-    },
-    {
-      paso: "3",
-      titulo: "Evaluación Médica",
-      descripcion: "Examen médico completo para verificar tu condición física y salud general.",
-      tiempo: "1 día",
-    },
-    {
-      paso: "4",
-      titulo: "Evaluación Psicológica",
-      descripcion: "Evaluación de aptitudes psicológicas necesarias para el servicio de bomberos.",
-      tiempo: "2 horas",
-    },
-    {
-      paso: "5",
-      titulo: "Pruebas Físicas",
-      descripcion: "Evaluación de condición física mediante pruebas estandarizadas.",
-      tiempo: "1 día",
-    },
-    {
-      paso: "6",
-      titulo: "Capacitación ESBAS",
-      descripcion: "Curso de Educación y Servicios Básicos de 30 lecciones teóricas y prácticas.",
-      tiempo: "3 meses",
-    },
-    {
-      paso: "7",
-      titulo: "Juramento e Incorporación",
-      descripcion: "Ceremonia oficial de incorporación como Bombero Voluntario.",
-      tiempo: "1 día",
-    },
-  ]
-
-  // Beneficios
-  const beneficios = [
-    "Capacitación profesional continua sin costo",
-    "Certificación nacional e internacional",
-    "Seguro de accidentes y vida",
-    "Uniformes y equipamiento completo",
-    "Reconocimiento comunitario y social",
-    "Desarrollo de habilidades de liderazgo",
-    "Experiencia en trabajo en equipo",
-    "Servicio a la comunidad",
+  const requisitos = [
+    "Tener entre 18 y 55 años de edad",
+    "Ser peruano(a) o residente legal",
+    "No tener antecedentes penales ni policiales",
+    "Gozar de buena salud física y mental",
+    "Disponibilidad para guardias y capacitaciones",
+    "Vocación de servicio a la comunidad",
   ]
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <Badge className="mb-6 bg-white/20 backdrop-blur-sm border-white/30 text-white text-sm">
-            Únete al Equipo
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Admisión de Nuevos Bomberos
-          </h1>
-          <p className="text-lg md:text-xl text-red-100 max-w-3xl leading-relaxed">
-            Conviértete en parte de nuestra familia de bomberos voluntarios. Sirve a tu comunidad y desarrolla habilidades que durarán toda la vida.
-          </p>
+      {/* ─── HERO ─── */}
+      <section className="relative min-h-[55vh] flex items-end overflow-hidden bg-black">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(220,38,38,0.12)_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10 pt-32 pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-end">
+            <div className="lg:col-span-7 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-[1px] w-12 bg-red-500" />
+                <SiteText contentKey="admision.hero.badge" fallback="Convocatoria abierta" className="text-red-400 text-sm font-mono tracking-[0.3em] uppercase" />
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[0.9] text-white">
+                SÉ<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">VOLUNTARIO</span>
+              </h1>
+              <div className="h-1 w-16 bg-red-500" />
+              <SiteText as="p" contentKey="admision.hero.subtitle" className="text-lg text-zinc-400 max-w-lg leading-relaxed"
+                fallback="No necesitas experiencia previa. Solo necesitas vocación de servicio y ganas de proteger a tu comunidad." />
+            </div>
+            <div className="lg:col-span-5 hidden lg:flex justify-end">
+              <div className="p-8 border border-zinc-800/60 bg-zinc-900/30 space-y-4">
+                <Heart className="w-8 h-8 text-red-500" />
+                <p className="text-white font-bold text-lg">¿Por qué ser voluntario?</p>
+                <SiteText as="p" contentKey="admision.porque" className="text-zinc-400 text-sm leading-relaxed"
+                  fallback="Ser bombero es más que una actividad — es una forma de vida dedicada al prójimo." />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <main className="flex-1">
-        {/* Requisitos */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Requisitos
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">¿Qué necesito para postular?</h2>
-              <p className="text-lg text-muted-foreground">
-                Conoce los requisitos básicos para iniciar tu camino como bombero voluntario
-              </p>
-            </div>
+      {/* ─── PROCESO ─── */}
+      <section className="py-24 md:py-32 bg-zinc-950 relative">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8">
+          <div className="mb-16">
+            <span className="text-red-500 text-sm font-mono tracking-[0.3em] uppercase">Paso a paso</span>
+            <h2 className="text-4xl md:text-5xl font-black text-white mt-4 leading-[1.1]">
+              Proceso de<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">admisión</span>
+            </h2>
+            <div className="h-1 w-16 bg-red-500 mt-6" />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {requisitos.map((req, index) => (
-                <Card
-                  key={index}
-                  className="bento-item glass border-primary/10 hover:border-primary/30"
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Step selector */}
+            <div className="lg:col-span-4 space-y-2">
+              {pasos.map((paso, i) => (
+                <button
+                  key={paso.titulo}
+                  onClick={() => setActiveStep(i)}
+                  className={`w-full text-left flex items-center gap-4 p-4 border transition-all duration-300 ${
+                    activeStep === i
+                      ? "border-red-500/40 bg-red-500/5"
+                      : "border-zinc-800/60 bg-zinc-900/30 hover:border-zinc-700/60"
+                  }`}
                 >
-                  <CardHeader>
-                    <div className={`w-14 h-14 ${req.color} rounded-2xl flex items-center justify-center mb-4`}>
-                      <req.icon className="h-7 w-7 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">{req.titulo}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{req.descripcion}</p>
-                  </CardContent>
-                </Card>
+                  <div className={`w-10 h-10 flex items-center justify-center border shrink-0 ${
+                    activeStep === i ? "border-red-500 bg-red-500/10" : "border-zinc-700 bg-zinc-900"
+                  }`}>
+                    <span className={`font-black text-sm ${activeStep === i ? "text-red-400" : "text-zinc-500"}`}>{i + 1}</span>
+                  </div>
+                  <div>
+                    <p className={`font-bold ${activeStep === i ? "text-white" : "text-zinc-400"}`}>{paso.titulo}</p>
+                  </div>
+                </button>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* Proceso de Admisión */}
-        <section className="py-16 md:py-24 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Proceso
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Pasos para Convertirte en Bombero</h2>
-              <p className="text-lg text-muted-foreground">
-                Un proceso estructurado de 7 etapas que garantiza la formación de bomberos de excelencia
+            {/* Active step detail */}
+            <div className="lg:col-span-8">
+              <div className="p-8 border border-zinc-800/60 bg-zinc-900/30 h-full">
+                <div className="flex items-center gap-4 mb-6">
+                  {(() => { const Icon = pasos[activeStep].icon; return <Icon className="w-8 h-8 text-red-500" /> })()}
+                  <h3 className="text-2xl font-black text-white">{pasos[activeStep].titulo}</h3>
+                </div>
+                <p className="text-zinc-400 leading-relaxed mb-8">{pasos[activeStep].desc}</p>
+                <ul className="space-y-3">
+                  {pasos[activeStep].detalles.map((detalle) => (
+                    <li key={detalle} className="flex items-center gap-3">
+                      <CheckCircle2 className="w-4 h-4 text-red-500 shrink-0" />
+                      <span className="text-zinc-300">{detalle}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── REQUISITOS ─── */}
+      <section className="py-24 md:py-32 bg-black relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(220,38,38,0.06)_0%,_transparent_50%)]" />
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+            <div className="lg:col-span-5 lg:sticky lg:top-32">
+              <span className="text-red-500 text-sm font-mono tracking-[0.3em] uppercase">Perfil requerido</span>
+              <h2 className="text-4xl md:text-5xl font-black text-white mt-4 leading-[1.1]">
+                Requisitos<br />
+                <span className="text-zinc-600">básicos</span>
+              </h2>
+              <div className="h-1 w-16 bg-red-500 mt-6" />
+              <p className="text-zinc-500 mt-6 leading-relaxed text-sm">
+                Estos son los requisitos mínimos para iniciar el proceso. La vocación de servicio es lo más importante.
               </p>
             </div>
 
-            <div className="max-w-4xl mx-auto space-y-6">
-              {proceso.map((etapa, index) => (
-                <Card
-                  key={index}
-                  className="bento-item glass border-primary/10 hover:border-primary/30 overflow-hidden"
-                >
-                  <div className="flex flex-col md:flex-row">
-                    <div className="bg-gradient-to-br from-primary to-red-800 text-white p-6 md:p-8 flex items-center justify-center md:w-32">
-                      <div className="text-center">
-                        <div className="text-4xl md:text-5xl font-bold mb-2">{etapa.paso}</div>
-                        <div className="text-sm opacity-90 flex items-center gap-1 justify-center">
-                          <Clock className="h-3 w-3" />
-                          {etapa.tiempo}
-                        </div>
-                      </div>
+            <div className="lg:col-span-7">
+              <div className="space-y-3">
+                {requisitos.map((req, i) => (
+                  <div key={req} className="flex items-center gap-4 p-5 border border-zinc-800/60 bg-zinc-900/30">
+                    <div className="w-8 h-8 flex items-center justify-center border border-zinc-700 bg-zinc-900 shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-red-500" />
                     </div>
-                    <div className="flex-1 p-6 md:p-8">
-                      <h3 className="text-xl font-bold mb-2">{etapa.titulo}</h3>
-                      <p className="text-muted-foreground">{etapa.descripcion}</p>
-                    </div>
+                    <span className="text-zinc-300">{req}</span>
                   </div>
-                </Card>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Beneficios */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Beneficios
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">¿Qué ganas al ser Bombero?</h2>
-              <p className="text-lg text-muted-foreground">
-                Más que un servicio, una experiencia de vida transformadora
-              </p>
-            </div>
-
-            <div className="max-w-4xl mx-auto">
-              <Card className="glass border-primary/10">
-                <CardContent className="p-8 md:p-12">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {beneficios.map((beneficio, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-lg">{beneficio}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+      {/* ─── FORMULARIO DE POSTULACIÓN ─── */}
+      <section id="postular" className="py-24 md:py-32 bg-zinc-950 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(220,38,38,0.08)_0%,_transparent_55%)]" />
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+          <div className="mb-14 text-center">
+            <span className="text-red-500 text-sm font-mono tracking-[0.3em] uppercase">Postula ahora</span>
+            <h2 className="text-4xl md:text-5xl font-black text-white mt-4 leading-[1.1]">
+              Formulario de<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">admisión</span>
+            </h2>
+            <div className="h-1 w-16 bg-red-500 mt-6 mx-auto" />
+            <SiteText as="p" contentKey="admision.form.intro" className="text-zinc-400 mt-6 max-w-xl mx-auto leading-relaxed"
+              fallback="Completa tus datos y adjunta tu CERTIJOVEN en PDF para postular a la convocatoria vigente." />
           </div>
-        </section>
+          <PostulacionForm />
+        </div>
+      </section>
 
-        {/* Formulario de Postulación */}
-        <section className="py-16 md:py-24 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Postula Ahora
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Formulario de Postulación</h2>
-              <p className="text-lg text-muted-foreground">
-                Completa tus datos y da el primer paso para unirte a nuestra compañía
-              </p>
-            </div>
-
-            <Card className="max-w-2xl mx-auto glass border-primary/10">
-              <CardContent className="p-6 md:p-8">
-                {formSubmitted ? (
-                  <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <CheckCircle2 className="h-12 w-12 text-green-600" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-4">¡Postulación Enviada!</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Hemos recibido tu postulación correctamente. Nos pondremos en contacto contigo en los próximos días.
-                    </p>
-                    <Badge className="bg-primary text-white">
-                      Revisa tu correo electrónico
-                    </Badge>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="nombres">Nombres *</Label>
-                        <Input
-                          id="nombres"
-                          placeholder="Tus nombres completos"
-                          required
-                          className="glass"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="apellidos">Apellidos *</Label>
-                        <Input
-                          id="apellidos"
-                          placeholder="Tus apellidos completos"
-                          required
-                          className="glass"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="dni">DNI *</Label>
-                        <Input
-                          id="dni"
-                          placeholder="12345678"
-                          required
-                          maxLength={8}
-                          className="glass"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento *</Label>
-                        <Input
-                          id="fecha_nacimiento"
-                          type="date"
-                          required
-                          className="glass"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Correo Electrónico *</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="tu@email.com"
-                          required
-                          className="glass"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="telefono">Teléfono *</Label>
-                        <Input
-                          id="telefono"
-                          type="tel"
-                          placeholder="+51 999 888 777"
-                          required
-                          className="glass"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="direccion">Dirección *</Label>
-                      <Input
-                        id="direccion"
-                        placeholder="Tu dirección completa"
-                        required
-                        className="glass"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="educacion">Nivel de Educación *</Label>
-                      <select
-                        id="educacion"
-                        required
-                        className="w-full px-3 py-2 rounded-md border border-input bg-background glass"
-                      >
-                        <option value="">Selecciona...</option>
-                        <option value="secundaria">Secundaria Completa</option>
-                        <option value="tecnica">Educación Técnica</option>
-                        <option value="universitaria">Universitaria</option>
-                        <option value="postgrado">Postgrado</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="ocupacion">Ocupación Actual</Label>
-                      <Input
-                        id="ocupacion"
-                        placeholder="¿A qué te dedicas?"
-                        className="glass"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="motivacion">¿Por qué quieres ser bombero? *</Label>
-                      <Textarea
-                        id="motivacion"
-                        placeholder="Cuéntanos tu motivación..."
-                        required
-                        rows={5}
-                        className="glass resize-none"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="experiencia">Experiencia Previa (si la tienes)</Label>
-                      <Textarea
-                        id="experiencia"
-                        placeholder="Describe cualquier experiencia relacionada con emergencias, primeros auxilios, voluntariado, etc."
-                        rows={3}
-                        className="glass resize-none"
-                      />
-                    </div>
-
-                    <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <Award className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-amber-900 dark:text-amber-200">
-                        Al postular, aceptas participar en todo el proceso de admisión y comprometerte con la capacitación ESBAS si eres aceptado.
-                      </p>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white text-lg py-6"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center">
-                          <svg
-                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          Enviando...
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center">
-                          Enviar Postulación
-                          <ArrowRight className="ml-2 h-5 w-5" />
-                        </div>
-                      )}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
+      {/* ─── CTA ─── */}
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-700 via-red-600 to-red-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,0,0,0)_0%,_rgba(0,0,0,0.4)_100%)]" />
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 40px)" }} />
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10 text-center space-y-6">
+          <Flame className="w-10 h-10 text-white/60 mx-auto" />
+          <h2 className="text-4xl md:text-5xl font-black text-white">¿Tienes dudas?</h2>
+          <p className="text-lg text-red-100/80 max-w-xl mx-auto">
+            Acércate a nuestro cuartel o contáctanos para resolver cualquier consulta sobre el proceso.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <Button size="lg" className="bg-white text-red-700 hover:bg-zinc-100 text-lg px-10 py-6 rounded-none font-bold shadow-2xl" asChild>
+              <Link href="/contacto">Contáctanos <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
           </div>
-        </section>
-      </main>
-
+          <p className="text-red-200/60 text-sm pt-4">
+            <Clock className="inline w-3 h-3 mr-1" />
+            {companyConfig.location.address}
+          </p>
+        </div>
+      </section>
     </>
   )
 }

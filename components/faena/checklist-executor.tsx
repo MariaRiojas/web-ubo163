@@ -50,7 +50,8 @@ export function ChecklistExecutor({
     }))
     startTransition(async () => {
       const res = await setItemResult({
-        executionId: detail.execution.id,
+        machineId: detail.execution.machineId,
+        checklistId: detail.execution.checklistId,
         inventoryId,
         status,
       })
@@ -72,7 +73,7 @@ export function ChecklistExecutor({
     }
     setFinishing(true)
     startTransition(async () => {
-      const res = await finishExecution(detail.execution.id)
+      const res = await finishExecution(detail.execution.machineId, detail.execution.checklistId)
       setFinishing(false)
       if (!res.ok) {
         toast.error(res.error)
@@ -106,7 +107,7 @@ export function ChecklistExecutor({
             <div className="checklist-detail-breadcrumb mono">
               {detail.machine.label} → {detail.compartment.name.toUpperCase()}
             </div>
-            <h3 className="checklist-detail-title">{detail.definition.name}</h3>
+            <h3 className="checklist-detail-title">Verificación de inventario</h3>
           </div>
         </div>
         <div className="checklist-detail-qr-id mono">{detail.compartment.qrCode}</div>

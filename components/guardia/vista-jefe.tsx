@@ -95,7 +95,7 @@ function ConfigPanel({ data }: { data: GuardiaData }) {
   for (const bunk of data.dormitory.bunks) {
     for (const bed of bunk.beds) {
       allBeds.push({
-        id: bed.bed.id,
+        id: bed.bed.bedId,
         number: bed.bed.number,
         position: bed.bed.position,
         status: bed.bed.status,
@@ -106,7 +106,7 @@ function ConfigPanel({ data }: { data: GuardiaData }) {
   }
   for (const bed of data.dormitory.looseBeds) {
     allBeds.push({
-      id: bed.bed.id,
+      id: bed.bed.bedId,
       number: bed.bed.number,
       position: bed.bed.position,
       status: bed.bed.status,

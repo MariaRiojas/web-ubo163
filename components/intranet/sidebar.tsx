@@ -5,7 +5,8 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { ChevronLeft, LogOut, Shield } from 'lucide-react'
+import { ChevronLeft, LogOut } from 'lucide-react'
+import { IntranetThemeToggle } from './theme-toggle'
 import { cn } from '@/lib/utils'
 import { companyConfig } from '@/company.config'
 import { buildMenu, isMenuItemActive, type MenuSection } from '@/lib/navigation/menu-builder'
@@ -62,7 +63,7 @@ export function IntranetSidebar() {
         collapsed ? 'w-[72px]' : 'w-[280px]',
       )}
       style={{
-        background: 'linear-gradient(180deg, var(--ink-deep), #0E131B 100%)',
+        background: 'linear-gradient(180deg, var(--ink-deep), var(--ink-black) 100%)',
         borderColor: 'var(--ink-line)',
       }}
     >
@@ -82,16 +83,9 @@ export function IntranetSidebar() {
         style={{ borderColor: 'var(--ink-line)' }}
       >
         <div className="w-[56px] h-[56px] flex-shrink-0 grid place-items-center">
-          {/* TODO: reemplazar con /public/escudo-163.svg cuando se suba */}
-          <div
-            className="w-full h-full rounded grid place-items-center"
-            style={{
-              background: 'radial-gradient(circle at 30% 30%, rgba(220,38,38,0.2), transparent), var(--ink-elevated)',
-              border: '1px solid var(--red-deep)',
-            }}
-          >
-            <Shield className="w-7 h-7" style={{ color: 'var(--red-glow)' }} />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/escudo-163.png" alt="Escudo Compañía N.° 163" width={56} height={56}
+            className="escudo-mark" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         {!collapsed && (
           <div className="min-w-0 flex-1 leading-tight">
@@ -203,6 +197,7 @@ export function IntranetSidebar() {
                 {GRADE_LABELS[grade] ?? grade}
               </div>
             </div>
+            <IntranetThemeToggle collapsed={collapsed} />
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
               title="Cerrar sesión"

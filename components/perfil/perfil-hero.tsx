@@ -1,4 +1,4 @@
-import { Shield, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
 import type { PerfilData } from '@/lib/perfil/get-perfil-data'
 import { GRADE_LABEL } from '@/lib/cgbvp/grades'
 import { getInitials } from '@/components/intranet/_shared'
@@ -29,7 +29,8 @@ export function PerfilHero({ data }: { data: PerfilData }) {
     <section className="profile-hero">
       <div className="profile-hero-bg">
         {/* Marca de agua — escudo de la UBO */}
-        <Shield className="w-full h-full" strokeWidth={0.8} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/escudo-163.png" alt="" aria-hidden="true" className="escudo-mark w-full h-full" style={{ objectFit: 'contain' }} />
       </div>
 
       <div className="profile-hero-content">

@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
-import { getChecklistExecution } from '@/lib/faena/get-faena-data'
+import { getChecklistExecutionById } from '@/lib/faena/get-faena-data'
 import { ChecklistExecutor } from '@/components/faena/checklist-executor'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,7 @@ export default async function ChecklistPage({
   if (!session?.user?.profileId) redirect('/login')
 
   const { executionId } = await params
-  const detail = await getChecklistExecution(executionId)
+  const detail = await getChecklistExecutionById(executionId)
 
   if (!detail) {
     return (

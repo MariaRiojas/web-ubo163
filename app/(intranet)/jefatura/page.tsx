@@ -290,7 +290,7 @@ export default async function JefaturaPage() {
                   </div>
                 ))}
                 <Button asChild variant="outline" className="w-full mt-2">
-                  <Link href="/contenido">Ver cronograma completo</Link>
+                  <Link href="/areas/imagen/calendario">Ver cronograma completo</Link>
                 </Button>
               </CardContent>
             </Card>

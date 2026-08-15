@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Menu, LogOut, Shield } from 'lucide-react'
+import { Menu, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { companyConfig } from '@/company.config'
 import { buildMenu, isMenuItemActive, type MenuSection } from '@/lib/navigation/menu-builder'
@@ -58,16 +58,9 @@ export function IntranetMobileNav() {
           style={{ borderColor: 'var(--ink-line)' }}
         >
           <div className="w-[48px] h-[48px] flex-shrink-0 grid place-items-center">
-            <div
-              className="w-full h-full rounded grid place-items-center"
-              style={{
-                background:
-                  'radial-gradient(circle at 30% 30%, rgba(220,38,38,0.2), transparent), var(--ink-elevated)',
-                border: '1px solid var(--red-deep)',
-              }}
-            >
-              <Shield className="w-6 h-6" style={{ color: 'var(--red-glow)' }} />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/escudo-163.png" alt="Escudo Compañía N.° 163" width={48} height={48}
+              className="escudo-mark" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <SheetTitle asChild>
             <div className="min-w-0 flex-1 leading-tight">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { companyConfig } from "@/company.config"
+import { SiteText } from "@/components/site-content/site-text"
 import {
   ChevronLeft,
   ChevronRight,
@@ -355,22 +356,18 @@ export default function CronogramaPage() {
       {/* Hero */}
       <section className="relative py-20 md:py-28 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10">
           <Badge className="mb-6 bg-white/20 backdrop-blur-sm border-white/30 text-white text-sm">
-            Agenda Institucional
+            <SiteText contentKey="cronograma.hero.badge" fallback="Agenda Institucional" />
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
-            Cronograma de Actividades
-          </h1>
-          <p className="text-lg text-red-100 max-w-2xl">
-            Calendario institucional de {companyConfig.shortName}. Conoce nuestras actividades operativas,
-            de instrucción, comunitarias y eventos públicos.
-          </p>
+          <SiteText as="h1" contentKey="cronograma.hero.title" fallback="Cronograma de Actividades" className="text-4xl md:text-5xl font-bold mb-4 leading-tight" />
+          <SiteText as="p" contentKey="cronograma.hero.subtitle" className="text-lg text-red-100 max-w-2xl"
+            fallback={<>Calendario institucional de {companyConfig.shortName}. Conoce nuestras actividades operativas, de instrucción, comunitarias y eventos públicos.</>} />
         </div>
       </section>
 
       <main className="flex-1 py-12 md:py-16">
-        <div className="container mx-auto px-4">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8">
 
           {/* Filtros por tipo */}
           <div className="flex flex-wrap gap-2 mb-8">

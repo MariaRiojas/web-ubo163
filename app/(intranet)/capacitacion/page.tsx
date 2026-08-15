@@ -1,8 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { db } from '@/lib/db'
-import { profiles } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { ddb, TABLE, GetCommand } from '@/lib/db/dynamodb'
 import { getCapacitacionData } from '@/lib/capacitacion/get-capacitacion-data'
 import { CapacitacionClient } from '@/components/capacitacion/capacitacion-client'
 import type { Permission } from '@/lib/auth/permissions'
@@ -22,9 +20,10 @@ export default async function CapacitacionPage() {
   const session = await auth()
   if (!session?.user?.profileId) redirect('/login')
 
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.id, session.user.profileId),
-  })
+  const { Item: profile } = await ddb.send(new GetCommand({
+    TableName: TABLE.profiles,
+    Key: { profileId: session.user.profileId },
+  })) as any
   if (!profile) redirect('/login')
 
   const permissions = (session.user.permissions as Permission[]) ?? []
@@ -37,7 +36,7 @@ export default async function CapacitacionPage() {
       ? 'ESBAS DISPONIBLE'
       : 'ACCESO RESTRINGIDO'
 
-  const data = await getCapacitacionData(profile.id)
+  const data = await getCapacitacionData(profile.profileId)
 
   return (
     <div className="max-w-[1400px]">

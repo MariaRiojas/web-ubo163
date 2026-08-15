@@ -350,6 +350,8 @@ export function resolvePermissions(
         permissions.add('training.manage')
         permissions.add('training.issue_certificate')
         permissions.add('training.view_all_progress')
+        permissions.add('training.access_esbas')
+        permissions.add('training.access_escuela_tecnica')
         break
       case 'administracion':
         permissions.add('personnel.edit')
@@ -394,8 +396,11 @@ export function resolvePermissions(
 
     // Casos especiales
     if (sectionKey === 'instruccion') {
+      permissions.add('area.instruction.manage')
       permissions.add('esbas.instruct')
       permissions.add('training.issue_certificate')
+      permissions.add('training.access_esbas')
+      permissions.add('training.access_escuela_tecnica')
     }
     if (['maquinas', 'servicios_generales', 'prehospitalaria'].includes(sectionKey)) {
       permissions.add('inventory.manage')
@@ -423,6 +428,25 @@ export function resolvePermissions(
     permissions.add('guard.view_male')
   } else if (profile.gender === 'femenino') {
     permissions.add('guard.view_female')
+  }
+
+  // ─── Todo miembro asignado a una sección ve el área de su sección ───
+  for (const r of activeRoles) {
+    const sectionKey = r.section?.key
+    if (!sectionKey) continue
+    const areaPrefix = SECTION_AREA_KEY[sectionKey]
+    if (areaPrefix) {
+      permissions.add(`${areaPrefix}.view` as Permission)
+      // Instrucción: todos los miembros son instructores y pueden gestionar contenido
+      if (sectionKey === 'instruccion') {
+        permissions.add(`${areaPrefix}.manage` as Permission)
+        permissions.add('esbas.instruct')
+        permissions.add('training.issue_certificate')
+        permissions.add('training.access_esbas')
+        permissions.add('training.access_escuela_tecnica')
+      }
+    }
+    permissions.add('section.view')
   }
 
   return [...new Set(permissions)]

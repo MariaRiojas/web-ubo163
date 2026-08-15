@@ -1,102 +1,61 @@
 "use server"
 
-import { db } from '@/lib/db'
-import {
-  checklistDefinitions,
-  checklistExecutions,
-  checklistItemResults,
-  machineCompartments,
-  incidents,
-  requests,
-  sections,
-  inventory,
-  profiles,
-} from '@/lib/db/schema'
+import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, QueryCommand, ScanCommand, generateId, now } from '@/lib/db/dynamodb'
+import type { ChecklistExecution, ChecklistItemResult } from '@/lib/db/schema/machines'
+import type { InventoryItem } from '@/lib/db/schema/inventory'
 import { auth } from '@/lib/auth'
-import { and, eq, desc, gte, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import type { Permission } from '@/lib/auth/permissions'
 import { detectCurrentShift } from './get-faena-data'
 
 // ═══════════════════════════════════════════════════════════════════
-// INICIAR O CONTINUAR CHECKLIST DE UN COMPARTIMIENTO
+// INICIAR O CONTINUAR CHECKLIST
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Busca o crea una ejecución de checklist para el compartimiento en el
- * turno actual. Si existe una `en_curso` del mismo usuario hoy, la retorna.
- * Si existe una `completado` hoy, retorna esa (solo lectura).
- * Si no hay definición activa para el turno, retorna un error.
- */
-export async function startOrContinueExecution(compartmentId: string) {
+export async function startOrContinueExecution(compartmentId: string, machineId: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
   const permissions = (session.user.permissions as Permission[]) ?? []
   if (!permissions.includes('faena.create_checklist')) {
-    return {
-      ok: false as const,
-      error: 'No tiene permisos para ejecutar checklists',
-    }
+    return { ok: false as const, error: 'No tiene permisos para ejecutar checklists' }
   }
 
   const shift = detectCurrentShift()
+  const todayIso = new Date().toISOString().slice(0, 10)
 
-  // Busca una definición activa para el turno
-  const [definition] = await db
-    .select()
-    .from(checklistDefinitions)
-    .where(
-      and(
-        eq(checklistDefinitions.compartmentId, compartmentId),
-        eq(checklistDefinitions.frequency, shift.frequency),
-        eq(checklistDefinitions.active, true),
-      ),
-    )
-    .limit(1)
+  // Look for an existing execution today for this compartment (definitionId = compartmentId)
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.machineChecklists,
+    KeyConditionExpression: 'machineId = :mid',
+    FilterExpression: '#d = :today AND definitionId = :cid',
+    ExpressionAttributeNames: { '#d': 'date' },
+    ExpressionAttributeValues: { ':mid': machineId, ':today': todayIso, ':cid': compartmentId },
+  }))
 
-  if (!definition) {
-    return {
-      ok: false as const,
-      error: `No hay checklist configurado para el turno ${shift.label} en este compartimiento`,
-    }
+  if (Items && Items.length > 0) {
+    const existing = Items[0] as ChecklistExecution
+    return { ok: true as const, machineId, checklistId: existing.checklistId, reused: true as const }
   }
 
-  // Busca una ejecución de hoy
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-
-  const [existingToday] = await db
-    .select()
-    .from(checklistExecutions)
-    .where(
-      and(
-        eq(checklistExecutions.definitionId, definition.id),
-        gte(checklistExecutions.startedAt, todayStart),
-      ),
-    )
-    .orderBy(desc(checklistExecutions.startedAt))
-    .limit(1)
-
-  if (existingToday) {
-    return { ok: true as const, executionId: existingToday.id, reused: true as const }
+  const checklistId = generateId()
+  const ts = now()
+  const newExecution: ChecklistExecution = {
+    machineId,
+    checklistId,
+    definitionId: compartmentId,
+    profileId: session.user.profileId,
+    date: todayIso,
+    status: 'en_curso',
+    startedAt: ts,
+    results: [],
+    createdAt: ts,
   }
 
-  // Crear nueva
-  const [created] = await db
-    .insert(checklistExecutions)
-    .values({
-      definitionId: definition.id,
-      performedBy: session.user.profileId,
-      status: 'en_curso',
-    })
-    .returning({ id: checklistExecutions.id })
+  await ddb.send(new PutCommand({ TableName: TABLE.machineChecklists, Item: newExecution }))
 
   revalidatePath('/faena')
-  return { ok: true as const, executionId: created.id, reused: false as const }
+  return { ok: true as const, machineId, checklistId, reused: false as const }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -106,7 +65,8 @@ export async function startOrContinueExecution(compartmentId: string) {
 export type ItemResultStatus = 'presente' | 'faltante' | 'danado' | 'no_aplica'
 
 export async function setItemResult(input: {
-  executionId: string
+  machineId: string
+  checklistId: string
   inventoryId: string
   status: ItemResultStatus
   foundQuantity?: number | null
@@ -114,69 +74,46 @@ export async function setItemResult(input: {
   photoKey?: string | null
 }) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  // Verificar que la ejecución existe y está en curso
-  const [execution] = await db
-    .select()
-    .from(checklistExecutions)
-    .where(eq(checklistExecutions.id, input.executionId))
-    .limit(1)
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.machineChecklists,
+    Key: { machineId: input.machineId, checklistId: input.checklistId },
+  }))
+  if (!Item) return { ok: false as const, error: 'Ejecución no encontrada' }
 
-  if (!execution) {
-    return { ok: false as const, error: 'Ejecución no encontrada' }
-  }
-  if (execution.status === 'completado') {
-    return { ok: false as const, error: 'Este checklist ya está finalizado' }
-  }
-  if (execution.performedBy !== session.user.profileId) {
-    // Admin / jefe puede editar
+  const execution = Item as ChecklistExecution
+  if (execution.status === 'completado') return { ok: false as const, error: 'Este checklist ya está finalizado' }
+
+  if (execution.profileId !== session.user.profileId) {
     const permissions = (session.user.permissions as Permission[]) ?? []
-    const isManager =
-      permissions.includes('area.machines.manage') ||
-      permissions.includes('system.admin')
-    if (!isManager) {
-      return {
-        ok: false as const,
-        error: 'Solo el ejecutor puede registrar resultados',
-      }
-    }
+    const isManager = permissions.includes('area.machines.manage') || permissions.includes('system.admin')
+    if (!isManager) return { ok: false as const, error: 'Solo el ejecutor puede registrar resultados' }
   }
 
-  // Upsert del resultado
-  const [existing] = await db
-    .select()
-    .from(checklistItemResults)
-    .where(
-      and(
-        eq(checklistItemResults.executionId, input.executionId),
-        eq(checklistItemResults.inventoryId, input.inventoryId),
-      ),
-    )
-    .limit(1)
+  // Update the results array: replace existing entry or append
+  const results = [...(execution.results ?? [])]
+  const idx = results.findIndex(r => r.inventoryId === input.inventoryId)
+  const newResult: ChecklistItemResult = {
+    inventoryId: input.inventoryId,
+    status: input.status,
+    ...(input.foundQuantity != null ? { foundQuantity: input.foundQuantity } : {}),
+    ...(input.notes ? { notes: input.notes } : {}),
+    ...(input.photoKey ? { photoKey: input.photoKey } : {}),
+  }
 
-  if (existing) {
-    await db
-      .update(checklistItemResults)
-      .set({
-        status: input.status,
-        foundQuantity: input.foundQuantity ?? null,
-        notes: input.notes ?? null,
-        photoKey: input.photoKey ?? null,
-      })
-      .where(eq(checklistItemResults.id, existing.id))
+  if (idx >= 0) {
+    results[idx] = newResult
   } else {
-    await db.insert(checklistItemResults).values({
-      executionId: input.executionId,
-      inventoryId: input.inventoryId,
-      status: input.status,
-      foundQuantity: input.foundQuantity ?? null,
-      notes: input.notes ?? null,
-      photoKey: input.photoKey ?? null,
-    })
+    results.push(newResult)
   }
+
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.machineChecklists,
+    Key: { machineId: input.machineId, checklistId: input.checklistId },
+    UpdateExpression: 'SET results = :r',
+    ExpressionAttributeValues: { ':r': results },
+  }))
 
   return { ok: true as const }
 }
@@ -185,146 +122,135 @@ export async function setItemResult(input: {
 // FINALIZAR CHECKLIST
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Cierra la ejecución (`status = completado`). Si hay ítems faltantes,
- * crea automáticamente una solicitud de reposición al área correspondiente.
- * Si hay ítems dañados, crea una incidencia al área de Máquinas (para EPP
- * u otros podría decidirse por inventory.sectionId; hoy simplificamos).
- */
-export async function finishExecution(executionId: string) {
+export async function finishExecution(machineId: string, checklistId: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  // Verificar ejecución
-  const execRows = await db
-    .select({
-      execution: checklistExecutions,
-      definition: checklistDefinitions,
-      compartment: machineCompartments,
-    })
-    .from(checklistExecutions)
-    .innerJoin(
-      checklistDefinitions,
-      eq(checklistExecutions.definitionId, checklistDefinitions.id),
-    )
-    .innerJoin(
-      machineCompartments,
-      eq(checklistDefinitions.compartmentId, machineCompartments.id),
-    )
-    .where(eq(checklistExecutions.id, executionId))
-    .limit(1)
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.machineChecklists,
+    Key: { machineId, checklistId },
+  }))
+  if (!Item) return { ok: false as const, error: 'Ejecución no encontrada' }
+  const execution = Item as ChecklistExecution
 
-  const row = execRows[0]
-  if (!row) return { ok: false as const, error: 'Ejecución no encontrada' }
-  if (row.execution.status === 'completado') {
-    return { ok: false as const, error: 'Ya estaba finalizado' }
-  }
-  if (row.execution.performedBy !== session.user.profileId) {
+  if (execution.status === 'completado') return { ok: false as const, error: 'Ya estaba finalizado' }
+  if (execution.profileId !== session.user.profileId) {
     return { ok: false as const, error: 'Solo el ejecutor puede finalizar' }
   }
 
-  // Ítems verificados
-  const results = await db
-    .select({ result: checklistItemResults, inventoryItem: inventory })
-    .from(checklistItemResults)
-    .innerJoin(inventory, eq(checklistItemResults.inventoryId, inventory.id))
-    .where(eq(checklistItemResults.executionId, executionId))
+  const compartmentId = execution.definitionId
 
-  // Ítems totales del compartimiento
-  const itemsTotal = await db
-    .select({ id: inventory.id })
-    .from(inventory)
-    .where(eq(inventory.compartmentId, row.compartment.id))
+  // Get all inventory items in this compartment
+  const { Items: invItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.inventory,
+    FilterExpression: 'compartmentId = :cid',
+    ExpressionAttributeValues: { ':cid': compartmentId },
+  }))
+  const inventoryItems = (invItems ?? []) as InventoryItem[]
+  const results = execution.results ?? []
 
-  if (results.length < itemsTotal.length) {
+  if (results.length < inventoryItems.length) {
     return {
       ok: false as const,
-      error: `Faltan ${itemsTotal.length - results.length} ítems por verificar`,
+      error: `Faltan ${inventoryItems.length - results.length} ítems por verificar`,
     }
   }
 
-  const faltantes = results.filter((r) => r.result.status === 'faltante')
-  const danados = results.filter((r) => r.result.status === 'danado')
+  const faltantes = results.filter(r => r.status === 'faltante')
+  const danados = results.filter(r => r.status === 'danado')
 
-  // Marcar completado
-  await db
-    .update(checklistExecutions)
-    .set({
-      status: 'completado',
-      completedAt: new Date(),
-    })
-    .where(eq(checklistExecutions.id, executionId))
+  const ts = now()
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.machineChecklists,
+    Key: { machineId, checklistId },
+    UpdateExpression: 'SET #st = :s, completedAt = :ca',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':s': 'completado', ':ca': ts },
+  }))
 
-  // Auto-generar solicitud de reposición para faltantes (si la hay)
+  // Auto-generate request for missing items
   if (faltantes.length > 0) {
-    // Target: primera sección asociada al inventario (sanidad, servicios, etc.)
-    // Si ningún ítem tiene sectionId, usamos servicios_generales por default
-    const sectionIds = faltantes
-      .map((f) => f.inventoryItem.sectionId)
-      .filter((s): s is string => !!s)
+    const faltanteInvIds = new Set(faltantes.map(f => f.inventoryId))
+    const faltanteItems = inventoryItems.filter(i => faltanteInvIds.has(i.itemId))
 
-    const [targetSection] = sectionIds.length > 0
-      ? await db
-          .select({ id: sections.id })
-          .from(sections)
-          .where(eq(sections.id, sectionIds[0]))
-          .limit(1)
-      : await db
-          .select({ id: sections.id })
-          .from(sections)
-          .where(eq(sections.key, 'servicios_generales'))
-          .limit(1)
+    const sectionIds = faltanteItems.map(i => i.sectionId).filter(Boolean) as string[]
+    let targetSectionId: string | null = null
 
-    if (targetSection) {
-      const itemNames = faltantes
-        .map((f) => `• ${f.inventoryItem.name} (esperados: ${f.inventoryItem.quantity ?? 1})`)
+    if (sectionIds.length > 0) {
+      const { Item: sectionItem } = await ddb.send(new GetCommand({
+        TableName: TABLE.sections,
+        Key: { sectionId: sectionIds[0] },
+      }))
+      targetSectionId = sectionItem ? (sectionItem as any).sectionId : null
+    }
+    if (!targetSectionId) {
+      const { Items: sgItems } = await ddb.send(new ScanCommand({
+        TableName: TABLE.sections,
+        FilterExpression: '#k = :sg',
+        ExpressionAttributeNames: { '#k': 'key' },
+        ExpressionAttributeValues: { ':sg': 'servicios_generales' },
+        Limit: 1,
+      }))
+      targetSectionId = (sgItems?.[0] as any)?.sectionId ?? null
+    }
+
+    if (targetSectionId) {
+      const itemNames = faltanteItems
+        .map(i => `• ${i.name} (esperados: ${i.quantity ?? 1})`)
         .join('\n')
-
       const code = `SOL-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`
-      await db.insert(requests).values({
-        code,
-        title: `Reposición tras inspección · ${row.compartment.name}`,
-        description:
-          `Ítems detectados como faltantes durante el checklist del turno ` +
-          `en ${row.compartment.name}:\n\n${itemNames}\n\n` +
-          `Generada automáticamente por el sistema de inspecciones.`,
-        category: 'reposicion_insumo',
-        priority: 'media',
-        status: 'pendiente',
-        createdBy: session.user.profileId,
-        targetSectionId: targetSection.id,
-      })
+      const reqTs = now()
+      await ddb.send(new PutCommand({
+        TableName: TABLE.requests,
+        Item: {
+          requestId: generateId(),
+          code,
+          title: `Reposición tras inspección · ${compartmentId}`,
+          description: `Ítems detectados como faltantes durante el checklist:\n\n${itemNames}\n\nGenerada automáticamente por el sistema de inspecciones.`,
+          category: 'reposicion_insumo',
+          priority: 'media',
+          status: 'pendiente',
+          createdBy: session.user.profileId,
+          sectionId: targetSectionId,
+          createdAt: reqTs,
+          updatedAt: reqTs,
+        },
+      }))
     }
   }
 
-  // Auto-generar incidencia para ítems dañados
+  // Auto-generate incident for damaged items
   if (danados.length > 0) {
-    const [maquinasSection] = await db
-      .select({ id: sections.id })
-      .from(sections)
-      .where(eq(sections.key, 'maquinas'))
-      .limit(1)
+    const { Items: maqItems } = await ddb.send(new ScanCommand({
+      TableName: TABLE.sections,
+      FilterExpression: '#k = :mq',
+      ExpressionAttributeNames: { '#k': 'key' },
+      ExpressionAttributeValues: { ':mq': 'maquinas' },
+      Limit: 1,
+    }))
+    const maquinasSectionId = (maqItems?.[0] as any)?.sectionId ?? null
 
-    const itemNames = danados
-      .map((d) => `• ${d.inventoryItem.name}`)
-      .join('\n')
-
+    const danadoInvIds = new Set(danados.map(d => d.inventoryId))
+    const danadoItems = inventoryItems.filter(i => danadoInvIds.has(i.itemId))
+    const itemNames = danadoItems.map(i => `• ${i.name}`).join('\n')
     const code = `INC-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`
-    await db.insert(incidents).values({
-      code,
-      title: `Equipos dañados detectados en ${row.compartment.name}`,
-      description:
-        `Durante el checklist del turno se detectaron los siguientes equipos dañados:\n\n` +
-        `${itemNames}\n\n` +
-        `Generada automáticamente por el sistema de inspecciones.`,
-      category: 'equipamiento',
-      priority: 'alta',
-      status: 'pendiente',
-      sectionId: maquinasSection?.id,
-      reportedBy: session.user.profileId,
-    })
+    const incTs = now()
+    await ddb.send(new PutCommand({
+      TableName: TABLE.incidents,
+      Item: {
+        incidentId: generateId(),
+        code,
+        title: `Equipos dañados detectados en compartimiento`,
+        description: `Durante el checklist se detectaron los siguientes equipos dañados:\n\n${itemNames}\n\nGenerada automáticamente por el sistema de inspecciones.`,
+        category: 'equipamiento',
+        priority: 'alta',
+        status: 'pendiente',
+        sectionId: maquinasSectionId,
+        reportedBy: session.user.profileId,
+        createdAt: incTs,
+        updatedAt: incTs,
+      },
+    }))
   }
 
   revalidatePath('/faena')
@@ -332,7 +258,7 @@ export async function finishExecution(executionId: string) {
     ok: true as const,
     summary: {
       total: results.length,
-      presentes: results.filter((r) => r.result.status === 'presente').length,
+      presentes: results.filter(r => r.status === 'presente').length,
       faltantes: faltantes.length,
       danados: danados.length,
       autoSolicitud: faltantes.length > 0,
@@ -353,23 +279,24 @@ export async function createIncident(input: {
   sectionId: string
 }) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
   const permissions = (session.user.permissions as Permission[]) ?? []
   if (!permissions.includes('faena.create_incident')) {
     return { ok: false as const, error: 'No tiene permisos' }
   }
-
   if (!input.title.trim() || !input.description.trim()) {
     return { ok: false as const, error: 'Título y descripción son obligatorios' }
   }
 
   const code = `INC-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`
-  const [created] = await db
-    .insert(incidents)
-    .values({
+  const incidentId = generateId()
+  const ts = now()
+
+  await ddb.send(new PutCommand({
+    TableName: TABLE.incidents,
+    Item: {
+      incidentId,
       code,
       title: input.title.trim(),
       description: input.description.trim(),
@@ -378,11 +305,13 @@ export async function createIncident(input: {
       status: 'pendiente',
       sectionId: input.sectionId,
       reportedBy: session.user.profileId,
-    })
-    .returning({ id: incidents.id, code: incidents.code })
+      createdAt: ts,
+      updatedAt: ts,
+    },
+  }))
 
   revalidatePath('/faena')
-  return { ok: true as const, id: created.id, code: created.code }
+  return { ok: true as const, id: incidentId, code }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -392,35 +321,29 @@ export async function createIncident(input: {
 export async function createRequest(input: {
   title: string
   description: string
-  category:
-    | 'repuesto'
-    | 'reparacion'
-    | 'reposicion_insumo'
-    | 'mantenimiento'
-    | 'capacitacion'
-    | 'permiso'
-    | 'otro'
+  category: 'repuesto' | 'reparacion' | 'reposicion_insumo' | 'mantenimiento' | 'capacitacion' | 'permiso' | 'otro'
   priority: 'baja' | 'media' | 'alta' | 'urgente'
   targetSectionId: string
 }) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
   const permissions = (session.user.permissions as Permission[]) ?? []
   if (!permissions.includes('faena.create_request')) {
     return { ok: false as const, error: 'No tiene permisos' }
   }
-
   if (!input.title.trim() || !input.description.trim()) {
     return { ok: false as const, error: 'Título y descripción son obligatorios' }
   }
 
   const code = `SOL-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`
-  const [created] = await db
-    .insert(requests)
-    .values({
+  const requestId = generateId()
+  const ts = now()
+
+  await ddb.send(new PutCommand({
+    TableName: TABLE.requests,
+    Item: {
+      requestId,
       code,
       title: input.title.trim(),
       description: input.description.trim(),
@@ -428,41 +351,42 @@ export async function createRequest(input: {
       priority: input.priority,
       status: 'pendiente',
       createdBy: session.user.profileId,
-      targetSectionId: input.targetSectionId,
-    })
-    .returning({ id: requests.id, code: requests.code })
+      sectionId: input.targetSectionId,
+      createdAt: ts,
+      updatedAt: ts,
+    },
+  }))
 
   revalidatePath('/faena')
-  return { ok: true as const, id: created.id, code: created.code }
+  return { ok: true as const, id: requestId, code }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CANCELAR/ARCHIVAR
+// CANCELAR SOLICITUD
 // ═══════════════════════════════════════════════════════════════════
 
 export async function cancelMyRequest(requestId: string) {
   const session = await auth()
-  if (!session?.user?.profileId) {
-    return { ok: false as const, error: 'No autenticado' }
-  }
+  if (!session?.user?.profileId) return { ok: false as const, error: 'No autenticado' }
 
-  const [req] = await db
-    .select()
-    .from(requests)
-    .where(eq(requests.id, requestId))
-    .limit(1)
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.requests,
+    Key: { requestId },
+  }))
+  const req = (Item ?? null) as any
   if (!req) return { ok: false as const, error: 'No encontrada' }
-  if (req.createdBy !== session.user.profileId) {
-    return { ok: false as const, error: 'No es suya' }
-  }
+  if (req.createdBy !== session.user.profileId) return { ok: false as const, error: 'No es suya' }
   if (!['pendiente', 'aprobada'].includes(req.status)) {
     return { ok: false as const, error: 'No se puede cancelar en este estado' }
   }
 
-  await db
-    .update(requests)
-    .set({ status: 'cancelada', updatedAt: new Date() })
-    .where(eq(requests.id, requestId))
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.requests,
+    Key: { requestId },
+    UpdateExpression: 'SET #st = :s, updatedAt = :ua',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':s': 'cancelada', ':ua': now() },
+  }))
 
   revalidatePath('/faena')
   return { ok: true as const }

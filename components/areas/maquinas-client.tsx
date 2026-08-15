@@ -159,7 +159,7 @@ function MaquinasTab({ data }: { data: MaquinasAreaData }) {
   return (
     <div className="area-machine-list">
       {data.machines.map((m) => (
-        <MachineCardUI key={m.machine.id} data={m} />
+        <MachineCardUI key={m.machine.machineId} data={m} />
       ))}
     </div>
   )
@@ -471,7 +471,7 @@ function IncidentInboxRow({ incident }: { incident: AreaIncidentInbox }) {
           </div>
           <div className="incident-meta-item">
             <span className="incident-meta-label">RECIBIDA</span>
-            <span className="mono">{timeAgo(incident.createdAt)}</span>
+            <span className="mono">{timeAgo(new Date(incident.createdAt))}</span>
           </div>
         </div>
       </div>
@@ -540,7 +540,7 @@ function RequestInboxRow({ request }: { request: AreaRequestInbox }) {
           </div>
           <div className="incident-meta-item">
             <span className="incident-meta-label">RECIBIDA</span>
-            <span className="mono">{timeAgo(request.createdAt)}</span>
+            <span className="mono">{timeAgo(new Date(request.createdAt))}</span>
           </div>
         </div>
       </div>
@@ -597,7 +597,7 @@ function ChecklistRow({ entry }: { entry: AreaChecklistLog }) {
 
   return (
     <div className={rowClass}>
-      <div className="area-checklist-time mono">{formatDateTime(entry.startedAt)}</div>
+      <div className="area-checklist-time mono">{formatDateTime(new Date(entry.startedAt))}</div>
       <div>
         <div className="area-checklist-title">
           {entry.machineLabel} → {entry.compartmentName}

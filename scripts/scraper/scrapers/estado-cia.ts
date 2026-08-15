@@ -2,45 +2,67 @@
  * Scraper de estado de compañía — equivalente a estado_cia.py
  * Captura: estado general, jefes, vehículos, personal en turno.
  * Se ejecuta cada ~2 minutos.
+ *
+ * DynamoDB: actualiza profile.status + cgbvpStatus history.
+ * El snapshot completo de estado se guarda en cgbvpSync (PK='estado-cia', SK=ISO).
  */
 import type { Page } from 'puppeteer'
-import { db, profiles, cgbvpCompanyStatus, cgbvpVehicles, cgbvpStatusVehicles, cgbvpShiftAttendance, cgbvpStatusHistory } from '../db'
-import { eq, and, ilike, sql } from 'drizzle-orm'
+import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, ScanCommand, generateId, now } from '../db'
+import type { Profile } from '../../../lib/db/schema/profiles'
 import { parseHtml, clean, parseFecha, fetchWithCookies } from '../utils'
 import { log, getCookies, ensureSession } from '../browser'
 
-const URL_ESTADO = 'https://www.bomberosperu.gob.pe/extranet/DEPA/CEEM/EstadoCia/CEEMCiaLis.asp'
-const CODIGO_CIA = '31501980006'
+const URL_ESTADO = 'https://www.bomberosperu.gob.pe/extranet/DEPA/CEEM/CEEMEstaCon.asp'
+const CODIGO_CIA = '31631980006'
 
+/** Fuzzy search por apellidos y nombres (nombres almacenados en mayúsculas desde bomberos scraper) */
 async function buscarBombero(nombreRaw: string): Promise<string | null> {
-  const nombre = nombreRaw.replace(/\s*\(\d*\)\s*$/, '').replace(/\s+/g, ' ').trim()
+  const nombre = nombreRaw.replace(/\s*\(\d*\)\s*$/, '').replace(/\s+/g, ' ').trim().toUpperCase()
   if (!nombre.includes(',')) return null
   const [parteIzq, nombres] = nombre.split(',', 2)
   const palabras = parteIzq.trim().split(' ')
   const apellidos = palabras.length >= 2 ? palabras.slice(-2).join(' ') : palabras[0]
+  const nombresLimpio = nombres.trim()
 
-  const result = await db.query.profiles.findFirst({
-    where: and(
-      ilike(profiles.fullName, `%${apellidos}%`),
-      ilike(profiles.fullName, `%${nombres.trim()}%`),
-    ),
-    columns: { id: true },
-  })
-  return result?.id ?? null
+  const { Items } = await ddb.send(new ScanCommand({
+    TableName: TABLE.profiles,
+    FilterExpression: 'contains(fullName, :ape) AND contains(fullName, :nom)',
+    ExpressionAttributeValues: { ':ape': apellidos, ':nom': nombresLimpio },
+    Limit: 50,
+  }))
+  return (Items?.[0] as Profile | undefined)?.profileId ?? null
 }
 
 async function actualizarEstadoBombero(profileId: string, nuevoEstado: string) {
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.id, profileId),
-    columns: { id: true, status: true },
-  })
-  if (!profile) return
-  if (profile.status !== nuevoEstado) {
-    await db.update(profiles).set({ status: nuevoEstado, updatedAt: new Date() }).where(eq(profiles.id, profileId))
-    await db.insert(cgbvpStatusHistory).values({
-      profileId, estadoAnterior: profile.status, estadoNuevo: nuevoEstado, fuente: 'scraper',
-    })
-  }
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.profiles,
+    Key: { profileId },
+    ProjectionExpression: 'profileId, #s',
+    ExpressionAttributeNames: { '#s': 'status' },
+  }))
+  if (!Item) return
+  const estadoAnterior = Item.status as string
+  if (estadoAnterior === nuevoEstado) return
+
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE.profiles,
+    Key: { profileId },
+    UpdateExpression: 'SET #s = :s, updatedAt = :t',
+    ExpressionAttributeNames: { '#s': 'status' },
+    ExpressionAttributeValues: { ':s': nuevoEstado, ':t': now() },
+  }))
+
+  await ddb.send(new PutCommand({
+    TableName: TABLE.cgbvpStatus,
+    Item: {
+      profileId,
+      date: now(),
+      estadoAnterior,
+      estadoNuevo: nuevoEstado,
+      fuente: 'scraper',
+      createdAt: now(),
+    },
+  }))
 }
 
 export async function scrapeEstadoCia(page: Page) {
@@ -84,7 +106,7 @@ export async function scrapeEstadoCia(page: Page) {
   let personal: number | null = null
   let observaciones: string | null = null
   let informante: string | null = null
-  let fechaHora: Date | null = null
+  let fechaHoraStr: string | null = null
 
   $(tablas[2]).find('tr').each((_, fila) => {
     const tds = $(fila).find('td')
@@ -96,17 +118,14 @@ export async function scrapeEstadoCia(page: Page) {
     else if (label.includes('personal')) personal = parseInt(valor) || null
     else if (label.includes('observa')) observaciones = valor || null
     else if (label.includes('informante')) informante = valor || null
-    else if (label.includes('fecha')) fechaHora = parseFecha(valor)
+    else if (label.includes('fecha')) {
+      const dt = parseFecha(valor)
+      fechaHoraStr = dt ? dt.toISOString() : null
+    }
   })
 
-  // Insertar estado
-  const [status] = await db.insert(cgbvpCompanyStatus).values({
-    primerJefe, segundoJefe, estadoGeneral: estadoGeneral,
-    pilotosDisponibles: pilotos, paramedicosDisponibles: paramedicos,
-    personalDisponible: personal, observaciones, informante, fechaHora,
-  }).returning()
-
-  // Tabla 2: vehículos
+  // Tabla 2: vehículos (denormalized array)
+  const vehiculos: { codigoVehiculo: string; estado?: string; motivo?: string; tipoVehiculo?: string }[] = []
   const filasVeh = $(tablas[1]).find('tr').slice(2)
   filasVeh.each((_, fila) => {
     const inputs = $(fila).find('input')
@@ -114,22 +133,15 @@ export async function scrapeEstadoCia(page: Page) {
     const codV = $(inputs[0]).attr('value')?.trim()
     if (!codV) return
     const estadoV = $(inputs[3]).attr('value')?.trim() || 'EN BASE'
-    const motivoV = $(inputs[4]).attr('value')?.trim() || null
+    const motivoV = $(inputs[4]).attr('value')?.trim() || undefined
     const tipoV = $(inputs[6]).attr('value')?.trim() || 'DESCONOCIDO'
-
-    // Upsert vehículo y vincular al snapshot (fire-and-forget dentro del each)
-    void (async () => {
-      const [veh] = await db.insert(cgbvpVehicles).values({ codigo: codV, tipo: tipoV, estado: estadoV, motivo: motivoV })
-        .onConflictDoUpdate({ target: cgbvpVehicles.codigo, set: { estado: estadoV, motivo: motivoV, tipo: tipoV, updatedAt: new Date() } })
-        .returning()
-      await db.insert(cgbvpStatusVehicles).values({
-        statusId: status.id, vehicleId: veh.id, codigoVehiculo: codV, estado: estadoV, motivo: motivoV, tipoVehiculo: tipoV,
-      })
-    })()
+    vehiculos.push({ codigoVehiculo: codV, estado: estadoV, motivo: motivoV, tipoVehiculo: tipoV })
   })
 
-  // Tabla 4: asistencia de turno
+  // Tabla 4: personal en turno
   const bomberosEnTurno = new Set<string>()
+  const personal_list: { profileId?: string; nombreRaw?: string; tipo?: string; horaIngreso?: string; esBombero?: boolean; esAlMando?: boolean; esPiloto?: boolean; esMedico?: boolean }[] = []
+
   if (tablas.length >= 4) {
     const filasTurno = $(tablas[3]).find('tr').slice(2)
     for (let i = 0; i < filasTurno.length; i++) {
@@ -137,33 +149,69 @@ export async function scrapeEstadoCia(page: Page) {
       if (tds.length < 10) continue
       const tipoEf = clean($(tds[0]).text())
       const nombreRaw = clean($(tds[1]).text())
-      const horaIng = clean($(tds[2]).text()) || null
-      const flags = [3, 4, 5, 6, 7, 8, 9].map((j) => $(tds[j]).text().includes('X') ? 1 : 0)
+      const horaIng = clean($(tds[2]).text()) || undefined
+      const flags = [3, 4, 5, 6, 7, 8, 9].map((j) => $(tds[j]).text().includes('X'))
 
-      let profileId: string | null = null
+      let profileId: string | undefined
       if (tipoEf === 'BOM') {
-        profileId = await buscarBombero(nombreRaw)
-        if (profileId) {
-          bomberosEnTurno.add(profileId)
-          await actualizarEstadoBombero(profileId, 'en_turno')
+        const pid = await buscarBombero(nombreRaw)
+        if (pid) {
+          profileId = pid
+          bomberosEnTurno.add(pid)
+          await actualizarEstadoBombero(pid, 'en_turno')
         }
       }
 
-      await db.insert(cgbvpShiftAttendance).values({
-        statusId: status.id, profileId, nombreRaw, tipo: tipoEf,
+      personal_list.push({
+        profileId,
+        nombreRaw,
+        tipo: tipoEf,
         horaIngreso: horaIng,
-        esBombero: flags[0], esAlMando: flags[1], esPiloto: flags[2],
-        esMedico: flags[3], esAppa: flags[4], esMap: flags[5], esBrec: flags[6],
+        esBombero: flags[0],
+        esAlMando: flags[1],
+        esPiloto: flags[2],
+        esMedico: flags[3],
       })
     }
   }
 
-  // Marcar como franco a quienes no están en turno
+  // Guardar snapshot en cgbvpSync
+  const ts = now()
+  await ddb.send(new PutCommand({
+    TableName: TABLE.cgbvpSync,
+    Item: {
+      syncType: 'estado-cia',
+      timestamp: ts,
+      statusId: generateId(),
+      primerJefe: primerJefe ?? undefined,
+      segundoJefe: segundoJefe ?? undefined,
+      estadoGeneral: estadoGeneral ?? undefined,
+      pilotosDisponibles: pilotos ?? undefined,
+      paramedicosDisponibles: paramedicos ?? undefined,
+      personalDisponible: personal ?? undefined,
+      observaciones: observaciones ?? undefined,
+      informante: informante ?? undefined,
+      fechaHora: fechaHoraStr ?? undefined,
+      vehiculos,
+      personal: personal_list,
+      createdAt: ts,
+    },
+  }))
+
+  // Marcar como franco a quienes estaban en turno y ya no aparecen
   if (bomberosEnTurno.size > 0) {
-    const enTurno = await db.select({ id: profiles.id }).from(profiles)
-      .where(and(eq(profiles.status, 'en_turno'), sql`${profiles.id} != ALL(${Array.from(bomberosEnTurno)}::uuid[])`))
-    for (const { id } of enTurno) {
-      await actualizarEstadoBombero(id, 'franco')
+    const { Items: enTurnoItems } = await ddb.send(new ScanCommand({
+      TableName: TABLE.profiles,
+      FilterExpression: '#s = :en_turno',
+      ExpressionAttributeNames: { '#s': 'status' },
+      ExpressionAttributeValues: { ':en_turno': 'en_turno' },
+      ProjectionExpression: 'profileId',
+    }))
+    for (const item of enTurnoItems ?? []) {
+      const pid = (item as Profile).profileId
+      if (!bomberosEnTurno.has(pid)) {
+        await actualizarEstadoBombero(pid, 'franco')
+      }
     }
   }
 

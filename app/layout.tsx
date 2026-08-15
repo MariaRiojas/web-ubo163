@@ -51,6 +51,12 @@ export default function RootLayout({
       className={`${fontDisplay.variable} ${fontUi.variable} ${fontMono.variable}`}
     >
       <body style={{ ['--' as any]: undefined }}>
+        {/* Aplica clase de tema intranet antes de hidratación para evitar flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('ubo163:intranet-theme')==='light'){document.documentElement.classList.add('intranet-light')}}catch(e){}`,
+          }}
+        />
         <style>{`:root { ${themeCSS} }`}</style>
         <SessionProvider>
           <ThemeProvider

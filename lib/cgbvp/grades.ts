@@ -6,6 +6,7 @@
  */
 
 export const GRADE_HIERARCHY = [
+  "postulante",
   "aspirante",
   "seccionario",
   "subteniente",
@@ -21,6 +22,7 @@ export type Grade = (typeof GRADE_HIERARCHY)[number]
 
 /** Nombre legible de cada grado */
 export const GRADE_LABEL: Record<Grade, string> = {
+  postulante:          "Postulante",
   aspirante:           "Aspirante",
   seccionario:         "Seccionario",
   subteniente:         "Subteniente",
@@ -34,6 +36,7 @@ export const GRADE_LABEL: Record<Grade, string> = {
 
 /** Abreviatura oficial para uso en listados */
 export const GRADE_ABBR: Record<Grade, string> = {
+  postulante:          "Post.",
   aspirante:           "Asp.",
   seccionario:         "Secc.",
   subteniente:         "Subten.",

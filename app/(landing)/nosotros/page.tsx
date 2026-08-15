@@ -1,390 +1,156 @@
-"use client";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-
-import { Shield, Award, Heart, Users, Target, Mail, Phone } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
+import { Shield, Flame, Heart, Target, Eye, Award, Calendar } from "lucide-react"
+import { companyConfig } from "@/company.config"
+import { SiteText } from "@/components/site-content/site-text"
 
 export default function NosotrosPage() {
-  const [visibleTimeline, setVisibleTimeline] = useState<number[]>([])
-  const timelineRefs = useRef<(HTMLDivElement | null)[]>([])
-
-  useEffect(() => {
-    const observers = timelineRefs.current.map((ref, index) => {
-      if (!ref) return null
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setVisibleTimeline((prev) => {
-                if (!prev.includes(index)) {
-                  return [...prev, index]
-                }
-                return prev
-              })
-            }
-          })
-        },
-        { threshold: 0.2 }
-      )
-
-      observer.observe(ref)
-      return observer
-    })
-
-    return () => {
-      observers.forEach((observer) => observer?.disconnect())
-    }
-  }, [])
-  // Línea de tiempo histórica
-  const timeline = [
-    {
-      year: "1952",
-      title: "Fundación",
-      description: "Fundación de la Compañía de Bomberos Voluntarios Ancón N° 163 por un grupo de ciudadanos comprometidos con la seguridad de la comunidad.",
-    },
-    {
-      year: "1965",
-      title: "Primera Estación",
-      description: "Inauguración de la primera estación de bomberos con equipamiento moderno para la época.",
-    },
-    {
-      year: "1978",
-      title: "Expansión del Servicio",
-      description: "Ampliación de los servicios para incluir rescate vehicular y atención de emergencias médicas.",
-    },
-    {
-      year: "1995",
-      title: "Modernización",
-      description: "Renovación completa de la flota y equipamiento con tecnología de punta.",
-    },
-    {
-      year: "2010",
-      title: "Centro de Capacitación",
-      description: "Inauguración del centro de capacitación para bomberos y la comunidad.",
-    },
-    {
-      year: "2023",
-      title: "Expansión Digital",
-      description: "Implementación de sistemas digitales de gestión y respuesta a emergencias.",
-    },
-  ]
-
-  // Valores institucionales
-  const values = [
-    {
-      icon: Heart,
-      title: "Vocación de Servicio",
-      description: "Compromiso desinteresado con el bienestar y la seguridad de la comunidad las 24 horas del día.",
-    },
-    {
-      icon: Users,
-      title: "Trabajo en Equipo",
-      description: "Coordinación y colaboración efectiva para lograr objetivos comunes en situaciones de emergencia.",
-    },
-    {
-      icon: Target,
-      title: "Excelencia",
-      description: "Búsqueda constante de la perfección en cada acción, procedimiento y capacitación.",
-    },
-    {
-      icon: Shield,
-      title: "Integridad",
-      description: "Actuación basada en principios éticos y morales inquebrantables en todo momento.",
-    },
-  ]
-
-  // Jefatura Principal (solo los 3 principales)
-  const jefaturaPrincipal = [
-    {
-      nombre: "Cap. Juan Pérez Torres",
-      cargo: "Primer Jefe - Comandante General",
-      grado: "Capitán",
-      especialidad: "Comando de Incidentes",
-      años: 15,
-      imagen: "/placeholder.svg?height=400&width=400",
-      email: "j.perez@bomberos163.pe",
-      telefono: "+51 999 888 777",
-    },
-    {
-      nombre: "Tte. María García López",
-      cargo: "Segundo Jefe - Jefa de Operaciones",
-      grado: "Teniente",
-      especialidad: "Rescate y Operaciones",
-      años: 12,
-      imagen: "/placeholder.svg?height=400&width=400",
-      email: "m.garcia@bomberos163.pe",
-      telefono: "+51 999 888 776",
-    },
-    {
-      nombre: "Brig. Pedro Fernández Luna",
-      cargo: "Jefe de Administración",
-      grado: "Brigadier",
-      especialidad: "Gestión Administrativa",
-      años: 7,
-      imagen: "/placeholder.svg?height=400&width=400",
-      email: "p.fernandez@bomberos163.pe",
-      telefono: "+51 999 888 771",
-    },
-  ]
-
-  // Comandante destacado
-  const comandante = {
-    nombre: "Cap. Juan Pérez Torres",
-    cargo: "Comandante General",
-    biografia: "Con más de 15 años de experiencia en el servicio de bomberos, el Capitán Juan Pérez Torres ha liderado nuestra compañía con dedicación y profesionalismo. Especializado en Comando de Incidentes Mayores, ha participado en más de 300 operaciones de emergencia y ha capacitado a más de 200 bomberos en técnicas avanzadas de rescate.",
-    logros: [
-      "Implementación del Sistema de Comando de Incidentes (SCI)",
-      "Certificación Internacional en Materiales Peligrosos (Hazmat)",
-      "Reconocimiento Nacional por Labor Humanitaria 2022",
-      "Instructor Certificado ESBAS y NFPA",
-    ],
-    imagen: "/placeholder.svg?height=500&width=500",
-  }
-
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <Badge className="mb-6 bg-white/20 backdrop-blur-sm border-white/30 text-white text-sm">
-            Nuestra Historia
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Bomberos Ancón 163
-          </h1>
-          <p className="text-lg md:text-xl text-red-100 max-w-3xl leading-relaxed">
-            Más de 70 años de servicio ininterrumpido a la comunidad de Ancón. Conoce nuestra trayectoria, valores y al equipo que hace posible nuestra misión cada día.
-          </p>
+      {/* ─── HERO ─── */}
+      <section className="relative min-h-[60vh] flex items-end overflow-hidden bg-black">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(220,38,38,0.12)_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10 pt-32 pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-end">
+            <div className="lg:col-span-7 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-[1px] w-12 bg-red-500" />
+                <SiteText contentKey="nosotros.hero.overline" fallback="Nuestra historia" className="text-red-400 text-sm font-mono tracking-[0.3em] uppercase" />
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[0.9] text-white">
+                <SiteText contentKey="nosotros.hero.title" fallback={<>QUIÉNES<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">SOMOS</span></>} />
+              </h1>
+              <div className="h-1 w-16 bg-red-500" />
+              <SiteText as="p" contentKey="nosotros.hero.subtitle" className="text-lg text-zinc-400 max-w-lg leading-relaxed"
+                fallback="Más de dos décadas protegiendo a la comunidad de Ancón con vocación, disciplina y entrega total." />
+            </div>
+            <div className="lg:col-span-5 hidden lg:flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-red-500/5 blur-[80px]" />
+                <Shield className="w-48 h-48 text-red-500/15 stroke-[0.5]" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-6xl font-black text-red-500/20">{companyConfig.id}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <main className="flex-1">
-        {/* Línea de Tiempo */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Nuestra Trayectoria
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Historia y Legado</h2>
-              <p className="text-lg text-muted-foreground">
-                Un recorrido por los momentos más importantes de nuestra institución
-              </p>
+      {/* ─── HISTORIA ─── */}
+      <section className="py-24 md:py-32 bg-zinc-950 relative">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-800/50 to-transparent" />
+        <div className="container max-w-7xl mx-auto px-6 md:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            <div className="lg:col-span-4">
+              <SiteText contentKey="nosotros.historia.overline" fallback="Fundación" className="text-red-500 text-sm font-mono tracking-[0.3em] uppercase" />
+              <h2 className="text-4xl md:text-5xl font-black text-white mt-4 leading-[1.1]">
+                Desde<br />
+                <span className="text-zinc-600">{companyConfig.foundedYear}</span>
+              </h2>
+              <div className="h-1 w-16 bg-red-500 mt-6" />
             </div>
-
-            <div className="relative">
-              {/* Línea vertical */}
-              <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-red-600 to-primary/20 transform md:-translate-x-1/2"></div>
-
-              <div className="space-y-12">
-                {timeline.map((event, index) => (
-                  <div
-                    key={index}
-                    ref={(el) => { timelineRefs.current[index] = el }}
-                    className={`relative flex flex-col md:flex-row items-start md:items-center transition-all duration-700 ${
-                      index % 2 === 0 ? "md:flex-row-reverse" : ""
-                    } ${
-                      visibleTimeline.includes(index)
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-8"
-                    }`}
-                  >
-                    {/* Punto en la línea */}
-                    <div className={`absolute left-8 md:left-1/2 w-4 h-4 bg-primary rounded-full transform md:-translate-x-1/2 ring-4 ring-background transition-all duration-500 ${
-                      visibleTimeline.includes(index) ? "scale-100 opacity-100" : "scale-0 opacity-0"
-                    }`}></div>
-
-                    {/* Contenido */}
-                    <div className={`ml-16 md:ml-0 md:w-1/2 ${index % 2 === 0 ? "md:pr-12" : "md:pl-12"}`}>
-                      <Card className="bento-item glass border-primary/10 hover:border-primary/30">
-                        <CardHeader>
-                          <div className="flex items-center gap-3 mb-2">
-                            <Badge className="bg-primary text-white px-3 py-1 text-lg font-bold">
-                              {event.year}
-                            </Badge>
-                            <Award className="h-5 w-5 text-primary" />
-                          </div>
-                          <CardTitle className="text-xl">{event.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground">{event.description}</p>
-                        </CardContent>
-                      </Card>
+            <div className="lg:col-span-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[
+                  { k: "1", year: "2000", text: "Fundación de la Compañía de Bomberos Voluntarios Nº 163, respondiendo a la necesidad de protección de la comunidad de Ancón." },
+                  { k: "2", year: "2005", text: "Consolidación operativa con la adquisición de la primera unidad de combate contra incendios y equipamiento básico." },
+                  { k: "3", year: "2012", text: "Ampliación de servicios a emergencias médicas prehospitalarias y rescate vehicular en la Panamericana Norte." },
+                  { k: "4", year: "2020", text: "Dos décadas de servicio ininterrumpido. Participación activa durante la emergencia sanitaria nacional." },
+                ].map((item) => (
+                  <div key={item.k} className="p-6 border border-zinc-800/60 bg-zinc-900/30">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Calendar className="w-4 h-4 text-red-500" />
+                      <SiteText contentKey={`nosotros.historia.${item.k}.year`} fallback={item.year} className="text-red-400 font-mono text-sm font-bold" />
                     </div>
+                    <SiteText as="p" contentKey={`nosotros.historia.${item.k}.text`} fallback={item.text} className="text-zinc-400 text-sm leading-relaxed" />
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Perfil del Comandante */}
-        <section className="py-16 md:py-24 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Liderazgo
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Comandante General</h2>
+      {/* ─── MISIÓN, VISIÓN, VALORES ─── */}
+      <section className="py-24 md:py-32 bg-black relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(220,38,38,0.06)_0%,_transparent_50%)]" />
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+            <div className="lg:col-span-5 lg:sticky lg:top-32">
+              <SiteText contentKey="nosotros.proposito.overline" fallback="Propósito" className="text-red-500 text-sm font-mono tracking-[0.3em] uppercase" />
+              <h2 className="text-4xl md:text-5xl font-black text-white mt-4 leading-[1.1]">
+                <SiteText contentKey="nosotros.proposito.title" fallback={<>Nuestra<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">razón de ser</span></>} />
+              </h2>
+              <div className="h-1 w-16 bg-red-500 mt-6" />
+              <p className="text-zinc-500 mt-6 leading-relaxed text-sm">
+                <SiteText contentKey="nosotros.proposito.intro" fallback={<>Guiados por nuestro lema <span className="text-zinc-300 font-medium">&ldquo;{companyConfig.motto}&rdquo;</span>, cada acción refleja nuestro compromiso con la vida humana.</>} />
+              </p>
             </div>
 
-            <Card className="max-w-5xl mx-auto glass border-primary/10">
-              <div className="grid md:grid-cols-2 gap-8 p-6 md:p-8">
-                <div className="relative h-80 md:h-full rounded-2xl overflow-hidden">
-                  <Image
-                    src={comandante.imagen}
-                    alt={comandante.nombre}
-                    width={500}
-                    height={500}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-primary text-white">{comandante.cargo}</Badge>
+            <div className="lg:col-span-7 space-y-6">
+              {[
+                {
+                  k: "1", icon: Target,
+                  title: "Misión",
+                  text: "Salvar vidas, proteger bienes y prevenir siniestros en el distrito de Ancón y zonas aledañas, brindando un servicio voluntario de excelencia las 24 horas del día, los 365 días del año.",
+                  accent: "group-hover:text-red-400",
+                },
+                {
+                  k: "2", icon: Eye,
+                  title: "Visión",
+                  text: "Ser reconocidos como una compañía de bomberos modelo a nivel nacional, con personal altamente capacitado, equipamiento de vanguardia y una comunidad comprometida con la prevención.",
+                  accent: "group-hover:text-orange-400",
+                },
+                {
+                  k: "3", icon: Award,
+                  title: "Valores",
+                  text: "Vocación de servicio, disciplina, honor, lealtad, solidaridad y trabajo en equipo. Cada voluntario encarna estos principios dentro y fuera del cuartel.",
+                  accent: "group-hover:text-amber-400",
+                },
+              ].map((item) => (
+                <div key={item.k} className="group p-8 border border-zinc-800/60 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-zinc-700/60 transition-all duration-500">
+                  <div className="flex items-start gap-6">
+                    <item.icon className={`w-8 h-8 text-zinc-600 ${item.accent} transition-colors duration-500 shrink-0 mt-1`} />
+                    <div>
+                      <SiteText as="h3" contentKey={`nosotros.mvv.${item.k}.title`} fallback={item.title} className="text-xl font-bold text-white mb-3" />
+                      <SiteText as="p" contentKey={`nosotros.mvv.${item.k}.text`} fallback={item.text} className="text-zinc-400 leading-relaxed" />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold mb-2">{comandante.nombre}</h3>
-                    <p className="text-primary font-semibold">{comandante.cargo}</p>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed">{comandante.biografia}</p>
-                  <div>
-                    <h4 className="font-bold mb-3 flex items-center gap-2">
-                      <Award className="h-5 w-5 text-primary" />
-                      Logros Destacados
-                    </h4>
-                    <ul className="space-y-2">
-                      {comandante.logros.map((logro, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <span className="text-primary mt-1">•</span>
-                          {logro}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CIFRAS ─── */}
+      <section className="py-20 bg-zinc-950 border-y border-zinc-800/50">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { k: "1", value: `${new Date().getFullYear() - companyConfig.foundedYear}+`, label: "Años de servicio" },
+              { k: "2", value: "24/7", label: "Disponibilidad" },
+              { k: "3", value: "40+", label: "Voluntarios" },
+              { k: "4", value: "1000+", label: "Emergencias atendidas" },
+            ].map((stat) => (
+              <div key={stat.k} className="text-center space-y-2">
+                <SiteText as="p" contentKey={`nosotros.cifras.${stat.k}.value`} fallback={stat.value} className="text-3xl md:text-4xl font-black text-white tracking-tight" />
+                <SiteText as="p" contentKey={`nosotros.cifras.${stat.k}.label`} fallback={stat.label} className="text-sm text-zinc-500 font-medium uppercase tracking-wider" />
               </div>
-            </Card>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Jefatura Principal - Cards */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Jefatura
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Plana Mayor de la Compañía</h2>
-              <p className="text-lg text-muted-foreground">
-                Conoce a los principales líderes que dirigen nuestra misión de servicio a la comunidad
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
-              {jefaturaPrincipal.map((jefe, index) => (
-                <Card
-                  key={index}
-                  className="bento-item glass border-primary/10 hover:border-primary/30 overflow-hidden group"
-                >
-                  <div className="relative h-72 overflow-hidden">
-                    <Image
-                      src={jefe.imagen}
-                      alt={jefe.nombre}
-                      width={400}
-                      height={400}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                      <div className="text-white space-y-2 w-full">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-4 w-4" />
-                          <span className="text-xs">{jefe.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4" />
-                          <span className="text-xs">{jefe.telefono}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-primary text-white">{jefe.grado}</Badge>
-                    </div>
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-lg leading-tight">{jefe.nombre}</CardTitle>
-                    <p className="text-sm text-primary font-semibold">{jefe.cargo}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Especialidad:</span>
-                        <span className="font-medium text-right text-xs">{jefe.especialidad}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Experiencia:</span>
-                        <Badge variant="outline" className="text-xs">{jefe.años} años</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Botón Ver Más */}
-            <div className="text-center">
-              <Link href="/equipo">
-                <Button size="lg" className="bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white px-8">
-                  Ver Todo el Equipo
-                  <Users className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Valores Institucionales */}
-        <section className="py-16 md:py-24 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                Principios que nos Guían
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Valores Institucionales</h2>
-              <p className="text-lg text-muted-foreground">
-                Los pilares fundamentales que sostienen nuestra labor diaria
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {values.map((value, index) => (
-                <Card
-                  key={index}
-                  className="bento-item glass border-primary/10 hover:border-primary/30 text-center group"
-                >
-                  <CardHeader>
-                    <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                      <value.icon className="h-8 w-8 text-primary" />
-                    </div>
-                    <CardTitle className="text-xl">{value.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{value.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-
+      {/* ─── MOTTO ─── */}
+      <section className="bg-black py-16">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 text-center">
+          <Flame className="w-8 h-8 text-red-500/30 mx-auto mb-4" />
+          <p className="text-zinc-600 text-sm font-mono tracking-[0.5em] uppercase">{companyConfig.motto}</p>
+        </div>
+      </section>
     </>
   )
 }

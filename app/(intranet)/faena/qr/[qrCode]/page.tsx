@@ -49,7 +49,7 @@ export default async function QrResolverPage({
   }
 
   // Intentar iniciar o continuar la ejecución
-  const res = await startOrContinueExecution(hit.compartment.id)
+  const res = await startOrContinueExecution(hit.compartment.compartmentId, hit.compartment.machineId)
 
   if (!res.ok) {
     return (
@@ -90,5 +90,5 @@ export default async function QrResolverPage({
   }
 
   // Redirigir al checklist
-  redirect(`/faena/checklist/${res.executionId}`)
+  redirect(`/faena/checklist/${res.checklistId}`)
 }

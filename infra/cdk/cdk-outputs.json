@@ -1,0 +1,53 @@
+{
+  "ubo163-dev-storage": {
+    "MediaBucketArn": "arn:aws:s3:::ubo163-dev-media",
+    "MediaBucketName": "ubo163-dev-media",
+    "ExportsOutputRefMediaBucketBCBB02BA270A7AEB": "ubo163-dev-media",
+    "ExportsOutputFnGetAttMediaBucketBCBB02BAArnB94B784B": "arn:aws:s3:::ubo163-dev-media"
+  },
+  "ubo163-dev-dynamo": {
+    "ExportsOutputFnGetAttGuardBunksTableFA8BBEC5Arn0B64638B": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-guard-bunks",
+    "ExportsOutputFnGetAttMachineCompartmentsTableB73D649FArn6B3EDA20": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-machine-compartments",
+    "ExportsOutputFnGetAttSectionsTable09666106Arn253BF32F": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-sections",
+    "InventoryTableName": "ubo163-dev-inventory",
+    "ExportsOutputFnGetAttEmergenciesTable49AB0737ArnFDB299BC": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-emergencies",
+    "ExportsOutputFnGetAttGuardDormitoriesTable9DCF40F8Arn26894EAC": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-guard-dormitories",
+    "ExportsOutputFnGetAttContentCalendarTable27E41B49Arn222969C0": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-content-calendar",
+    "ProfilesTableName": "ubo163-dev-profiles",
+    "IncidentsTableName": "ubo163-dev-incidents",
+    "ExportsOutputFnGetAttGuardBedsTable9C54C2CAArnF3E499C3": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-guard-beds",
+    "ExportsOutputFnGetAttSectionRolesTable17CF4BE6Arn000E789B": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-section-roles",
+    "ExportsOutputFnGetAttTrainingCertificatesTableEFBBE3BBArn3B05571A": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-training-certificates",
+    "ExportsOutputFnGetAttMachinesTable8A25D5EAArn34D0714C": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-machines",
+    "ExportsOutputFnGetAttTrainingCoursesTable3F0596D6ArnB29139A1": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-training-courses",
+    "ExportsOutputFnGetAttServiceHoursTable84E4E581ArnD804C396": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-service-hours",
+    "ExportsOutputFnGetAttInventoryTableFD135387Arn76BB4BE2": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-inventory",
+    "ExportsOutputFnGetAttProfilesTable3B48B4C6Arn02770504": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-profiles",
+    "ExportsOutputFnGetAttGuardReservationsTableD415AE70ArnC9DD22DE": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-guard-reservations",
+    "SectionsTableName": "ubo163-dev-sections",
+    "ExportsOutputFnGetAttEmergencyCrewTable5E032980Arn91426365": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-emergency-crew",
+    "UsersTableName": "ubo163-dev-users",
+    "ExportsOutputFnGetAttRequestsTable419243C7Arn7D5A935D": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-requests",
+    "ExportsOutputFnGetAttMachineChecklistsTableABEB6457Arn06389A20": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-machine-checklists",
+    "ExportsOutputFnGetAttTrainingProgressTable44329F48ArnC6C35E49": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-training-progress",
+    "ExportsOutputFnGetAttIcsTable18A1A3A9ArnB93E1A78": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-ics",
+    "ExportsOutputFnGetAttCgbvpAttendanceTable9E724464Arn00D2AD92": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-cgbvp-attendance",
+    "ExportsOutputFnGetAttInternalRequestsTable456A2AA9Arn692B88A6": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-internal-requests",
+    "ExportsOutputFnGetAttCgbvpStatusTable840A0F5AArnC41E6DB1": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-cgbvp-status",
+    "ExportsOutputFnGetAttAnnouncementsTable77DB15DDArn6CC3C35C": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-announcements",
+    "ExportsOutputFnGetAttCgbvpSyncTable93F0E1A4ArnB6596572": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-cgbvp-sync",
+    "ExportsOutputFnGetAttUsersTable9725E9C8Arn5684EF99": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-users",
+    "EmergenciesTableName": "ubo163-dev-emergencies",
+    "ExportsOutputFnGetAttInventoryAttachmentsTable544CC6CDArnCF0F3003": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-inventory-attachments",
+    "ExportsOutputFnGetAttIncidentsTable307EBBA6Arn66FA3897": "arn:aws:dynamodb:us-east-1:607520774564:table/ubo163-dev-incidents"
+  },
+  "ubo163-dev-compute-app": {
+    "StaticBucketName": "ubo163-dev-static",
+    "ExportsOutputFnGetAttDistribution830FAC52DomainNameBEB09E30": "d1bno1kyerz6hk.cloudfront.net",
+    "ExportsOutputRefDistribution830FAC524DF81588": "E29S9K40S665N4",
+    "LambdaArn": "arn:aws:lambda:us-east-1:607520774564:function:ubo163-dev-web",
+    "ExportsOutputRefWebFunction291B7D47869E7853": "ubo163-dev-web",
+    "DistributionUrl": "https://d1bno1kyerz6hk.cloudfront.net",
+    "LambdaFunctionUrl": "https://3fkhax53pbsepk52ruspowh4ky0xuzfq.lambda-url.us-east-1.on.aws/"
+  }
+}

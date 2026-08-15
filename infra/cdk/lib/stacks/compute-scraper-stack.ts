@@ -108,6 +108,10 @@ export class ComputeScraperStack extends cdk.Stack {
       name: resourceName(config, 'scraper-schedules'),
     })
 
+    // SCHEDULES DESHABILITADOS — CGBVP bloquea IPs de AWS; el scraper falla
+    // con timeout en cada invocación (5 min facturados por nada).
+    // Para sincronizar datos: correr el scraper localmente y subir via API.
+    // Ver docs/CGBVP_SYNC.md para el flujo manual.
     const schedules: Array<{
       name: string
       scraperType: string
@@ -135,14 +139,12 @@ export class ComputeScraperStack extends cdk.Stack {
       {
         name: 'asistencia-mensual',
         scraperType: 'asistencia-mensual',
-        // Días 1-5 a las 3 AM Lima = 8 AM UTC
         cron: 'cron(0 8 1-5 * ? *)',
         description: 'Asistencia del mes anterior, días 1-5 a las 3 AM Lima',
       },
       {
         name: 'bomberos',
         scraperType: 'bomberos',
-        // Día 1 a las 2 AM Lima = 7 AM UTC
         cron: 'cron(0 7 1 * ? *)',
         description: 'Padrón de bomberos mensual, día 1 a las 2 AM Lima',
       },
@@ -156,7 +158,7 @@ export class ComputeScraperStack extends cdk.Stack {
         flexibleTimeWindow: { mode: 'OFF' },
         scheduleExpression: s.cron,
         scheduleExpressionTimezone: 'UTC',
-        state: 'ENABLED',
+        state: 'DISABLED',
         target: {
           arn: this.scraperFunction.functionArn,
           roleArn: schedulerRole.roleArn,

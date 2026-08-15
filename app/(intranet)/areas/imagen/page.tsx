@@ -19,6 +19,8 @@ export default async function AreaImagenPage() {
   ])
 
   const pendingCount = extra.stats.plannedThisMonth + extra.stats.inProgressThisMonth
+  const perms = (session.user.permissions ?? []) as string[]
+  const canManageInbox = perms.some(p => p.startsWith('area.') && p.endsWith('.manage'))
 
   return (
     <div className="max-w-[1400px]">
@@ -26,10 +28,11 @@ export default async function AreaImagenPage() {
 
       <AreaBaseClient
         data={data}
+        canManageInbox={canManageInbox}
         customPanel={{
           key: 'contenido',
           label: 'Contenido y anuncios',
-          icon: Camera,
+          icon: <Camera className="w-3.5 h-3.5" strokeWidth={1.8} />,
           count: pendingCount > 0 ? pendingCount : undefined,
           node: <ImagenPanel extra={extra} />,
         }}

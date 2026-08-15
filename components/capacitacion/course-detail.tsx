@@ -1,17 +1,15 @@
 "use client"
 
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import Link from 'next/link'
 import {
   Check, Play, FileText, Video, ClipboardCheck, BookOpen, Lock,
-  ArrowLeft, Clock, GraduationCap, Award,
+  ArrowLeft, Clock, GraduationCap, Award, ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { CourseDetailData } from '@/lib/capacitacion/get-capacitacion-data'
-import {
-  enrollInCourse, unenrollFromCourse, markLessonComplete, unmarkLesson,
-} from '@/lib/capacitacion/actions'
+import { enrollInCourse, unenrollFromCourse } from '@/lib/capacitacion/actions'
 
 const CONTENT_TYPE_LABELS: Record<string, string> = {
   texto: 'Lectura',
@@ -34,18 +32,28 @@ export function CourseDetail({ detail }: { detail: CourseDetailData }) {
 
   const handleEnroll = () => {
     startTransition(async () => {
-      const res = await enrollInCourse(detail.course.id)
-      if (!res.ok) toast.error(res.error)
-      else toast.success(res.reused ? 'Inscripción reactivada' : 'Inscripción confirmada')
+      try {
+        const res = await enrollInCourse(detail.course.courseId)
+        if (!res.ok) toast.error(res.error)
+        else toast.success(res.reused ? 'Inscripción reactivada' : 'Inscripción confirmada')
+      } catch (err) {
+        console.error('Error al inscribirse:', err)
+        toast.error('No se pudo completar la inscripción. Inténtelo de nuevo.')
+      }
     })
   }
 
   const handleUnenroll = () => {
     if (!confirm('¿Abandonar el curso? Su progreso actual se mantendrá.')) return
     startTransition(async () => {
-      const res = await unenrollFromCourse(detail.course.id)
-      if (!res.ok) toast.error(res.error)
-      else toast.success('Abandonó el curso')
+      try {
+        const res = await unenrollFromCourse(detail.course.courseId)
+        if (!res.ok) toast.error(res.error)
+        else toast.success('Abandonó el curso')
+      } catch (err) {
+        console.error('Error al desinscribirse:', err)
+        toast.error('No se pudo procesar. Inténtelo de nuevo.')
+      }
     })
   }
 
@@ -191,10 +199,10 @@ export function CourseDetail({ detail }: { detail: CourseDetailData }) {
           <div className="lesson-list">
             {detail.lessons.map((l) => (
               <LessonRow
-                key={l.id}
+                key={l.lessonId}
                 lesson={l}
+                courseSlug={detail.course.slug}
                 isEnrolled={!!detail.enrollment}
-                canEdit={detail.enrollment?.status === 'activa'}
               />
             ))}
           </div>
@@ -204,24 +212,22 @@ export function CourseDetail({ detail }: { detail: CourseDetailData }) {
   )
 }
 
+
 function LessonRow({
   lesson,
+  courseSlug,
   isEnrolled,
-  canEdit,
 }: {
   lesson: CourseDetailData['lessons'][number]
+  courseSlug: string
   isEnrolled: boolean
-  canEdit: boolean
 }) {
-  const [pending, startTransition] = useTransition()
-  const [showScoreInput, setShowScoreInput] = useState(false)
-  const [scoreValue, setScoreValue] = useState('')
-
   const Icon = CONTENT_TYPE_ICONS[lesson.contentType as keyof typeof CONTENT_TYPE_ICONS] ?? BookOpen
   const typeLabel = CONTENT_TYPE_LABELS[lesson.contentType] ?? lesson.contentType
 
   const isCompleted = ['completada', 'aprobada'].includes(lesson.status)
   const isReprobada = lesson.status === 'reprobada'
+  const isPendingReview = lesson.status === 'en_curso' && lesson.contentType === 'evaluacion'
 
   const rowClass = cn(
     'lesson-item',
@@ -229,45 +235,15 @@ function LessonRow({
     lesson.isCurrent && !isCompleted && 'lesson-item--current',
   )
 
-  const handleMark = (score?: number) => {
-    startTransition(async () => {
-      const res = await markLessonComplete({
-        lessonId: lesson.id,
-        score,
-      })
-      if (!res.ok) {
-        toast.error(res.error)
-        return
-      }
-      if (res.courseCompleted) {
-        toast.success('¡Curso completado! 🎓')
-      } else {
-        toast.success(res.status === 'aprobada' ? 'Lección aprobada' : 'Lección marcada')
-      }
-      setShowScoreInput(false)
-      setScoreValue('')
-    })
-  }
-
-  const handleUnmark = () => {
-    if (!confirm('¿Desmarcar esta lección?')) return
-    startTransition(async () => {
-      const res = await unmarkLesson(lesson.id)
-      if (!res.ok) toast.error(res.error)
-      else toast.success('Lección desmarcada')
-    })
-  }
-
   return (
     <div className={rowClass}>
       <div className="lesson-item-number">
-        {isCompleted ? (
-          <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
-        ) : (
-          lesson.displayOrder + 1
-        )}
+        {isCompleted
+          ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+          : lesson.displayOrder + 1}
       </div>
-      <div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div className="lesson-item-title">{lesson.title}</div>
         <div className="lesson-item-meta">
           <span className="lesson-item-type">
@@ -283,10 +259,20 @@ function LessonRow({
               </span>
             </>
           )}
-          {!lesson.required && (
+          {lesson.hasQuiz && (
             <>
               <span>·</span>
-              <span style={{ color: 'var(--graphite)' }}>opcional</span>
+              <span>
+                <ListChecks className="w-3 h-3 inline mr-1" strokeWidth={1.8} />
+                {lesson.contentType === 'evaluacion' ? 'examen' : 'quiz'}
+              </span>
+            </>
+          )}
+          {!lesson.required && <><span>·</span><span style={{ color: 'var(--graphite)' }}>opcional</span></>}
+          {isPendingReview && (
+            <>
+              <span>·</span>
+              <span style={{ color: 'var(--brass)' }}>en revisión del instructor</span>
             </>
           )}
           {lesson.score && (
@@ -301,104 +287,28 @@ function LessonRow({
       </div>
 
       <div className="lesson-item-action">
-        {lesson.isLocked && (
+        {!isEnrolled && (
           <span style={{ color: 'var(--graphite)', fontSize: 11 }}>
             <Lock className="w-3 h-3 inline mr-1" strokeWidth={1.8} />
             Inscríbase para desbloquear
           </span>
         )}
-        {!lesson.isLocked && isEnrolled && !isCompleted && canEdit && (
-          <>
-            {showScoreInput ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  step="0.5"
-                  placeholder="0-20"
-                  value={scoreValue}
-                  onChange={(e) => setScoreValue(e.target.value)}
-                  style={{
-                    width: 60,
-                    padding: '6px 8px',
-                    fontSize: 12,
-                    fontFamily: 'var(--font-mono)',
-                    background: 'var(--ink-black)',
-                    border: '1px solid var(--ink-line)',
-                    color: 'var(--bone)',
-                    borderRadius: 2,
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn--primary btn--sm"
-                  onClick={() => {
-                    const n = Number(scoreValue)
-                    if (isNaN(n) || n < 0 || n > 20) {
-                      toast.error('Puntaje entre 0 y 20')
-                      return
-                    }
-                    handleMark(n)
-                  }}
-                  disabled={pending}
-                >
-                  Aprobar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  onClick={() => {
-                    setShowScoreInput(false)
-                    setScoreValue('')
-                  }}
-                  disabled={pending}
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => {
-                  if (lesson.contentType === 'evaluacion') {
-                    setShowScoreInput(true)
-                  } else {
-                    handleMark()
-                  }
-                }}
-                disabled={pending}
-              >
-                <Play className="w-3 h-3" strokeWidth={1.8} />
-                {lesson.isCurrent ? 'Continuar' : 'Marcar completa'}
-              </button>
-            )}
-          </>
-        )}
-        {!lesson.isLocked && isEnrolled && isCompleted && canEdit && (
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={handleUnmark}
-            disabled={pending}
-            title="Desmarcar"
-          >
-            Desmarcar
-          </button>
-        )}
-        {!lesson.isLocked && isEnrolled && isCompleted && !canEdit && (
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              color: 'var(--emerald-glow)',
-              letterSpacing: '0.08em',
-            }}
-          >
-            <Check className="w-3 h-3 inline mr-1" strokeWidth={2.5} />
-            COMPLETADA
+        {isEnrolled && lesson.isLocked && (
+          <span style={{ color: 'var(--graphite)', fontSize: 11 }}>
+            <Lock className="w-3 h-3 inline mr-1" strokeWidth={1.8} />
+            Complete la lección anterior
           </span>
+        )}
+        {isEnrolled && !lesson.isLocked && (
+          <Link
+            href={`/capacitacion/${courseSlug}/leccion/${lesson.lessonId}`}
+            className="btn btn--ghost btn--sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+          >
+            {isCompleted
+              ? <><BookOpen className="w-3 h-3" strokeWidth={1.8} /> Repasar</>
+              : <><Play className="w-3 h-3" strokeWidth={1.8} /> {lesson.isCurrent ? 'Continuar' : 'Ver lección'}</>}
+          </Link>
         )}
       </div>
     </div>

@@ -136,7 +136,7 @@ function RequestCardUI({ request }: { request: RequestCard }) {
           )}
           <div className="incident-meta-item">
             <span className="incident-meta-label">ENVIADA</span>
-            <span className="mono">{timeAgo(request.createdAt)}</span>
+            <span className="mono">{timeAgo(new Date(request.createdAt))}</span>
           </div>
           <div className="incident-meta-item">
             <span className="incident-meta-label">PRIORIDAD</span>

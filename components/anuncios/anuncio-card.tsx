@@ -16,6 +16,7 @@ import {
   deleteMyDraft,
   archiveMyAnnouncement,
 } from '@/lib/anuncios/actions'
+import { AnuncioContent, getAnuncioTextLength } from './anuncio-content'
 
 const STATUS_LABELS: Record<string, string> = {
   borrador: 'BORRADOR',
@@ -47,7 +48,7 @@ export function AnuncioCard({
   const [rejectMode, setRejectMode] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
 
-  const isLong = anuncio.content.length > 260
+  const isLong = getAnuncioTextLength(anuncio.content) > 260
   const isUnread = mode === 'buzon' && !anuncio.isRead
 
   const cardClass = cn(
@@ -152,14 +153,13 @@ export function AnuncioCard({
 
       <h3 className="anuncio-card-title">{anuncio.title}</h3>
 
-      <div
+      <AnuncioContent
+        content={anuncio.content}
         className={cn(
           'anuncio-card-content',
           isLong && !expanded && 'anuncio-card-content--collapsed',
         )}
-      >
-        {anuncio.content}
-      </div>
+      />
 
       {isLong && (
         <button

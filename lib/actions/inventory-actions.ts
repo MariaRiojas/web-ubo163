@@ -1,10 +1,10 @@
 'use server'
 
-import { db } from '@/lib/db'
-import { inventory, sections } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
-import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { ddb, TABLE, QueryCommand, PutCommand, generateId, now } from '@/lib/db/dynamodb'
+import type { Section } from '@/lib/db/schema/sections'
+import { revalidatePath } from 'next/cache'
+import { writeAuditLog, auditActor } from '@/lib/audit/write-audit'
 
 const AREA_KEY_TO_ALMACEN: Record<string, string> = {
   maquinas:            'maquina',
@@ -24,41 +24,74 @@ const AREA_KEY_TO_SLUG: Record<string, string> = {
   imagen:              'imagen',
 }
 
+async function getSectionByKey(key: string): Promise<Section | null> {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.sections,
+    IndexName: 'key-index',
+    KeyConditionExpression: '#k = :key',
+    ExpressionAttributeNames: { '#k': 'key' },
+    ExpressionAttributeValues: { ':key': key },
+    Limit: 1,
+  }))
+  return (Items?.[0] ?? null) as Section | null
+}
+
 export async function createInventoryItemAction(areaKey: string, formData: FormData) {
-  const session = await auth()
-  if (!session?.user) throw new Error('No autorizado')
+  try {
+    const session = await auth()
+    if (!session?.user) return { success: false, error: 'No autorizado' }
 
-  const name = (formData.get('name') as string | null)?.trim()
-  const category = (formData.get('category') as string | null)?.trim()
-  if (!name || !category) throw new Error('Nombre y categoría son obligatorios')
+    const name = (formData.get('name') as string | null)?.trim()
+    const category = (formData.get('category') as string | null)?.trim()
+    if (!name || !category) return { success: false, error: 'Nombre y categoría son obligatorios' }
 
-  const [section] = await db
-    .select()
-    .from(sections)
-    .where(eq(sections.key, areaKey))
-    .limit(1)
+    const section = await getSectionByKey(areaKey)
 
-  const qty = parseInt((formData.get('quantity') as string) ?? '1', 10)
+    const qty = parseInt((formData.get('quantity') as string) ?? '1', 10)
+    const finalQty = isNaN(qty) || qty < 1 ? 1 : qty
+    const ts = now()
+    const itemId = generateId()
 
-  await db.insert(inventory).values({
-    name,
-    category,
-    subcategory:       (formData.get('subcategory') as string) || null,
-    brand:             (formData.get('brand') as string) || null,
-    model:             (formData.get('model') as string) || null,
-    numeroSerie:       (formData.get('numeroSerie') as string) || null,
-    codigoCbp:         (formData.get('codigoCbp') as string) || null,
-    quantity:          isNaN(qty) || qty < 1 ? 1 : qty,
-    unitMeasure:       (formData.get('unitMeasure') as string) || 'unidad',
-    condition:         (formData.get('condition') as string) || 'operativo',
-    almacenTipo:       AREA_KEY_TO_ALMACEN[areaKey] ?? 'servicios',
-    ubicacionInterna:  (formData.get('ubicacionInterna') as string) || null,
-    referenceValue:    (formData.get('referenceValue') as string) || null,
-    notes:             (formData.get('notes') as string) || null,
-    sectionId:         section?.id ?? null,
-    createdBy:         (session.user.profileId as string) || null,
-  })
+    await ddb.send(new PutCommand({
+      TableName: TABLE.inventory,
+      Item: {
+        itemId,
+        name,
+        category,
+        subcategory:      (formData.get('subcategory') as string) || undefined,
+        brand:            (formData.get('brand') as string) || undefined,
+        model:            (formData.get('model') as string) || undefined,
+        numeroSerie:      (formData.get('numeroSerie') as string) || undefined,
+        codigoCbp:        (formData.get('codigoCbp') as string) || undefined,
+        quantity:         finalQty,
+        unitMeasure:      (formData.get('unitMeasure') as string) || 'unidad',
+        condition:        (formData.get('condition') as string) || 'operativo',
+        almacenTipo:      AREA_KEY_TO_ALMACEN[areaKey] ?? 'servicios',
+        ubicacionInterna: (formData.get('ubicacionInterna') as string) || undefined,
+        referenceValue:   (formData.get('referenceValue') as string) || undefined,
+        notes:            (formData.get('notes') as string) || undefined,
+        sectionId:        section?.sectionId ?? undefined,
+        createdBy:        (session.user as any).profileId ?? undefined,
+        createdAt:        ts,
+        updatedAt:        ts,
+      },
+    }))
 
-  const slug = AREA_KEY_TO_SLUG[areaKey] ?? areaKey.replace('_', '-')
-  redirect(`/areas/${slug}/inventario`)
+    await writeAuditLog({
+      entityType: 'inventory',
+      entityId: itemId,
+      entityLabel: name,
+      action: 'create',
+      ...auditActor(session),
+      summary: `Registró el ítem «${name}» (${finalQty} ${(formData.get('unitMeasure') as string) || 'unidad'}) en el inventario de ${areaKey}`,
+      after: { name, category, quantity: finalQty, sectionId: section?.sectionId },
+    })
+
+    const slug = AREA_KEY_TO_SLUG[areaKey] ?? areaKey.replace('_', '-')
+    revalidatePath(`/areas/${slug}/inventario`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error en createInventoryItemAction:', error)
+    return { success: false, error: error.message }
+  }
 }

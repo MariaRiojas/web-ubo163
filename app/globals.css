@@ -215,7 +215,78 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.005em;
+
+  /* ─────────────────────────────────────────────────────────────────
+     Alineación de los componentes base (shadcn/ui) al diseño institucional.
+     Los primitivos (Button, Dialog, Input, Select, Card…) usan estos tokens
+     HSL; al sobrescribirlos SOLO dentro de `.intranet-theme`, TODO componente
+     de la librería adopta la paleta institucional automáticamente — actual y
+     futuro — sin tocar cada uno. El landing público (fuera de este tema)
+     conserva su propia paleta. Valores = paleta institucional en HSL.
+     ───────────────────────────────────────────────────────────────── */
+  --background: 218 27% 10%;        /* ink-deep */
+  --foreground: 218 22% 93%;        /* bone */
+  --card: 218 27% 10%;
+  --card-foreground: 218 22% 93%;
+  --popover: 218 27% 10%;           /* fondo de popups/menús */
+  --popover-foreground: 218 22% 93%;
+  --primary: 0 72% 51%;             /* red-163 */
+  --primary-foreground: 218 22% 93%;
+  --secondary: 218 25% 18%;         /* ink-line */
+  --secondary-foreground: 218 22% 93%;
+  --muted: 218 33% 6%;              /* ink-black */
+  --muted-foreground: 214 13% 60%;  /* steel */
+  --accent: 218 25% 18%;
+  --accent-foreground: 218 22% 93%;
+  --border: 218 25% 18%;            /* ink-line */
+  --input: 218 25% 18%;
+  --ring: 38 47% 58%;               /* brass */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 218 22% 93%;
 }
+
+/* Radio institucional (2px, esquinas nítidas) para los primitivos shadcn */
+.intranet-theme .rounded-md,
+.intranet-theme .rounded-lg,
+.intranet-theme .sm\:rounded-lg {
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Componentes PORTALED de Radix (Dialog, Select, Dropdown, Popover):
+   se montan en document.body, FUERA de `.intranet-theme`, así que la
+   sobreescritura scoped no los alcanza y quedarían con el tema claro por
+   defecto. Se les aplica la paleta institucional apuntando a los
+   contenedores de portal de Radix. (El landing no usa estos diálogos.)
+   ───────────────────────────────────────────────────────────────── */
+[role="dialog"],
+[role="alertdialog"],
+[data-radix-popper-content-wrapper],
+[data-radix-menu-content],
+[data-radix-select-content] {
+  --background: 218 27% 10%;
+  --foreground: 218 22% 93%;
+  --card: 218 27% 10%;
+  --card-foreground: 218 22% 93%;
+  --popover: 218 27% 10%;
+  --popover-foreground: 218 22% 93%;
+  --primary: 0 72% 51%;
+  --primary-foreground: 218 22% 93%;
+  --secondary: 218 25% 18%;
+  --secondary-foreground: 218 22% 93%;
+  --muted: 218 33% 6%;
+  --muted-foreground: 214 13% 60%;
+  --accent: 218 25% 18%;
+  --accent-foreground: 218 22% 93%;
+  --border: 218 25% 18%;
+  --input: 218 25% 18%;
+  --ring: 38 47% 58%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 218 22% 93%;
+}
+[role="dialog"], [role="alertdialog"] { border-radius: 2px; }
+[role="dialog"] .rounded-md, [role="dialog"] .rounded-lg,
+[data-radix-popper-content-wrapper] .rounded-md { border-radius: 2px; }
 
 .intranet-theme .mono {
   font-family: var(--font-mono);
@@ -4662,6 +4733,186 @@
   gap: 12px;
 }
 
+/* Editor enriquecido (Tiptap) del contenido del anuncio */
+.intranet-theme .anuncio-editor-wrap {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  background: var(--ink-black);
+  overflow: hidden;
+  transition: border-color 140ms var(--ease-swift);
+}
+.intranet-theme .anuncio-editor-wrap:focus-within {
+  border-color: var(--red-163);
+}
+.intranet-theme .anuncio-editor-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px;
+  background: var(--ink-deep);
+  border-bottom: 1px solid var(--ink-line);
+}
+.intranet-theme .anuncio-editor-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 4px;
+  background: var(--ink-line);
+}
+.intranet-theme .anuncio-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--steel);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 120ms var(--ease-swift);
+}
+.intranet-theme .anuncio-editor-btn:hover:not(:disabled) {
+  color: var(--bone);
+  background: var(--ink-black);
+  border-color: var(--ink-line);
+}
+.intranet-theme .anuncio-editor-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.intranet-theme .anuncio-editor-btn--active {
+  color: var(--brass);
+  background: rgba(196, 160, 98, 0.1);
+  border-color: var(--brass-deep);
+}
+.intranet-theme .anuncio-editor-linkbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--ink-deep);
+  border-bottom: 1px solid var(--ink-line);
+}
+.intranet-theme .anuncio-editor-link-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  color: var(--bone);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+.intranet-theme .anuncio-editor-link-input:focus {
+  outline: none;
+  border-color: var(--red-163);
+}
+.intranet-theme .anuncio-editor-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--steel);
+  background: var(--ink-black);
+  border: 1px solid var(--ink-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 120ms var(--ease-swift);
+}
+.intranet-theme .anuncio-editor-link-btn:hover {
+  color: var(--bone);
+  border-color: var(--graphite);
+}
+.intranet-theme .anuncio-editor-content-wrap {
+  padding: 4px 2px;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror {
+  min-height: 140px;
+  padding: 10px 12px;
+  color: var(--bone);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  line-height: 1.6;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror:focus {
+  outline: none;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror p {
+  margin: 0 0 10px;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bone);
+  margin: 4px 0 8px;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror ul,
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror li {
+  margin-bottom: 4px;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror a {
+  color: var(--brass);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.intranet-theme .anuncio-editor-content-wrap .ProseMirror .anuncio-editor-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--graphite);
+  pointer-events: none;
+}
+
+/* Render del contenido saneado (buzón, mis anuncios, comunicados de imagen) */
+.intranet-theme .anuncio-rich p {
+  margin: 0 0 10px;
+}
+.intranet-theme .anuncio-rich p:last-child {
+  margin-bottom: 0;
+}
+.intranet-theme .anuncio-rich h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bone);
+  margin: 4px 0 8px;
+}
+.intranet-theme .anuncio-rich ul,
+.intranet-theme .anuncio-rich ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+.intranet-theme .anuncio-rich li {
+  margin-bottom: 4px;
+}
+.intranet-theme .anuncio-rich a {
+  color: var(--brass);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.intranet-theme .anuncio-rich a:hover {
+  color: var(--red-glow);
+}
+.intranet-theme .anuncio-rich strong {
+  color: var(--bone);
+  font-weight: 600;
+}
+
 /* Audiencia block */
 .intranet-theme .anuncio-audience {
   background: var(--ink-black);
@@ -4845,4 +5096,153 @@
     top: 12px;
     right: 12px;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODO CLARO INSTITUCIONAL
+   Activado con html.intranet-light (toggle en sidebar).
+   Redefine la paleta oscura → cálida/marfil manteniendo acentos.
+   ═══════════════════════════════════════════════════════════════════ */
+
+html.intranet-light .intranet-theme {
+  --ink-black:     #F7F4EE;
+  --ink-deep:      #EFEBe3;
+  --ink-surface:   #E6E1D7;
+  --ink-elevated:  #DBD5C8;
+  --ink-line:      #C3BDB0;
+  --ink-line-soft: #DAD5CB;
+
+  --bone:          #1A1714;
+  --steel:         #52504A;
+  --graphite:      #868178;
+  --shadow:        #A8A29A;
+
+  background: var(--ink-black);
+  color: var(--bone);
+}
+
+/* Fondos atmosféricos — apagados en modo claro */
+html.intranet-light .intranet-theme .bg-grid { opacity: 0.5; }
+html.intranet-light .intranet-theme .bg-noise { opacity: 0.15; }
+html.intranet-light .intranet-theme .bg-glow-red { opacity: 0.35; }
+html.intranet-light .intranet-theme .bg-glow-brass { opacity: 0.3; }
+
+/* Scrollbar más ligero en modo claro */
+html.intranet-light .intranet-theme ::-webkit-scrollbar-thumb {
+  background: var(--ink-line);
+}
+html.intranet-light .intranet-theme { scrollbar-color: var(--ink-line) transparent; }
+
+/* Tablas y headers con fondo ligeramente más cálido */
+html.intranet-light .intranet-theme .history-table th {
+  background: var(--ink-elevated);
+}
+html.intranet-light .intranet-theme .history-table tr:hover td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Inputs — borde más visible en modo claro */
+html.intranet-light .intranet-theme input,
+html.intranet-light .intranet-theme select,
+html.intranet-light .intranet-theme textarea {
+  color: var(--bone);
+  background: var(--ink-black);
+  border-color: var(--ink-line);
+}
+html.intranet-light .intranet-theme input::placeholder,
+html.intranet-light .intranet-theme textarea::placeholder {
+  color: var(--graphite);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   MODO CLARO — mejoras (2026-08)
+   1) Redefinir los tokens HSL de shadcn/ui para que TODOS los primitivos
+      (Dialog, Select, Card, Popover, Button…) adopten la paleta clara.
+      Sin esto, los componentes de librería seguían renderizando en oscuro.
+   2) Ajustar los acentos para que tengan contraste sobre marfil (los tonos
+      claros como brass/emerald/flame se leían lavados sobre fondo claro).
+   ─────────────────────────────────────────────────────────────────── */
+html.intranet-light .intranet-theme {
+  /* Acentos con más cuerpo sobre fondo claro (AA sobre marfil) */
+  --red-163:      #C21B1B;
+  --red-glow:     #D42F2F;
+  --brass:        #8A6A2E;   /* dorado profundo, legible sobre marfil */
+  --brass-deep:   #6E5423;
+  --flame:        #B4700A;   /* ámbar tostado en vez de amarillo lavado */
+  --emerald:      #0A7F5B;
+  --emerald-glow: #0B8A5B;   /* verde bosque legible */
+  --shadow:       #B7B1A6;
+
+  /* Tokens shadcn (HSL) → paleta clara */
+  --background: 40 27% 95%;         /* ink-black claro (marfil) */
+  --foreground: 24 12% 9%;          /* bone oscuro (tinta) */
+  --card: 42 22% 91%;               /* ink-deep claro */
+  --card-foreground: 24 12% 9%;
+  --popover: 42 22% 93%;
+  --popover-foreground: 24 12% 9%;
+  --primary: 0 75% 43%;             /* red-163 (light) */
+  --primary-foreground: 40 27% 97%;
+  --secondary: 40 15% 85%;          /* ink-surface claro */
+  --secondary-foreground: 24 12% 9%;
+  --muted: 42 20% 88%;
+  --muted-foreground: 40 6% 42%;    /* steel (light) */
+  --accent: 40 15% 85%;
+  --accent-foreground: 24 12% 9%;
+  --border: 40 13% 73%;             /* ink-line (light) */
+  --input: 40 13% 73%;
+  --ring: 38 50% 36%;               /* brass (light) */
+  --destructive: 0 75% 43%;
+  --destructive-foreground: 40 27% 97%;
+
+  color-scheme: light;
+}
+
+/* Botón primario: mantener texto claro sobre rojo/dorado también en claro */
+html.intranet-light .intranet-theme .btn--primary {
+  color: #FBF7EF;
+}
+
+/* Sombra de tarjetas ligeramente perceptible sobre marfil (profundidad) */
+html.intranet-light .intranet-theme .area-hero,
+html.intranet-light .intranet-theme .guardia-empty {
+  box-shadow: 0 1px 2px rgba(26, 23, 20, 0.06);
+}
+
+/* Radix portaled (Dialog/Select/Dropdown/Popover) — se montan fuera de
+   `.intranet-theme`; cuando el modo claro está activo hay que redefinir
+   sus tokens también, o quedaban en oscuro sobre la app clara. */
+html.intranet-light [role="dialog"],
+html.intranet-light [role="alertdialog"],
+html.intranet-light [data-radix-popper-content-wrapper],
+html.intranet-light [data-radix-menu-content],
+html.intranet-light [data-radix-select-content] {
+  --background: 40 27% 95%;
+  --foreground: 24 12% 9%;
+  --card: 42 22% 91%;
+  --card-foreground: 24 12% 9%;
+  --popover: 42 22% 93%;
+  --popover-foreground: 24 12% 9%;
+  --primary: 0 75% 43%;
+  --primary-foreground: 40 27% 97%;
+  --secondary: 40 15% 85%;
+  --secondary-foreground: 24 12% 9%;
+  --muted: 42 20% 88%;
+  --muted-foreground: 40 6% 42%;
+  --accent: 40 15% 85%;
+  --accent-foreground: 24 12% 9%;
+  --border: 40 13% 73%;
+  --input: 40 13% 73%;
+  --ring: 38 50% 36%;
+  --destructive: 0 75% 43%;
+  --destructive-foreground: 40 27% 97%;
+  color-scheme: light;
+}
+
+/* ── Escudo institucional ──────────────────────────────────────────────
+   El PNG del escudo es blanco (silueta con alfa). En modo oscuro se ve tal
+   cual; en modo claro se invierte a una silueta oscura para que contraste
+   sobre los fondos crema del tema claro. */
+html.intranet-light .escudo-mark {
+  filter: brightness(0) saturate(100%) invert(13%) sepia(12%) saturate(600%) hue-rotate(340deg) opacity(0.9);
 }

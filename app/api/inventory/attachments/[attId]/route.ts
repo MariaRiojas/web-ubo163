@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
 import { auth } from '@/lib/auth'
 import { hasPermission, type Permission } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
-import { inventoryAttachments } from '@/lib/db/schema'
+import { ddb, TABLE, ScanCommand, DeleteCommand } from '@/lib/db/dynamodb'
+import type { InventoryAttachment } from '@/lib/db/schema/inventory'
 import { deleteFile } from '@/lib/storage/s3'
 
 /**
  * DELETE /api/inventory/attachments/[attId]
- * Elimina un adjunto: borra el archivo de S3 y la fila de BD.
+ * Elimina un adjunto: borra el archivo de S3 y el item de DynamoDB.
  */
 export async function DELETE(
   _req: NextRequest,
@@ -29,10 +28,16 @@ export async function DELETE(
 
   const { attId } = await params
 
-  const att = await db.query.inventoryAttachments.findFirst({
-    where: eq(inventoryAttachments.id, attId),
-    columns: { id: true, fileKey: true },
-  })
+  // La tabla tiene PK=itemId, SK=attachmentId — necesitamos ambos para DeleteCommand.
+  // Scan por attachmentId para obtener el itemId.
+  const { Items } = await ddb.send(new ScanCommand({
+    TableName: TABLE.inventoryAttachments,
+    FilterExpression: 'attachmentId = :a',
+    ExpressionAttributeValues: { ':a': attId },
+    Limit: 1,
+  }))
+
+  const att = (Items?.[0] as InventoryAttachment | undefined) ?? null
   if (!att) {
     return NextResponse.json({ error: 'Adjunto no encontrado' }, { status: 404 })
   }
@@ -42,10 +47,12 @@ export async function DELETE(
     await deleteFile(att.fileKey)
   } catch (err) {
     console.error('[inventory/attachments] S3 delete error:', err)
-    // Continuamos con el delete de BD aunque S3 falle para no dejar registros huérfanos
   }
 
-  await db.delete(inventoryAttachments).where(eq(inventoryAttachments.id, attId))
+  await ddb.send(new DeleteCommand({
+    TableName: TABLE.inventoryAttachments,
+    Key: { itemId: att.itemId, attachmentId: att.attachmentId },
+  }))
 
   return NextResponse.json({ ok: true })
 }

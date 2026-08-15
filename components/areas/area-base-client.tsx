@@ -14,7 +14,9 @@ import type {
   AreaBaseIncidentInbox,
   AreaBaseRequestInbox,
 } from '@/lib/areas/get-area-base-data'
-import type { ComponentType, SVGProps } from 'react'
+import { updateIncidentStatus, updateRequestStatus } from '@/lib/areas/actions'
+import type { IncidentStatus } from '@/lib/db/schema/incidents'
+import type { AreaRequestStatus } from '@/lib/db/schema/requests'
 
 type TabKey = 'personal' | 'inventario' | 'bandeja' | 'custom'
 
@@ -24,16 +26,18 @@ export interface AreaBaseClientProps {
   customPanel?: {
     key: string
     label: string
-    icon: ComponentType<SVGProps<SVGSVGElement>>
+    icon: React.ReactNode
     count?: number
     node: React.ReactNode
   }
   /** Tab por defecto. Si hay customPanel, default = custom */
   defaultTab?: TabKey
+  /** Si true, muestra botones de acción en la bandeja (jefe/adjunto de sección) */
+  canManageInbox?: boolean
 }
 
 export function AreaBaseClient({
-  data, customPanel, defaultTab,
+  data, customPanel, defaultTab, canManageInbox = false,
 }: AreaBaseClientProps) {
   const initialTab: TabKey = defaultTab ?? (customPanel ? 'custom' : 'personal')
   const [tab, setTab] = useState<TabKey>(initialTab)
@@ -100,15 +104,15 @@ export function AreaBaseClient({
             )}
           </TabBtn>
         )}
-        <TabBtn active={tab === 'personal'} onClick={() => setTab('personal')} icon={Users}>
+        <TabBtn active={tab === 'personal'} onClick={() => setTab('personal')} icon={<Users className="w-3.5 h-3.5" strokeWidth={1.8} />}>
           Personal
           <span className="area-tab-count mono">{data.stats.personnelCount}</span>
         </TabBtn>
-        <TabBtn active={tab === 'inventario'} onClick={() => setTab('inventario')} icon={Package}>
+        <TabBtn active={tab === 'inventario'} onClick={() => setTab('inventario')} icon={<Package className="w-3.5 h-3.5" strokeWidth={1.8} />}>
           Inventario
           <span className="area-tab-count mono">{data.stats.inventoryCount}</span>
         </TabBtn>
-        <TabBtn active={tab === 'bandeja'} onClick={() => setTab('bandeja')} icon={Inbox}>
+        <TabBtn active={tab === 'bandeja'} onClick={() => setTab('bandeja')} icon={<Inbox className="w-3.5 h-3.5" strokeWidth={1.8} />}>
           Bandeja recibida
           {totalInbox > 0 && (
             <span className="area-tab-count area-tab-count--urgent mono">{totalInbox}</span>
@@ -120,18 +124,18 @@ export function AreaBaseClient({
       {tab === 'personal' && <PersonalTab personnel={data.personnel} />}
       {tab === 'inventario' && <InventarioTab inventory={data.inventory} />}
       {tab === 'bandeja' && (
-        <BandejaTab incidents={data.incidentsInbox} requests={data.requestsInbox} />
+        <BandejaTab incidents={data.incidentsInbox} requests={data.requestsInbox} canManage={canManageInbox} />
       )}
     </>
   )
 }
 
 function TabBtn({
-  active, onClick, icon: Icon, children,
+  active, onClick, icon, children,
 }: {
   active: boolean
   onClick: () => void
-  icon: ComponentType<SVGProps<SVGSVGElement>>
+  icon: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -140,7 +144,7 @@ function TabBtn({
       className={cn('area-tab', active && 'area-tab--active')}
       onClick={onClick}
     >
-      <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />
+      {icon}
       {children}
     </button>
   )
@@ -270,10 +274,11 @@ function InventarioTab({ inventory }: { inventory: AreaBaseInventoryRow[] }) {
 
 // ─── Bandeja ───
 function BandejaTab({
-  incidents, requests,
+  incidents, requests, canManage,
 }: {
   incidents: AreaBaseIncidentInbox[]
   requests: AreaBaseRequestInbox[]
+  canManage: boolean
 }) {
   const [view, setView] = useState<'incidencias' | 'solicitudes'>('solicitudes')
 
@@ -303,7 +308,7 @@ function BandejaTab({
           <div className="guardia-empty">No hay solicitudes dirigidas al área.</div>
         ) : (
           <div className="incident-list">
-            {requests.map((r) => <RequestInboxRow key={r.id} request={r} />)}
+            {requests.map((r) => <RequestInboxRow key={r.id} request={r} canManage={canManage} />)}
           </div>
         )
       ) : (
@@ -311,7 +316,7 @@ function BandejaTab({
           <div className="guardia-empty">No hay incidencias dirigidas al área.</div>
         ) : (
           <div className="incident-list">
-            {incidents.map((i) => <IncidentInboxRow key={i.id} incident={i} />)}
+            {incidents.map((i) => <IncidentInboxRow key={i.id} incident={i} canManage={canManage} />)}
           </div>
         )
       )}
@@ -319,25 +324,41 @@ function BandejaTab({
   )
 }
 
-function IncidentInboxRow({ incident }: { incident: AreaBaseIncidentInbox }) {
+function IncidentInboxRow({ incident, canManage }: { incident: AreaBaseIncidentInbox; canManage: boolean }) {
+  const [status, setStatus] = useState(incident.status)
+  const [busy, setBusy] = useState(false)
+
+  async function act(newStatus: IncidentStatus) {
+    const prev = status
+    setBusy(true)
+    setStatus(newStatus)
+    const res = await updateIncidentStatus(incident.id, newStatus)
+    if (!res.ok) {
+      setStatus(prev)
+      window.alert(res.error)
+    }
+    setBusy(false)
+  }
+
   const cardClass = cn(
     'incident-card',
-    incident.status === 'resuelta' && 'incident-card--resolved',
-    incident.status === 'en_proceso' && 'incident-card--in-progress',
-    incident.status === 'pendiente' && 'incident-card--pending',
+    status === 'resuelta' && 'incident-card--resolved',
+    status === 'en_proceso' && 'incident-card--in-progress',
+    status === 'pendiente' && 'incident-card--pending',
   )
   const pillClass = {
     resuelta: 'incident-status-pill incident-status-pill--resolved',
     en_proceso: 'incident-status-pill incident-status-pill--in-progress',
     pendiente: 'incident-status-pill incident-status-pill--pending',
     rechazada: 'incident-status-pill incident-status-pill--rejected',
-  }[incident.status] ?? 'incident-status-pill incident-status-pill--pending'
+  }[status] ?? 'incident-status-pill incident-status-pill--pending'
   const pillLabel = {
     resuelta: 'RESUELTA',
     en_proceso: 'EN PROCESO',
     pendiente: 'PENDIENTE',
     rechazada: 'RECHAZADA',
-  }[incident.status] ?? incident.status.toUpperCase()
+  }[status] ?? status.toUpperCase()
+  const isTerminal = status === 'resuelta' || status === 'rechazada'
 
   return (
     <article className={cardClass}>
@@ -371,36 +392,70 @@ function IncidentInboxRow({ incident }: { incident: AreaBaseIncidentInbox }) {
       </div>
       <div className="incident-card-status">
         <span className={pillClass}>
-          {incident.status === 'resuelta' && <Check className="w-2.5 h-2.5" strokeWidth={2.5} />}
+          {status === 'resuelta' && <Check className="w-2.5 h-2.5" strokeWidth={2.5} />}
           {pillLabel}
         </span>
+        {canManage && !isTerminal && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+            {status === 'pendiente' && (
+              <button type="button" className="btn btn--sm btn--ghost" disabled={busy} onClick={() => act('en_proceso')}>
+                Tomar
+              </button>
+            )}
+            {status === 'en_proceso' && (
+              <button type="button" className="btn btn--sm btn--primary" disabled={busy} onClick={() => act('resuelta')}>
+                Resolver
+              </button>
+            )}
+            <button type="button" className="btn btn--sm btn--ghost" disabled={busy} onClick={() => act('rechazada')}
+              style={{ color: 'var(--red-glow)', borderColor: 'var(--red-glow)' }}>
+              Rechazar
+            </button>
+          </div>
+        )}
       </div>
     </article>
   )
 }
 
-function RequestInboxRow({ request }: { request: AreaBaseRequestInbox }) {
+function RequestInboxRow({ request, canManage }: { request: AreaBaseRequestInbox; canManage: boolean }) {
+  const [status, setStatus] = useState(request.status)
+  const [busy, setBusy] = useState(false)
+
+  async function act(newStatus: AreaRequestStatus) {
+    const prev = status
+    setBusy(true)
+    setStatus(newStatus)
+    const res = await updateRequestStatus(request.id, newStatus)
+    if (!res.ok) {
+      setStatus(prev)
+      window.alert(res.error)
+    }
+    setBusy(false)
+  }
+
   const cardClass = cn(
     'incident-card',
-    ['completada', 'aprobada'].includes(request.status) && 'incident-card--resolved',
-    request.status === 'en_proceso' && 'incident-card--in-progress',
-    request.status === 'pendiente' && 'incident-card--pending',
+    ['completada', 'aprobada'].includes(status) && 'incident-card--resolved',
+    status === 'en_proceso' && 'incident-card--in-progress',
+    status === 'pendiente' && 'incident-card--pending',
   )
   const pillClass =
-    ['completada', 'aprobada'].includes(request.status)
+    ['completada', 'aprobada'].includes(status)
       ? 'incident-status-pill incident-status-pill--resolved'
-      : request.status === 'en_proceso'
+      : status === 'en_proceso'
         ? 'incident-status-pill incident-status-pill--in-progress'
         : 'incident-status-pill incident-status-pill--pending'
   const pillLabel = {
     pendiente: 'PENDIENTE', aprobada: 'APROBADA', rechazada: 'RECHAZADA',
     en_proceso: 'EN PROCESO', completada: 'COMPLETADA', cancelada: 'CANCELADA',
-  }[request.status] ?? request.status.toUpperCase()
+  }[status] ?? status.toUpperCase()
   const categoryLabel = {
     repuesto: 'REPUESTO', reparacion: 'REPARACIÓN', reposicion_insumo: 'REPOSICIÓN',
     mantenimiento: 'MANTENIMIENTO', capacitacion: 'CAPACITACIÓN',
     permiso: 'PERMISO', otro: 'OTRO',
   }[request.category] ?? request.category.toUpperCase()
+  const isTerminal = ['completada', 'cancelada', 'rechazada'].includes(status)
 
   return (
     <article className={cardClass}>
@@ -430,11 +485,36 @@ function RequestInboxRow({ request }: { request: AreaBaseRequestInbox }) {
       </div>
       <div className="incident-card-status">
         <span className={pillClass}>
-          {['completada', 'aprobada'].includes(request.status) && (
+          {['completada', 'aprobada'].includes(status) && (
             <Check className="w-2.5 h-2.5" strokeWidth={2.5} />
           )}
           {pillLabel}
         </span>
+        {canManage && !isTerminal && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+            {status === 'pendiente' && (
+              <button type="button" className="btn btn--sm btn--primary" disabled={busy} onClick={() => act('aprobada')}>
+                Aprobar
+              </button>
+            )}
+            {status === 'aprobada' && (
+              <button type="button" className="btn btn--sm btn--ghost" disabled={busy} onClick={() => act('en_proceso')}>
+                Iniciar proceso
+              </button>
+            )}
+            {status === 'en_proceso' && (
+              <button type="button" className="btn btn--sm btn--primary" disabled={busy} onClick={() => act('completada')}>
+                Completar
+              </button>
+            )}
+            {status !== 'rechazada' && (
+              <button type="button" className="btn btn--sm btn--ghost" disabled={busy} onClick={() => act('rechazada')}
+                style={{ color: 'var(--red-glow)', borderColor: 'var(--red-glow)' }}>
+                Rechazar
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </article>
   )
@@ -479,8 +559,8 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-function timeAgo(d: Date): string {
-  const secs = Math.floor((Date.now() - d.getTime()) / 1000)
+function timeAgo(d: Date | string): string {
+  const secs = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
   if (secs < 60) return 'ahora'
   const mins = Math.floor(secs / 60)
   if (mins < 60) return `hace ${mins} min`

@@ -1,14 +1,31 @@
-import puppeteer, { Browser, Page } from 'puppeteer'
+import puppeteerCore from 'puppeteer-core'
+import type { Browser, Page } from 'puppeteer-core'
 
-const LOGIN_URL = 'http://www.bomberosperu.gob.pe/extranet/ini.asp'
+const puppeteer = puppeteerCore
+
+const LOGIN_URL = process.env.EXTRANET_URL || 'http://www.bomberosperu.gob.pe/extranet/ini.asp'
 
 let browser: Browser | null = null
 let page: Page | null = null
 
 export async function initBrowser(): Promise<Page> {
+  let executablePath: string | undefined
+  let args: string[] = ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
+
+  // En Lambda, usar @sparticuz/chromium
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const chromium = await import('@sparticuz/chromium')
+    executablePath = await (chromium.default?.executablePath ?? chromium.executablePath)()
+    args = [...(chromium.default?.args ?? chromium.args ?? []), '--single-process']
+  } else {
+    // Local: usar chromium del sistema
+    executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser'
+  }
+
   browser = await puppeteer.launch({
-    headless: process.env.HEADLESS !== '0',
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    headless: true,
+    executablePath,
+    args,
   })
   page = await browser.newPage()
   await page.setUserAgent('Mozilla/5.0')
@@ -21,22 +38,52 @@ export async function login(p: Page, retries = 5): Promise<void> {
 
   for (let i = 0; i < retries; i++) {
     try {
-      await p.goto(LOGIN_URL, { waitUntil: 'networkidle2', timeout: 30000 })
-      // Dismiss alerts
+      // Dismiss any dialogs
       p.on('dialog', (d) => d.accept().catch(() => {}))
-      await p.type('input[name="txtUsuario"]', user, { delay: 50 })
-      await p.type('input[name="txtContrasenia"]', pass, { delay: 50 })
-      await p.click('input.Boton[value="ACEPTAR"]')
-      await p.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {})
+
+      await p.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
       await sleep(2000)
-      if (p.url().includes('bienvenida')) {
+
+      // Esperar a que el formulario de login esté disponible
+      await p.waitForSelector('input[name="txtUsuario"]', { timeout: 10000 })
+      
+      // Limpiar campos y escribir
+      await p.$eval('input[name="txtUsuario"]', (el: any) => { el.value = '' })
+      await p.type('input[name="txtUsuario"]', user, { delay: 30 })
+      await p.$eval('input[name="txtContrasenia"]', (el: any) => { el.value = '' })
+      await p.type('input[name="txtContrasenia"]', pass, { delay: 30 })
+
+      // Click y esperar navegación sin waitForNavigation (evita frame detach)
+      await Promise.all([
+        p.click('input[value="ACEPTAR"]').catch(() => p.click('input.Boton')),
+        sleep(5000),
+      ])
+
+      // Verificar si logueó (puede estar en un frame o nueva URL)
+      const url = p.url()
+      const content = await p.content()
+      if (url.includes('bienvenida') || content.includes('bienvenida') || content.includes('DEPA')) {
         log('Login OK')
         return
       }
+
+      // Intentar verificar en frames
+      const frames = p.frames()
+      for (const frame of frames) {
+        try {
+          const fUrl = frame.url()
+          if (fUrl.includes('bienvenida') || fUrl.includes('DEPA')) {
+            log('Login OK (frame)')
+            return
+          }
+        } catch {}
+      }
+
+      log(`Login intento ${i + 1}: no se detectó sesión activa, URL: ${url}`)
     } catch (e) {
       log(`Login intento ${i + 1}/${retries} falló: ${e}`)
-      await sleep(10000)
     }
+    await sleep(5000)
   }
   throw new Error('Login falló tras todos los intentos')
 }

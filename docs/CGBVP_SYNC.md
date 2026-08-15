@@ -214,3 +214,56 @@ con autenticación propia, sin compartir credenciales personales). Ver
 
 Para dudas sobre esta pantalla, problemas técnicos o solicitudes de
 cambio: contacte al administrador del sistema.
+
+---
+
+## Ejecución local del scraper (flujo técnico)
+
+> **¿Por qué local?** El intranet del CGBVP (`bomberosperu.gob.pe/extranet`)
+> bloquea los rangos de IP de AWS. El Lambda scraper (`ubo163-dev-scraper`)
+> falla con timeout en cada intento. **Los schedules de EventBridge están
+> permanentemente deshabilitados.** La única forma de obtener datos es correr
+> el scraper desde una red doméstica o de oficina.
+
+### Requisitos
+
+- Node.js 20+, dependencias del proyecto instaladas (`npm install` en la raíz)
+- Archivo `.env.local` en la raíz con las credenciales CGBVP:
+  ```
+  USUARIO_INTRANET=A#####
+  CONTRASENA_INTRANET=tupassword
+  AWS_PROFILE=manbuild
+  TABLE_PREFIX=ubo163-dev
+  ```
+- Acceso AWS con perfil `manbuild` (para escribir en DynamoDB)
+
+### Comandos disponibles
+
+Todos se corren desde la raíz del proyecto:
+
+```bash
+# Loop continuo: estado-cia (2 min), partes-cia (15 min), SGO (5 min), asistencia (6 h)
+npm run scraper:start
+
+# Padrón de bomberos (lista completa del personal de la 163) — se corre una vez
+npm run scraper:bomberos
+
+# Partes de emergencia históricas (últimos 60 días)
+npm run scraper:historico
+```
+
+El scraper escribe directamente en DynamoDB. Los datos aparecen en la plataforma
+de inmediato al terminar la invocación.
+
+### Cuándo correr cada uno
+
+| Tarea | Comando | Cuándo |
+|---|---|---|
+| Actualizar padrón de bomberos | `scraper:bomberos` | Cuando hay incorporaciones o cambios de grado |
+| Importar partes históricos | `scraper:historico` | Primera vez o tras un período sin datos |
+| Mantener datos al día | `scraper:start` | Dejar corriendo en segundo plano mientras se necesite |
+| Asistencia mensual | `scraper:start` (auto, días 1-5) | El loop la corre automáticamente los primeros 5 días del mes |
+
+> **`scraper:start` es el modo normal de operación.** Abrir una terminal, correrlo,
+> y dejarlo activo. Se puede cerrar cuando los datos ya están actualizados.
+> No requiere estar corriendo 24/7 — con unas horas al día es suficiente.

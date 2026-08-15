@@ -1,16 +1,13 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import { contentCalendar, announcements, profiles } from '@/lib/db/schema'
-import { eq, gte, lte, and, desc, asc, or, count } from 'drizzle-orm'
-
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS
-// ═══════════════════════════════════════════════════════════════════
+import { ddb, TABLE, QueryCommand, ScanCommand, BatchGetCommand } from '@/lib/db/dynamodb'
+import type { ContentCalendarItem } from '@/lib/db/schema/content-calendar'
+import type { Announcement } from '@/lib/db/schema/announcements'
+import type { Profile } from '@/lib/db/schema/profiles'
 
 export interface CalendarEntry {
   id: string
   title: string
-  date: string                   // ISO date
+  date: string
   type: string | null
   platform: string[] | null
   category: string | null
@@ -19,7 +16,7 @@ export interface CalendarEntry {
   templateUrl: string | null
   caption: string | null
   notes: string | null
-  isUpcoming: boolean            // fecha >= hoy
+  isUpcoming: boolean
 }
 
 export interface PublishedAnnouncement {
@@ -27,13 +24,13 @@ export interface PublishedAnnouncement {
   title: string
   priority: string
   authorName: string | null
-  publishedAt: Date | null
+  publishedAt: string | null
   audienceSummary: string
 }
 
 export interface ImagenExtraData {
-  upcomingContent: CalendarEntry[]    // próximas 30 publicaciones (hoy en adelante)
-  recentContent: CalendarEntry[]      // últimas 10 publicadas
+  upcomingContent: CalendarEntry[]
+  recentContent: CalendarEntry[]
   publishedAnnouncements: PublishedAnnouncement[]
   stats: {
     totalThisMonth: number
@@ -46,154 +43,141 @@ export interface ImagenExtraData {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════════
-
 export async function getImagenExtraData(): Promise<ImagenExtraData> {
   const now = new Date()
   const todayStr = now.toISOString().slice(0, 10)
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10)
-  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .slice(0, 10)
-  const in30Str = new Date(now.getTime() + 30 * 86400000)
-    .toISOString()
-    .slice(0, 10)
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
+  const in30Str = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10)
 
-  // ── Contenido próximo (hoy → +30 días) ───────────────────────
-  const upcomingRows = await db
-    .select({
-      item: contentCalendar,
-      assignedName: profiles.fullName,
-    })
-    .from(contentCalendar)
-    .leftJoin(profiles, eq(contentCalendar.assignedTo, profiles.id))
-    .where(
-      and(
-        gte(contentCalendar.date, todayStr),
-        lte(contentCalendar.date, in30Str),
-      ),
-    )
-    .orderBy(asc(contentCalendar.date))
-    .limit(30)
+  // All calendar items for the month + upcoming
+  const { Items: calItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.contentCalendar,
+    FilterExpression: '#d >= :start',
+    ExpressionAttributeNames: { '#d': 'date' },
+    ExpressionAttributeValues: { ':start': firstOfMonth },
+  }))
+  const allItems = (calItems ?? []) as ContentCalendarItem[]
 
-  // ── Contenido publicado reciente ──────────────────────────────
-  const recentRows = await db
-    .select({
-      item: contentCalendar,
-      assignedName: profiles.fullName,
-    })
-    .from(contentCalendar)
-    .leftJoin(profiles, eq(contentCalendar.assignedTo, profiles.id))
-    .where(eq(contentCalendar.status, 'publicado'))
-    .orderBy(desc(contentCalendar.date))
-    .limit(10)
+  // Resolve assignedTo profiles
+  const assigneeIds = [...new Set(
+    allItems.filter(i => i.assignedTo).map(i => i.assignedTo!),
+  )]
+  const assigneeNames = new Map<string, string>()
+  if (assigneeIds.length > 0) {
+    const { Responses } = await ddb.send(new BatchGetCommand({
+      RequestItems: {
+        [TABLE.profiles]: {
+          Keys: assigneeIds.map(pid => ({ profileId: pid })),
+          ProjectionExpression: 'profileId, fullName',
+        },
+      },
+    }))
+    for (const p of Responses?.[TABLE.profiles] ?? []) {
+      assigneeNames.set(p.profileId as string, p.fullName as string)
+    }
+  }
 
-  function mapEntry(r: typeof upcomingRows[number], upcoming: boolean): CalendarEntry {
+  function mapEntry(item: ContentCalendarItem, upcoming: boolean): CalendarEntry {
     return {
-      id: r.item.id,
-      title: r.item.title,
-      date: r.item.date,
-      type: r.item.type,
-      platform: r.item.platform,
-      category: r.item.category,
-      status: r.item.status ?? 'planificado',
-      assignedToName: r.assignedName,
-      templateUrl: r.item.templateUrl,
-      caption: r.item.caption,
-      notes: r.item.notes,
+      id: item.eventId,
+      title: item.title,
+      date: item.date,
+      type: item.type ?? null,
+      platform: item.platform ?? null,
+      category: item.category ?? null,
+      status: item.status ?? 'planificado',
+      assignedToName: item.assignedTo ? (assigneeNames.get(item.assignedTo) ?? null) : null,
+      templateUrl: item.templateUrl ?? null,
+      caption: item.caption ?? null,
+      notes: item.notes ?? null,
       isUpcoming: upcoming,
     }
   }
 
-  const upcomingContent = upcomingRows.map((r) => mapEntry(r, true))
-  const recentContent = recentRows.map((r) => mapEntry(r, false))
+  const upcomingContent = allItems
+    .filter(i => i.date >= todayStr && i.date <= in30Str)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 30)
+    .map(i => mapEntry(i, true))
 
-  // ── Anuncios publicados (últimos 15) ─────────────────────────
-  const announcementRows = await db
-    .select({
-      ann: announcements,
-      authorName: profiles.fullName,
-    })
-    .from(announcements)
-    .leftJoin(profiles, eq(announcements.authorId, profiles.id))
-    .where(eq(announcements.status, 'aprobado'))
-    .orderBy(desc(announcements.publishedAt))
-    .limit(15)
+  const recentContent = allItems
+    .filter(i => i.status === 'publicado')
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 10)
+    .map(i => mapEntry(i, false))
 
-  const publishedAnnouncements: PublishedAnnouncement[] = announcementRows.map((r) => {
+  // Published announcements (last 15)
+  const { Items: annItems } = await ddb.send(new QueryCommand({
+    TableName: TABLE.announcements,
+    IndexName: 'status-createdAt-index',
+    KeyConditionExpression: '#s = :aprobado',
+    ExpressionAttributeNames: { '#s': 'status' },
+    ExpressionAttributeValues: { ':aprobado': 'aprobado' },
+    ScanIndexForward: false,
+    Limit: 15,
+  }))
+  const announcements = (annItems ?? []) as Announcement[]
+
+  const authorIds = [...new Set(announcements.map(a => a.authorId).filter(Boolean))]
+  const authorNames = new Map<string, string>()
+  if (authorIds.length > 0) {
+    const { Responses } = await ddb.send(new BatchGetCommand({
+      RequestItems: {
+        [TABLE.profiles]: {
+          Keys: authorIds.map(pid => ({ profileId: pid })),
+          ProjectionExpression: 'profileId, fullName',
+        },
+      },
+    }))
+    for (const p of Responses?.[TABLE.profiles] ?? []) {
+      authorNames.set(p.profileId as string, p.fullName as string)
+    }
+  }
+
+  const publishedAnnouncements: PublishedAnnouncement[] = announcements.map(a => {
     let audienceSummary = 'Todos los bomberos'
-    if (r.ann.audienceAllBomberos) audienceSummary = 'Todos los bomberos'
-    else if (r.ann.audienceAspirantes && r.ann.audiencePostulantes) audienceSummary = 'Aspirantes y postulantes'
-    else if (r.ann.audienceAspirantes) audienceSummary = 'Aspirantes'
-    else if (r.ann.audiencePostulantes) audienceSummary = 'Postulantes'
+    if (a.audienceAllBomberos) audienceSummary = 'Todos los bomberos'
+    else if (a.audienceAspirantes && a.audiencePostulantes) audienceSummary = 'Aspirantes y postulantes'
+    else if (a.audienceAspirantes) audienceSummary = 'Aspirantes'
+    else if (a.audiencePostulantes) audienceSummary = 'Postulantes'
     else audienceSummary = 'Audiencia específica'
-
     return {
-      id: r.ann.id,
-      title: r.ann.title,
-      priority: r.ann.priority,
-      authorName: r.authorName,
-      publishedAt: r.ann.publishedAt,
+      id: a.announcementId,
+      title: a.title,
+      priority: a.priority,
+      authorName: a.authorId ? (authorNames.get(a.authorId) ?? null) : null,
+      publishedAt: a.publishedAt ?? null,
       audienceSummary,
     }
   })
 
-  // ── Stats del mes ─────────────────────────────────────────────
-  const monthRows = await db
-    .select({
-      status: contentCalendar.status,
-      platform: contentCalendar.platform,
-      category: contentCalendar.category,
-    })
-    .from(contentCalendar)
-    .where(
-      and(
-        gte(contentCalendar.date, firstOfMonth),
-        lte(contentCalendar.date, lastOfMonth),
-      ),
-    )
-
+  // Month stats
+  const monthItems = allItems.filter(i => i.date >= firstOfMonth && i.date <= lastOfMonth)
   const byPlatform: Record<string, number> = {}
   const byCategory: Record<string, number> = {}
-  let publishedThisMonth = 0
-  let plannedThisMonth = 0
-  let inProgressThisMonth = 0
+  let publishedThisMonth = 0; let plannedThisMonth = 0; let inProgressThisMonth = 0
 
-  for (const r of monthRows) {
+  for (const r of monthItems) {
     if (r.status === 'publicado') publishedThisMonth++
     else if (r.status === 'planificado') plannedThisMonth++
     else if (r.status === 'en_proceso') inProgressThisMonth++
-
     if (r.platform) {
-      for (const p of r.platform) {
-        byPlatform[p] = (byPlatform[p] ?? 0) + 1
-      }
+      for (const p of r.platform) byPlatform[p] = (byPlatform[p] ?? 0) + 1
     }
-    if (r.category) {
-      byCategory[r.category] = (byCategory[r.category] ?? 0) + 1
-    }
+    if (r.category) byCategory[r.category] = (byCategory[r.category] ?? 0) + 1
   }
-
-  const totalAnnouncements = await db
-    .select({ count: count() })
-    .from(announcements)
-    .where(eq(announcements.status, 'aprobado'))
-    .then((r) => Number(r[0]?.count ?? 0))
 
   return {
     upcomingContent,
     recentContent,
     publishedAnnouncements,
     stats: {
-      totalThisMonth: monthRows.length,
+      totalThisMonth: monthItems.length,
       publishedThisMonth,
       plannedThisMonth,
       inProgressThisMonth,
-      totalAnnouncements,
+      totalAnnouncements: announcements.length,
       byPlatform,
       byCategory,
     },

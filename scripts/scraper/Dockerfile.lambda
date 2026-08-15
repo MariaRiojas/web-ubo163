@@ -1,58 +1,30 @@
-# ═══════════════════════════════════════════════════════════════════════════
-# Dockerfile del scraper CGBVP — AWS Lambda container image (Node.js 20)
-#
-# Handler: scripts/scraper/lambda-handler.handler
-#
-# Ejecuta TypeScript directamente con tsx (--import tsx en NODE_OPTIONS).
-# Chromium instalado via dnf (Amazon Linux 2023 — base de la imagen Lambda).
-#
-# Variables inyectadas por CDK (ComputeScraperStack):
-#   TABLE_PREFIX             prefijo de tablas DynamoDB
-#   CGBVP_SECRET_ARN         ARN del secreto CGBVP
-#   SCRAPER_TOKEN_SECRET_ARN ARN del scraper-sync-token
-#   WEB_SYNC_URL             URL del endpoint /api/sync
-#   HEADLESS=1               Chromium sin interfaz gráfica
-# ═══════════════════════════════════════════════════════════════════════════
+# Scraper CGBVP — Lambda container (Node.js 20 + @sparticuz/chromium)
 FROM public.ecr.aws/lambda/nodejs:20
 
 WORKDIR ${LAMBDA_TASK_ROOT}
 
-# Instalar Chromium y dependencias en Amazon Linux 2023
-RUN dnf install -y \
-      chromium \
-      nss \
-      atk \
-      at-spi2-atk \
-      cups-libs \
-      libXcomposite \
-      libXdamage \
-      libXrandr \
-      libxkbcommon \
-      mesa-libgbm \
-      pango \
-      gtk3 \
-    && dnf clean all
-
-# Variables de entorno para Puppeteer y Node.js
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
     HEADLESS=1 \
     NODE_ENV=production \
-    AWS_NODEJS_CONNECTION_REUSE_ENABLED=1 \
-    # Cargar tsx como loader para ejecutar TypeScript sin compilación
-    NODE_OPTIONS="--import=tsx/esm"
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED=1
 
-# Instalar dependencias de producción + tsx (loader TypeScript)
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts \
- && npm install --no-save tsx@4 \
- && npm cache clean --force
+RUN echo '{"name":"scraper","type":"module","private":true}' > package.json
+
+# Chromium
+RUN npm install @sparticuz/chromium puppeteer-core
+
+# Resto de dependencias
+RUN npm install tsx@4 @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb @aws-sdk/client-secrets-manager cheerio \
+    && npm cache clean --force
 
 # Código fuente
-COPY lib/ lib/
+COPY lib/db/dynamodb.ts lib/db/dynamodb.ts
+COPY lib/db/schema/ lib/db/schema/
+COPY lib/cgbvp/ lib/cgbvp/
 COPY scripts/scraper/ scripts/scraper/
 COPY company.config.ts tsconfig.json ./
 
-# Lambda RIC invoca el handler en formato: <módulo>.<export>
-# La imagen base de Lambda usa: /lambda-entrypoint.sh <handler>
-CMD ["scripts/scraper/lambda-handler.handler"]
+# NODE_OPTIONS al final (tsx ya está instalado)
+ENV NODE_OPTIONS="--import=tsx/esm"
+
+CMD ["scripts/scraper/index.handler"]

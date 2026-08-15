@@ -20,6 +20,11 @@ type Bombero = {
   guardias: number
   emergencias: number
   alMando: number
+  horasTrim: number
+  guardiasTrim: number
+  ndrEstado: 'cumple' | 'excedente' | 'falta' | 'na'
+  ndrRequeridas: number
+  ndrDelta: number
 }
 
 interface Props {
@@ -32,6 +37,12 @@ interface Props {
   totalEmergencias: number
   gradesOptions: string[]
   gradeLabels: Record<string, string>
+  trimestreLabel: string
+  trimestreNumero: number
+  cumplenNdr: number
+  faltanNdr: number
+  asistieron: number
+  porcentajeAsistencia: number
 }
 
 const MESES = [
@@ -43,9 +54,26 @@ function initials(name: string) {
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
 }
 
+function NdrBadge({ estado, delta, requeridas, horasTrim }: { estado: string; delta: number; requeridas: number; horasTrim: number }) {
+  if (estado === 'na') {
+    return <span style={{ color: 'var(--graphite)', fontSize: 12, fontFamily: 'var(--font-mono)' }} title="Grado sin requisito NDR">—</span>
+  }
+  const cfg = estado === 'excedente'
+    ? { color: 'var(--emerald-glow)', bg: 'rgba(16,185,129,0.10)', bd: 'rgba(16,185,129,0.25)', txt: `✓ +${delta}h`, title: `Excedente de ${delta} h sobre el mínimo (${requeridas} h)` }
+    : estado === 'cumple'
+    ? { color: 'var(--emerald-glow)', bg: 'rgba(16,185,129,0.10)', bd: 'rgba(16,185,129,0.25)', txt: '✓ CUMPLE', title: `Cumple el mínimo (${requeridas} h)` }
+    : { color: 'var(--flame)', bg: 'rgba(245,158,11,0.10)', bd: 'rgba(245,158,11,0.28)', txt: `▽ faltan ${Math.abs(delta)}h`, title: `Lleva ${horasTrim} h de ${requeridas} h requeridas en el trimestre` }
+  return (
+    <span title={cfg.title} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.05em', fontWeight: 700, padding: '2px 8px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.bd}`, whiteSpace: 'nowrap' }}>
+      {cfg.txt}
+    </span>
+  )
+}
+
 export function BomberosClient({
   bomberos, mes, anio, totalActivos, totalEnTurno, totalHoras, totalEmergencias,
   gradesOptions, gradeLabels,
+  trimestreLabel, trimestreNumero, cumplenNdr, faltanNdr, asistieron, porcentajeAsistencia,
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -114,7 +142,8 @@ export function BomberosClient({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
         {[
           { label: 'BOMBEROS ACTIVOS', value: totalActivos, sub: 'en la compañía' },
-          { label: 'EN TURNO AHORA', value: totalEnTurno, sub: 'estado actual' },
+          { label: 'ASISTIERON ESTE MES', value: asistieron, sub: `${porcentajeAsistencia}% de ${totalActivos} efectivos` },
+          { label: `CUMPLEN NDR · TRIM. ${trimestreLabel}`, value: cumplenNdr, sub: `${faltanNdr} por debajo del mínimo` },
           { label: 'HORAS ACUMULADAS', value: totalHoras, sub: `${monthLabel} ${anio}` },
           { label: 'EMERGENCIAS ATENDIDAS', value: totalEmergencias, sub: 'participaciones totales' },
         ].map(kpi => (
@@ -187,13 +216,7 @@ export function BomberosClient({
                   </div>
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  {b.enTurno ? (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", fontWeight: 700, padding: "2px 8px", background: "rgba(16,185,129,0.10)", color: "var(--emerald-glow)", border: "1px solid rgba(16,185,129,0.25)" }}>
-                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--emerald-glow)" }} /> EN TURNO
-                    </span>
-                  ) : (
-                    <span style={{ color: "var(--graphite)", fontSize: 13 }}>—</span>
-                  )}
+                  <NdrBadge estado={b.ndrEstado} delta={b.ndrDelta} requeridas={b.ndrRequeridas} horasTrim={b.horasTrim} />
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 120 }}>

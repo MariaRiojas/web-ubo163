@@ -126,8 +126,8 @@ export class ObservabilityStack extends cdk.Stack {
         width: 12,
       }),
       new cloudwatch.GraphWidget({
-        title: 'CloudFront — Cache Hit Rate',
-        left: [distribution.metricCacheHitRate({ statistic: cloudwatch.Statistic.AVERAGE })],
+        title: 'CloudFront — Requests',
+        left: [distribution.metricRequests({ statistic: cloudwatch.Statistic.SUM })],
         width: 12,
       })
     )

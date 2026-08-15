@@ -19,6 +19,8 @@ export default async function AreaJefaturaPage() {
   ])
 
   const alertCount = extra.monthStats.openIncidents + extra.monthStats.openRequests
+  const perms = (session.user.permissions ?? []) as string[]
+  const canManageInbox = perms.some(p => p.startsWith('area.') && p.endsWith('.manage'))
 
   return (
     <div className="max-w-[1400px]">
@@ -27,10 +29,11 @@ export default async function AreaJefaturaPage() {
       <AreaBaseClient
         data={data}
         defaultTab="custom"
+        canManageInbox={canManageInbox}
         customPanel={{
           key: 'operativo',
           label: 'Operativo institucional',
-          icon: Flame,
+          icon: <Flame className="w-3.5 h-3.5" strokeWidth={1.8} />,
           count: alertCount > 0 ? alertCount : extra.monthStats.emergenciesThisMonth,
           node: <JefaturaPanel extra={extra} />,
         }}

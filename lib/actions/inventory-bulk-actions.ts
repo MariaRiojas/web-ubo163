@@ -1,112 +1,114 @@
 'use server'
 
-import { db } from '@/lib/db'
-import { inventory, NewInventoryItem } from '@/lib/db/schema/inventory'
-import { sections } from '@/lib/db/schema/sections'
-import { profiles } from '@/lib/db/schema/profiles'
-import { hiredDrivers } from '@/lib/db/schema/emergencies'
-import { eq, or, inArray } from 'drizzle-orm'
+import { ddb, TABLE, QueryCommand, ScanCommand, BatchWriteCommand, generateId, now } from '@/lib/db/dynamodb'
+import type { Section } from '@/lib/db/schema/sections'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { NewInventoryItem } from '@/lib/db/schema/inventory'
 import { revalidatePath } from 'next/cache'
+
+async function getSectionByKey(key: string): Promise<Section | null> {
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.sections,
+    IndexName: 'key-index',
+    KeyConditionExpression: '#k = :key',
+    ExpressionAttributeNames: { '#k': 'key' },
+    ExpressionAttributeValues: { ':key': key },
+    Limit: 1,
+  }))
+  return (Items?.[0] ?? null) as Section | null
+}
 
 export async function importInventoryRowsAction(areaKey: string, rows: any[]) {
   try {
-    // 1. Obtener la sección
-    const section = await db.query.sections.findFirst({
-      where: eq(sections.key, areaKey)
-    })
-    
+    const section = await getSectionByKey(areaKey)
     if (!section) {
       throw new Error(`No se encontró la sección para el área: ${areaKey}`)
     }
 
-    // 2. Resolver asignaciones (Profiles y Hired Drivers)
     const codigos = rows
       .map(r => r.data.assignedCodigo)
       .filter(Boolean) as string[]
-    
-    let profileMap: Record<string, string> = {}
-    let driverMap: Record<string, number> = {}
+
+    const profileMap = new Map<string, string>()
 
     if (codigos.length > 0) {
-      // Buscar en profiles (por codigoCgbvp o DNI)
-      const foundProfiles = await db.select({
-        id: profiles.id,
-        codigoCgbvp: profiles.codigoCgbvp,
-        dni: profiles.dni
-      })
-      .from(profiles)
-      .where(
-        or(
-          inArray(profiles.codigoCgbvp, codigos),
-          inArray(profiles.dni, codigos)
-        )
-      )
+      // Look for profiles by codigoCgbvp
+      for (const codigo of codigos) {
+        const { Items } = await ddb.send(new QueryCommand({
+          TableName: TABLE.profiles,
+          IndexName: 'codigoCgbvp-index',
+          KeyConditionExpression: 'codigoCgbvp = :c',
+          ExpressionAttributeValues: { ':c': codigo },
+          Limit: 1,
+        }))
+        if (Items?.[0]) {
+          const p = Items[0] as Profile
+          profileMap.set(codigo, p.profileId)
+        }
+      }
 
-      foundProfiles.forEach(p => {
-        if (p.codigoCgbvp) profileMap[p.codigoCgbvp] = p.id
-        if (p.dni) profileMap[p.dni] = p.id
-      })
-
-      // Buscar en hiredDrivers
-      const foundDrivers = await db.select({
-        id: hiredDrivers.id,
-        codigoCgbvp: hiredDrivers.codigoCgbvp,
-        dni: hiredDrivers.dni
-      })
-      .from(hiredDrivers)
-      .where(
-        or(
-          inArray(hiredDrivers.codigoCgbvp, codigos),
-          inArray(hiredDrivers.dni, codigos)
-        )
-      )
-
-      foundDrivers.forEach(d => {
-        if (d.codigoCgbvp) driverMap[d.codigoCgbvp] = d.id
-        if (d.dni) driverMap[d.dni] = d.id
-      })
+      // For DNI-based codes not found yet
+      const remaining = codigos.filter(c => !profileMap.has(c))
+      for (const dni of remaining) {
+        const { Items } = await ddb.send(new QueryCommand({
+          TableName: TABLE.profiles,
+          IndexName: 'dni-index',
+          KeyConditionExpression: 'dni = :d',
+          ExpressionAttributeValues: { ':d': dni },
+          Limit: 1,
+        }))
+        if (Items?.[0]) {
+          const p = Items[0] as Profile
+          profileMap.set(dni, p.profileId)
+        }
+      }
     }
 
-    // 3. Preparar los datos de inserción
-    const toInsert: NewInventoryItem[] = rows.map(r => {
+    const ts = now()
+    const toInsert = rows.map(r => {
       const d = r.data
-      const assignedProfileId = d.assignedCodigo ? profileMap[d.assignedCodigo] : null
-      const assignedHiredDriverId = d.assignedCodigo ? driverMap[d.assignedCodigo] : null
+      const assignedProfileId = d.assignedCodigo ? profileMap.get(d.assignedCodigo) : undefined
 
       return {
+        itemId: generateId(),
         name: d.name,
         category: d.category,
-        subcategory: d.subcategory,
-        brand: d.brand,
-        model: d.model,
-        numeroSerie: d.numeroSerie,
-        codigoCbp: d.codigoCbp,
+        subcategory: d.subcategory || undefined,
+        brand: d.brand || undefined,
+        model: d.model || undefined,
+        numeroSerie: d.numeroSerie || undefined,
+        codigoCbp: d.codigoCbp || undefined,
         almacenTipo: d.almacenTipo,
-        almacenReferencia: d.almacenReferencia,
-        ubicacionInterna: d.ubicacionInterna,
-        sectionId: section.id,
-        assignedCodigo: d.assignedCodigo,
-        assignedProfileId,
-        assignedHiredDriverId,
-        quantity: d.quantity,
-        unitMeasure: d.unitMeasure,
-        condition: d.condition,
-        lote: d.lote,
-        expirationDate: d.expirationDate,
+        almacenReferencia: d.almacenReferencia || undefined,
+        ubicacionInterna: d.ubicacionInterna || undefined,
+        sectionId: section.sectionId,
+        assignedCodigo: d.assignedCodigo || undefined,
+        assignedProfileId: assignedProfileId || undefined,
+        quantity: d.quantity ?? 1,
+        unitMeasure: d.unitMeasure || 'unidad',
+        condition: d.condition || 'operativo',
+        lote: d.lote || undefined,
+        expirationDate: d.expirationDate || undefined,
         requiresCertification: d.requiresCertification,
-        lastCertificationDate: d.lastCertificationDate,
-        nextCertificationDate: d.nextCertificationDate,
+        lastCertificationDate: d.lastCertificationDate || undefined,
+        nextCertificationDate: d.nextCertificationDate || undefined,
         usefulLifeMonths: d.usefulLifeMonths,
-        referenceValue: d.referenceValue,
-        notes: d.notes,
+        referenceValue: d.referenceValue || undefined,
+        notes: d.notes || undefined,
+        createdAt: ts,
+        updatedAt: ts,
       }
     })
 
-    // 4. Insertar en chunks para evitar límites
-    const chunkSize = 50
+    // Insert in chunks of 25 (DynamoDB BatchWrite limit)
+    const chunkSize = 25
     for (let i = 0; i < toInsert.length; i += chunkSize) {
       const chunk = toInsert.slice(i, i + chunkSize)
-      await db.insert(inventory).values(chunk)
+      await ddb.send(new BatchWriteCommand({
+        RequestItems: {
+          [TABLE.inventory]: chunk.map(item => ({ PutRequest: { Item: item } })),
+        },
+      }))
     }
 
     revalidatePath(`/areas/${areaKey}/inventario`)

@@ -1,381 +1,192 @@
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { db } from "@/lib/db"
-import {
-  cgbvpCompanyStatus,
-  cgbvpShiftAttendance,
-  cgbvpVehicles,
-  emergencies,
-  profiles,
-} from "@/lib/db/schema"
-import { desc, eq, and, isNull } from "drizzle-orm"
-import {
-  Users,
-  Truck,
-  AlertTriangle,
-  Siren,
-  Wrench,
-  Flame,
-  CheckCircle2,
-  CircleDot,
-} from "lucide-react"
-import type { Permission } from "@/lib/auth/permissions"
-import { DonutChart, HorizontalBarChart } from "./operatividad-charts"
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Users, Truck, Flame, Moon, Radio, CheckCircle2, Wrench, AlertCircle, Clock } from 'lucide-react'
+import { getOperatividadData } from '@/lib/reportes/get-operatividad-data'
+import type { Permission } from '@/lib/auth/permissions'
+
+export const dynamic = 'force-dynamic'
 
 export default async function OperatividadPage() {
   const session = await auth()
-  if (!session?.user) redirect("/login")
+  if (!session?.user) redirect('/login')
+
   const perms = (session.user.permissions ?? []) as Permission[]
-  if (!perms.includes("company.view_all") && !perms.includes("company.manage"))
-    redirect("/dashboard")
-
-  // Latest company status
-  const [latestStatus] = await db
-    .select()
-    .from(cgbvpCompanyStatus)
-    .orderBy(desc(cgbvpCompanyStatus.createdAt))
-    .limit(1)
-
-  const statusId = latestStatus?.id
-
-  // Parallel queries
-  const [shiftRaw, vehicles, activeEmergencies] = await Promise.all([
-    statusId
-      ? db
-          .select({
-            id: cgbvpShiftAttendance.id,
-            nombreRaw: cgbvpShiftAttendance.nombreRaw,
-            tipo: cgbvpShiftAttendance.tipo,
-            horaIngreso: cgbvpShiftAttendance.horaIngreso,
-            esAlMando: cgbvpShiftAttendance.esAlMando,
-            esPiloto: cgbvpShiftAttendance.esPiloto,
-            esMedico: cgbvpShiftAttendance.esMedico,
-            esAppa: cgbvpShiftAttendance.esAppa,
-            esMap: cgbvpShiftAttendance.esMap,
-            esBrec: cgbvpShiftAttendance.esBrec,
-            profileId: cgbvpShiftAttendance.profileId,
-            grade: profiles.grade,
-            code: profiles.codigoCgbvp,
-          })
-          .from(cgbvpShiftAttendance)
-          .leftJoin(profiles, eq(cgbvpShiftAttendance.profileId, profiles.id))
-          .where(eq(cgbvpShiftAttendance.statusId, statusId))
-      : Promise.resolve([]),
-    db.select().from(cgbvpVehicles),
-    db
-      .select()
-      .from(emergencies)
-      .where(isNull(emergencies.fechaRetorno)),
-  ])
-
-  // KPI calculations
-  const bomberos = shiftRaw.filter((p) => p.tipo === "BOM").length
-  const rentados = shiftRaw.filter((p) => p.tipo === "REN").length
-  const totalTurno = shiftRaw.length
-
-  const operativas = vehicles.filter(
-    (v) => v.estado === "EN BASE" || v.estado === "EMERGENCIA"
-  ).length
-  const conFalla = vehicles.filter((v) => v.estado === "FALLA").length
-  const enEmergenciaV = vehicles.filter((v) => v.estado === "EMERGENCIA").length
-
-  // Specialty counts
-  const specialties = [
-    { name: "Piloto", value: shiftRaw.filter((p) => p.esPiloto === 1).length },
-    { name: "Médico", value: shiftRaw.filter((p) => p.esMedico === 1).length },
-    { name: "APPA", value: shiftRaw.filter((p) => p.esAppa === 1).length },
-    { name: "MAP", value: shiftRaw.filter((p) => p.esMap === 1).length },
-    { name: "BREC", value: shiftRaw.filter((p) => p.esBrec === 1).length },
-  ].filter((s) => s.value > 0)
-
-  const fechaStatus = latestStatus?.fechaHora ?? latestStatus?.createdAt
-
-  const GRADE_ABBR: Record<string, string> = {
-    aspirante: "Asp.",
-    seccionario: "Secc.",
-    subteniente: "Subten.",
-    teniente: "Ten.",
-    capitan: "Cap.",
-    teniente_brigadier: "Ten. Brig.",
-    brigadier: "Brig.",
-    brigadier_mayor: "Brig. Mayor",
-    brigadier_general: "Brig. Gral.",
+  if (!perms.includes('reports.view_all') && !perms.includes('company.view_all')) {
+    redirect('/dashboard')
   }
 
+  const { snapshot, guardia, emergencias, inventario } = await getOperatividadData()
+
+  const estado = snapshot?.estado ?? 'desconocido'
+  const bannerText = estado === 'operativo' ? 'EN SERVICIO'
+    : estado === 'parcial' ? 'PARCIALMENTE OPERATIVO'
+    : estado === 'desconocido' ? 'ESTADO SIN SINCRONIZAR' : 'INOPERATIVO'
+  const bannerColor = estado === 'operativo' ? 'var(--emerald-glow)'
+    : estado === 'parcial' ? 'var(--flame)'
+    : estado === 'desconocido' ? 'var(--graphite)' : 'var(--red-glow)'
+
+  const syncFecha = snapshot?.syncedAt
+    ? new Date(snapshot.syncedAt).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
+  const syncStale = snapshot?.syncedAt ? (Date.now() - new Date(snapshot.syncedAt).getTime()) > 3 * 24 * 3600 * 1000 : true
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-          <h1 className="text-2xl font-bold">Operatividad</h1>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
-            EN SERVICIO
+    <div className="max-w-[1400px]">
+      {/* Hero + estado */}
+      <header className="area-hero" style={{ marginBottom: 16 }}>
+        <div className="area-hero-seal"><Radio className="w-6 h-6" strokeWidth={1.6} /></div>
+        <div className="area-hero-body">
+          <div className="area-hero-ref">COMANDO · ESTADO OPERATIVO</div>
+          <h1 className="area-hero-title">Operatividad</h1>
+          <p className="area-hero-desc">Estado actual de la Compañía: guardia, flota y actividad de emergencias.</p>
+        </div>
+        <div className="area-hero-jefe">
+          <span className="area-hero-jefe-label">ESTADO</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: bannerColor, fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, letterSpacing: '0.04em' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: bannerColor }} />
+            {bannerText}
           </span>
         </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="font-medium text-red-600 cursor-pointer hover:underline">
-            POR DESPACHO
+      </header>
+
+      {/* Aviso de sincronización */}
+      {syncStale && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', marginBottom: 16, background: 'var(--ink-deep)', border: '1px solid var(--ink-line)', borderLeft: '3px solid var(--flame)', borderRadius: 2, fontSize: 12, color: 'var(--steel)' }}>
+          <AlertCircle className="w-4 h-4" strokeWidth={1.8} style={{ color: 'var(--flame)', flexShrink: 0 }} />
+          <span>
+            El estado en vivo (personal en turno) requiere sincronización desde una máquina del cuartel.
+            {syncFecha ? ` Última: ${syncFecha}.` : ' Aún sin sincronizar.'} La guardia y las emergencias mostradas sí están al día.
           </span>
-          <span>—</span>
-          <span className="font-medium text-red-600 cursor-pointer hover:underline">
-            POR INGRESO
-          </span>
-          {fechaStatus && (
-            <span>
-              {new Date(fechaStatus).toLocaleDateString("es-PE", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
         </div>
+      )}
+
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <Kpi icon={<Moon className="w-5 h-5" strokeWidth={1.7} />} label="Guardia esta noche" value={`${guardia.ocupadas}/${guardia.total}`} sub="camas reservadas" accent={guardia.ocupadas > 0} />
+        <Kpi icon={<Truck className="w-5 h-5" strokeWidth={1.7} />} label="Flota operativa" value={snapshot ? `${snapshot.vehiculosOperativos}/${snapshot.vehiculosTotal}` : '—'} sub="unidades" />
+        <Kpi icon={<Flame className="w-5 h-5" strokeWidth={1.7} />} label="Emergencias este mes" value={emergencias.esteMes} sub="partes de la Compañía" />
+        <Kpi icon={<Users className="w-5 h-5" strokeWidth={1.7} />} label="Personal en turno" value={snapshot?.personalEnTurno ?? '—'} sub={snapshot?.personalEnTurno ? 'efectivos' : 'requiere sync'} />
       </div>
 
-      {/* 4 KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard
-          icon={<Users className="h-5 w-5 text-blue-500" />}
-          label="EN TURNO"
-          value={totalTurno}
-          sub={`${bomberos} bomberos · ${rentados} rentados`}
-        />
-        <KpiCard
-          icon={<Truck className="h-5 w-5 text-blue-500" />}
-          label="FLOTA OPERATIVA"
-          value={`${operativas}/${vehicles.length}`}
-          sub={`${conFalla} con desperfectos`}
-        />
-        <KpiCard
-          icon={
-            <AlertTriangle
-              className={`h-5 w-5 ${activeEmergencies.length > 0 ? "text-red-500" : "text-muted-foreground"}`}
-            />
-          }
-          label="EMERGENCIAS ACTIVAS"
-          value={activeEmergencies.length}
-          sub=""
-          highlight={activeEmergencies.length > 0}
-        />
-        <KpiCard
-          icon={<CircleDot className="h-5 w-5 text-green-500" />}
-          label="PILOTOS DISPONIBLES"
-          value={latestStatus?.pilotosDisponibles ?? 0}
-          sub=""
-        />
-      </div>
-
-      {/* 3 Chart Cards */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="rounded-xl border bg-white p-4">
-          <p className="text-sm font-semibold mb-1">Estado de Flota</p>
-          <p className="text-xs text-muted-foreground mb-3">
-            {vehicles.length} unidades registradas
-          </p>
-          <DonutChart
-            data={[
-              { name: "Con desperfectos", value: conFalla, color: "#dc2626" },
-              { name: "En emergencia", value: enEmergenciaV, color: "#f59e0b" },
-              {
-                name: "Operativas",
-                value: vehicles.filter((v) => v.estado === "EN BASE").length,
-                color: "#22c55e",
-              },
-            ]}
-          />
-        </div>
-
-        <div className="rounded-xl border bg-white p-4">
-          <p className="text-sm font-semibold mb-1">Composición del Turno</p>
-          <p className="text-xs text-muted-foreground mb-3">
-            {totalTurno} efectivos presentes
-          </p>
-          <DonutChart
-            data={[
-              { name: "Bomberos", value: bomberos, color: "#3b82f6" },
-              { name: "Pilotos Rent.", value: rentados, color: "#8b5cf6" },
-            ]}
-          />
-        </div>
-
-        <div className="rounded-xl border bg-white p-4">
-          <p className="text-sm font-semibold mb-1">Especialidades en Turno</p>
-          <p className="text-xs text-muted-foreground mb-3">Roles activos</p>
-          {specialties.length > 0 ? (
-            <HorizontalBarChart data={specialties} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 12 }}>
+        {/* Flota */}
+        <Panel title="Flota" icon={<Truck className="w-4 h-4" strokeWidth={1.7} />} sub={snapshot ? `${snapshot.vehiculos.length} unidades` : ''}>
+          {!snapshot || snapshot.vehiculos.length === 0 ? (
+            <Empty>Sin flota registrada. Cárgala en el área de Máquinas o sincroniza el estado desde el cuartel.</Empty>
           ) : (
-            <p className="text-xs text-muted-foreground">Sin especialidades registradas</p>
-          )}
-        </div>
-      </div>
-
-      {/* Two columns: Personal + Unidades/Emergencias */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Left: Personal en Turno */}
-        <div className="rounded-xl border bg-white p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4" /> Personal en Turno
-            </h2>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-              {totalTurno}
-            </span>
-          </div>
-          {shiftRaw.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sin datos de turno.</p>
-          ) : (
-            <div className="space-y-2 max-h-[420px] overflow-y-auto">
-              {shiftRaw.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between border-l-4 border-blue-500 pl-3 py-2"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{p.nombreRaw}</span>
-                      {p.esAlMando === 1 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">
-                          MANDO
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {p.grade ? GRADE_ABBR[p.grade] ?? p.grade : p.tipo === "BOM" ? "Bombero" : "Rentado"}
-                      {p.code && ` · ${p.code}`}
-                    </p>
-                  </div>
-                  {p.horaIngreso && (
-                    <span className="text-xs text-muted-foreground">{p.horaIngreso}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-6">
-          {/* Unidades */}
-          <div className="rounded-xl border bg-white p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold flex items-center gap-2">
-                <Truck className="h-4 w-4" /> Unidades
-              </h2>
-              <span className="text-xs text-muted-foreground">
-                {vehicles.length} registradas
-              </span>
-            </div>
-            {vehicles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sin vehículos.</p>
-            ) : (
-              <div className="space-y-2 max-h-[260px] overflow-y-auto">
-                {vehicles.map((v) => {
-                  const badge =
-                    v.estado === "FALLA"
-                      ? { label: "FALLA", cls: "bg-red-100 text-red-700" }
-                      : v.estado === "EMERGENCIA"
-                        ? { label: "EMERG.", cls: "bg-yellow-100 text-yellow-700" }
-                        : v.estado === "EN BASE"
-                          ? { label: "EN BASE", cls: "bg-green-100 text-green-700" }
-                          : { label: "FUERA", cls: "bg-red-100 text-red-700" }
-
-                  return (
-                    <div
-                      key={v.id}
-                      className="flex items-center justify-between py-2 border-b last:border-0"
-                    >
-                      <div className="flex items-center gap-2">
-                        {v.estado === "FALLA" ? (
-                          <Wrench className="h-4 w-4 text-red-500" />
-                        ) : v.estado === "EMERGENCIA" ? (
-                          <Flame className="h-4 w-4 text-yellow-500" />
-                        ) : (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        )}
-                        <div>
-                          <p className="text-sm font-bold">{v.codigo}</p>
-                          <p className="text-xs text-muted-foreground">{v.tipo}</p>
-                          {v.motivo && (
-                            <p className="text-xs text-red-500">{v.motivo}</p>
-                          )}
-                        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {snapshot.vehiculos.map((v, i) => {
+                const op = v.estado === 'operativo'
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--ink-line)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {op ? <CheckCircle2 className="w-4 h-4" strokeWidth={1.8} style={{ color: 'var(--emerald-glow)' }} /> : <Wrench className="w-4 h-4" strokeWidth={1.8} style={{ color: 'var(--red-glow)' }} />}
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bone)' }}>{v.codigo}</div>
+                        <div style={{ fontSize: 11, color: 'var(--steel)' }}>{v.tipo}{v.motivo ? ` — ${v.motivo}` : ''}</div>
                       </div>
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${badge.cls}`}
-                      >
-                        {badge.label}
-                      </span>
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Emergencias Activas */}
-          <div className="rounded-xl border bg-white p-4">
-            <h2 className="font-semibold flex items-center gap-2 mb-4">
-              <Siren className="h-4 w-4" /> Emergencias Activas
-            </h2>
-            {activeEmergencies.length === 0 ? (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="text-sm font-medium">Sin emergencias en atención</span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {activeEmergencies.map((e) => (
-                  <div
-                    key={e.id}
-                    className="border-l-4 border-red-500 pl-3 py-2"
-                  >
-                    <p className="text-sm font-medium">{e.numeroParte}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {e.tipo} — {e.direccion}
-                    </p>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-semibold">
-                      {e.estado}
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', color: op ? 'var(--emerald-glow)' : 'var(--red-glow)' }}>
+                      {op ? 'OPERATIVA' : 'FALLA'}
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+                )
+              })}
+            </div>
+          )}
+          {snapshot && (
+            <div style={{ marginTop: 10, display: 'flex', gap: 12, fontSize: 11, color: 'var(--graphite)' }}>
+              {snapshot.primerJefe && <span>1er Jefe: <span style={{ color: 'var(--steel)' }}>{snapshot.primerJefe}</span></span>}
+              {snapshot.segundoJefe && <span>2do Jefe: <span style={{ color: 'var(--steel)' }}>{snapshot.segundoJefe}</span></span>}
+            </div>
+          )}
+        </Panel>
+
+        {/* Emergencias recientes */}
+        <Panel title="Emergencias recientes" icon={<Flame className="w-4 h-4" strokeWidth={1.7} />} sub="partes de la Compañía">
+          {emergencias.recientes.length === 0 ? (
+            <Empty>Sin emergencias registradas recientemente.</Empty>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {emergencias.recientes.map(e => (
+                <div key={e.numeroParte} style={{ borderLeft: '2px solid var(--brass-deep)', paddingLeft: 10 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--brass)' }}>{e.fecha}</span>
+                    <span style={{ fontSize: 12, color: 'var(--bone)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.tipo}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--steel)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {e.direccion}{e.distrito !== '—' ? ` · ${e.distrito}` : ''}
+                  </div>
+                </div>
+              ))}
+              <Link href="/emergencias" className="btn btn--ghost btn--sm" style={{ marginTop: 6, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
+                <Clock className="w-3 h-3" strokeWidth={1.8} /> Ver análisis completo de emergencias
+              </Link>
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      {/* Operatividad del inventario por área */}
+      <div style={{ marginTop: 12 }}>
+        <Panel title="Operatividad del inventario por área" icon={<Truck className="w-4 h-4" strokeWidth={1.7} />} sub="equipos operativos vs total">
+          {inventario.length === 0 ? (
+            <Empty>Sin inventario registrado.</Empty>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+              {inventario.map(a => {
+                const color = a.porcentaje >= 90 ? 'var(--emerald-glow)' : a.porcentaje >= 70 ? 'var(--brass)' : 'var(--flame)'
+                return (
+                  <div key={a.area} style={{ background: 'var(--ink-black)', border: '1px solid var(--ink-line)', borderRadius: 2, padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, color: 'var(--bone)', fontWeight: 600 }}>{a.area}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color }}>{a.porcentaje}%</span>
+                    </div>
+                    <div style={{ height: 5, background: 'var(--ink-deep)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', width: `${a.porcentaje}%`, background: color, borderRadius: 2 }} />
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--graphite)', display: 'flex', gap: 10 }}>
+                      <span>{a.operativos}/{a.total} operativos</span>
+                      {a.atencion > 0 && <span style={{ color: 'var(--flame)' }}>{a.atencion} en atención</span>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Panel>
       </div>
     </div>
   )
 }
 
-function KpiCard({
-  icon,
-  label,
-  value,
-  sub,
-  highlight,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: number | string
-  sub: string
-  highlight?: boolean
-}) {
+function Kpi({ icon, label, value, sub, accent }: { icon: React.ReactNode; label: string; value: number | string; sub: string; accent?: boolean }) {
   return (
-    <div
-      className={`rounded-xl border bg-white p-4 text-center ${highlight ? "border-red-400" : ""}`}
-    >
-      <div className="flex justify-center mb-2">{icon}</div>
-      <p className={`text-2xl font-bold ${highlight ? "text-red-600" : ""}`}>
-        {value}
-      </p>
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-1">
-        {label}
-      </p>
-      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    <div style={{ background: 'var(--ink-deep)', border: '1px solid var(--ink-line)', borderLeft: `3px solid ${accent ? 'var(--brass)' : 'var(--ink-line)'}`, borderRadius: 3, padding: '14px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--graphite)' }}>{label}</span>
+        <span style={{ color: 'var(--brass)' }}>{icon}</span>
+      </div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, lineHeight: 1, color: 'var(--bone)' }}>{value}</div>
+      <div style={{ fontSize: 11, color: 'var(--steel)', marginTop: 6 }}>{sub}</div>
     </div>
   )
+}
+
+function Panel({ title, icon, sub, children }: { title: string; icon: React.ReactNode; sub?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: 'var(--ink-deep)', border: '1px solid var(--ink-line)', borderRadius: 3, padding: '16px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <span style={{ color: 'var(--brass)' }}>{icon}</span>
+        <h2 style={{ fontSize: 13, color: 'var(--bone)', fontWeight: 600 }}>{title}</h2>
+        {sub && <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--graphite)' }}>{sub}</span>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p style={{ fontSize: 12, color: 'var(--graphite)', padding: '8px 0' }}>{children}</p>
 }

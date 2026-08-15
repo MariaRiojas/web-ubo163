@@ -18,16 +18,20 @@ export default async function AreaAdministracionPage() {
     getAdministracionExtraData(),
   ])
 
+  const perms = (session.user.permissions ?? []) as string[]
+  const canManageInbox = perms.some(p => p.startsWith('area.') && p.endsWith('.manage'))
+
   return (
     <div className="max-w-[1400px]">
       <AreaHero areaKey="administracion" jefeArea={data.jefeArea} />
 
       <AreaBaseClient
         data={data}
+        canManageInbox={canManageInbox}
         customPanel={{
           key: 'admin',
           label: 'Reportería institucional',
-          icon: BarChart2,
+          icon: <BarChart2 className="w-3.5 h-3.5" strokeWidth={1.8} />,
           count: extra.stats.pendingRequestsCount > 0
             ? extra.stats.pendingRequestsCount
             : undefined,

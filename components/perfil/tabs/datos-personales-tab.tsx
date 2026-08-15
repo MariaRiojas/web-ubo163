@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { Shield, Phone, User, AlertTriangle, Pencil, Info } from 'lucide-react'
 import type { PerfilData } from '@/lib/perfil/get-perfil-data'
 import { GRADE_LABEL } from '@/lib/cgbvp/grades'
@@ -18,6 +19,22 @@ const PROFILE_STATUS_LABEL: Record<string, string> = {
 export function DatosPersonalesTab({ data }: { data: PerfilData }) {
   const { profile } = data
   const gradeLabel = GRADE_LABEL[profile.grade as keyof typeof GRADE_LABEL] ?? profile.grade
+  const [editingContact, setEditingContact] = useState(false)
+  const [editingEmergency, setEditingEmergency] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [contactForm, setContactForm] = useState({ phone: profile.phone ?? '', address: profile.address ?? '', personalEmail: profile.personalEmail ?? '' })
+  const [emergencyForm, setEmergencyForm] = useState({ emergencyContactName: profile.emergencyContactName ?? '', emergencyContactPhone: profile.emergencyContactPhone ?? '', emergencyContactRelation: profile.emergencyContactRelation ?? '' })
+
+  async function saveContact() {
+    setSaving(true)
+    await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contactForm) })
+    setSaving(false); setEditingContact(false); window.location.reload()
+  }
+  async function saveEmergency() {
+    setSaving(true)
+    await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(emergencyForm) })
+    setSaving(false); setEditingEmergency(false); window.location.reload()
+  }
   const statusLabel = PROFILE_STATUS_LABEL[profile.status] ?? profile.status
   const age = calcAge(profile.birthDate)
   const specialties = (profile.specialties ?? []).filter(Boolean).join(', ')
@@ -85,12 +102,19 @@ export function DatosPersonalesTab({ data }: { data: PerfilData }) {
         <div className="profile-card-header">
           <Phone className="w-[18px] h-[18px]" strokeWidth={1.6} />
           <h3>Contacto personal</h3>
-          <button className="profile-edit-btn" type="button" title="Edición disponible en la próxima entrega">
+          <button className="profile-edit-btn" type="button" onClick={() => setEditingContact(!editingContact)}>
             <Pencil className="w-3 h-3" />
-            <span>Editar</span>
+            <span>{editingContact ? 'Cancelar' : 'Editar'}</span>
           </button>
         </div>
 
+        {editingContact ? (
+          <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div><label style={{ fontSize: 10, color: 'var(--graphite)', display: 'block', marginBottom: 4 }}>TELÉFONO</label><input value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} style={{ width: '100%', height: 32, background: 'var(--ink-surface)', border: '1px solid var(--ink-line)', color: 'var(--bone)', padding: '0 10px', fontSize: 13 }} /></div>
+            <div><label style={{ fontSize: 10, color: 'var(--graphite)', display: 'block', marginBottom: 4 }}>DIRECCIÓN</label><input value={contactForm.address} onChange={e => setContactForm(f => ({ ...f, address: e.target.value }))} style={{ width: '100%', height: 32, background: 'var(--ink-surface)', border: '1px solid var(--ink-line)', color: 'var(--bone)', padding: '0 10px', fontSize: 13 }} /></div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button onClick={saveContact} disabled={saving} style={{ height: 30, padding: '0 14px', background: 'var(--red-163)', border: 'none', color: '#fff', fontSize: 12, cursor: 'pointer' }}>{saving ? 'Guardando...' : 'Guardar'}</button></div>
+          </div>
+        ) : (
         <div className="profile-field-grid">
           <div className="profile-field">
             <span className="profile-field-label">CORREO</span>
@@ -103,9 +127,10 @@ export function DatosPersonalesTab({ data }: { data: PerfilData }) {
           {/* La dirección aún no está en el schema; cuando se agregue, reemplazar aquí */}
           <div className="profile-field profile-field--full">
             <span className="profile-field-label">DIRECCIÓN</span>
-            <span className="profile-field-value">Sin registrar</span>
+            <span className="profile-field-value">{profile.address ?? 'Sin registrar'}</span>
           </div>
         </div>
+        )}
       </div>
 
       {/* ─── Información personal ─── */}
@@ -152,12 +177,20 @@ export function DatosPersonalesTab({ data }: { data: PerfilData }) {
             style={{ color: 'var(--red-glow)' }}
           />
           <h3>Contacto de emergencia</h3>
-          <button className="profile-edit-btn" type="button" title="Edición disponible en la próxima entrega">
+          <button className="profile-edit-btn" type="button" onClick={() => setEditingEmergency(!editingEmergency)}>
             <Pencil className="w-3 h-3" />
-            <span>Editar</span>
+            <span>{editingEmergency ? 'Cancelar' : 'Editar'}</span>
           </button>
         </div>
 
+        {editingEmergency ? (
+          <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div><label style={{ fontSize: 10, color: 'var(--graphite)', display: 'block', marginBottom: 4 }}>NOMBRE</label><input value={emergencyForm.emergencyContactName} onChange={e => setEmergencyForm(f => ({ ...f, emergencyContactName: e.target.value }))} style={{ width: '100%', height: 32, background: 'var(--ink-surface)', border: '1px solid var(--ink-line)', color: 'var(--bone)', padding: '0 10px', fontSize: 13 }} /></div>
+            <div><label style={{ fontSize: 10, color: 'var(--graphite)', display: 'block', marginBottom: 4 }}>TELÉFONO</label><input value={emergencyForm.emergencyContactPhone} onChange={e => setEmergencyForm(f => ({ ...f, emergencyContactPhone: e.target.value }))} style={{ width: '100%', height: 32, background: 'var(--ink-surface)', border: '1px solid var(--ink-line)', color: 'var(--bone)', padding: '0 10px', fontSize: 13 }} /></div>
+            <div><label style={{ fontSize: 10, color: 'var(--graphite)', display: 'block', marginBottom: 4 }}>RELACIÓN</label><input value={emergencyForm.emergencyContactRelation} onChange={e => setEmergencyForm(f => ({ ...f, emergencyContactRelation: e.target.value }))} placeholder="Ej: Esposa, Padre, Hermano" style={{ width: '100%', height: 32, background: 'var(--ink-surface)', border: '1px solid var(--ink-line)', color: 'var(--bone)', padding: '0 10px', fontSize: 13 }} /></div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button onClick={saveEmergency} disabled={saving} style={{ height: 30, padding: '0 14px', background: 'var(--red-163)', border: 'none', color: '#fff', fontSize: 12, cursor: 'pointer' }}>{saving ? 'Guardando...' : 'Guardar'}</button></div>
+          </div>
+        ) : (
         <div className="profile-field-grid">
           <div className="profile-field">
             <span className="profile-field-label">NOMBRE</span>
@@ -168,6 +201,7 @@ export function DatosPersonalesTab({ data }: { data: PerfilData }) {
             <span className="profile-field-value mono">{profile.emergencyContactPhone ?? '—'}</span>
           </div>
         </div>
+        )}
 
         {!profile.emergencyContactName && (
           <div className="profile-card-note">

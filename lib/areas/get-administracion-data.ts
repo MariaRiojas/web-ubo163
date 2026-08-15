@@ -1,11 +1,8 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import { profiles, serviceHours, internalRequests } from '@/lib/db/schema'
-import { eq, gte, sql, and, inArray, desc } from 'drizzle-orm'
-
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS
-// ═══════════════════════════════════════════════════════════════════
+import { ddb, TABLE, QueryCommand, ScanCommand, BatchGetCommand } from '@/lib/db/dynamodb'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { ServiceHour } from '@/lib/db/schema/service-hours'
+import type { InternalRequest } from '@/lib/db/schema/internal-requests'
 
 export interface ServiceHoursContributor {
   profileId: string
@@ -37,7 +34,7 @@ export interface PendingInternalRequest {
   priority: string
   status: string
   requesterName: string | null
-  createdAt: Date
+  createdAt: string
 }
 
 export interface AdministracionExtraData {
@@ -53,88 +50,78 @@ export interface AdministracionExtraData {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════════
-
 export async function getAdministracionExtraData(): Promise<AdministracionExtraData> {
-  const now = new Date()
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10)
+  const nowDate = new Date()
+  const firstOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1)
+    .toISOString().slice(0, 10)
 
-  // ── Horas de servicio del mes en curso ────────────────────────
-  const hoursRows = await db
-    .select({
-      profileId: serviceHours.profileId,
-      type: serviceHours.type,
-      hours: serviceHours.hours,
-    })
-    .from(serviceHours)
-    .where(gte(serviceHours.date, firstOfMonth))
+  // All profiles
+  const { Items: profItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.profiles,
+    ProjectionExpression: 'profileId, fullName, grade, #st, codigoCgbvp',
+    ExpressionAttributeNames: { '#st': 'status' },
+  }))
+  const allProfiles = (profItems ?? []) as Profile[]
 
-  // Agrupar por perfil
-  const byProfile = new Map<string, ServiceHoursContributor['breakdown'] & { total: number }>()
-  for (const row of hoursRows) {
-    const h = Number(row.hours)
-    let entry = byProfile.get(row.profileId)
-    if (!entry) {
-      entry = {
-        total: 0,
+  // Service hours this month — scan by profileId from active profiles
+  // We query by profileId (PK) for each active profile — use parallel queries for top N
+  const activeProfiles = allProfiles.filter(p => p.status === 'activo' || p.status === 'reserva')
+
+  const byProfile = new Map<string, { total: number; breakdown: ServiceHoursContributor['breakdown'] }>()
+
+  // Batch query service hours for active profiles (parallel, max 20)
+  const TOP = 30
+  const profilesToQuery = activeProfiles.slice(0, 60)
+  await Promise.all(profilesToQuery.map(async (p) => {
+    const { Items } = await ddb.send(new QueryCommand({
+      TableName: TABLE.serviceHours,
+      KeyConditionExpression: 'profileId = :pid AND sk >= :from',
+      ExpressionAttributeValues: {
+        ':pid': p.profileId,
+        ':from': firstOfMonth,
+      },
+      ProjectionExpression: 'hours, #t',
+      ExpressionAttributeNames: { '#t': 'type' },
+    }))
+    const hours = (Items ?? []) as ServiceHour[]
+    if (hours.length === 0) return
+    const entry = {
+      total: 0,
+      breakdown: {
         guardia_nocturna: 0, emergencia: 0, instruccion: 0,
         administrativo: 0, mantenimiento: 0, evento_institucional: 0, comision: 0,
-      }
-      byProfile.set(row.profileId, entry)
+      } as ServiceHoursContributor['breakdown'],
     }
-    entry.total += h
-    const key = row.type as keyof typeof entry
-    if (key in entry && key !== 'total') {
-      (entry[key] as number) += h
+    for (const h of hours) {
+      const val = Number(h.hours ?? 0)
+      entry.total += val
+      const key = h.type as keyof typeof entry.breakdown
+      if (key in entry.breakdown) (entry.breakdown[key] as number) += val
     }
-  }
+    if (entry.total > 0) byProfile.set(p.profileId, entry)
+  }))
 
-  // Traer perfiles activos
-  const activeProfiles = await db
-    .select({
-      id: profiles.id,
-      fullName: profiles.fullName,
-      grade: profiles.grade,
-      status: profiles.status,
-      codigoCgbvp: profiles.codigoCgbvp,
-    })
-    .from(profiles)
-    .where(inArray(profiles.status, ['activo', 'reserva']))
-    .orderBy(profiles.fullName)
+  const profileById = new Map(allProfiles.map(p => [p.profileId, p]))
 
-  // Top contribuidores (con horas este mes)
   const topContributors: ServiceHoursContributor[] = activeProfiles
-    .filter((p) => byProfile.has(p.id))
-    .map((p) => {
-      const entry = byProfile.get(p.id)!
-      const { total, ...breakdown } = entry
+    .filter(p => byProfile.has(p.profileId))
+    .map(p => {
+      const entry = byProfile.get(p.profileId)!
       return {
-        profileId: p.id,
+        profileId: p.profileId,
         fullName: p.fullName,
         grade: p.grade,
-        codigoCgbvp: p.codigoCgbvp,
-        totalHours: Math.round(total * 100) / 100,
-        breakdown: breakdown as ServiceHoursContributor['breakdown'],
+        codigoCgbvp: p.codigoCgbvp ?? null,
+        totalHours: Math.round(entry.total * 100) / 100,
+        breakdown: entry.breakdown,
       }
     })
     .sort((a, b) => b.totalHours - a.totalHours)
     .slice(0, 15)
 
-  const totalHoursThisMonth = Array.from(byProfile.values()).reduce(
-    (acc, e) => acc + e.total, 0,
-  )
-
-  // ── Distribución de personal ──────────────────────────────────
-  const allProfiles = await db
-    .select({
-      grade: profiles.grade,
-      status: profiles.status,
-    })
-    .from(profiles)
+  const totalHoursThisMonth = Math.round(
+    Array.from(byProfile.values()).reduce((acc, e) => acc + e.total, 0) * 10,
+  ) / 10
 
   const byStatus: Record<string, number> = {}
   const byGrade: Record<string, number> = {}
@@ -143,41 +130,55 @@ export async function getAdministracionExtraData(): Promise<AdministracionExtraD
     byGrade[p.grade] = (byGrade[p.grade] ?? 0) + 1
   }
 
-  // ── Solicitudes internas pendientes ──────────────────────────
-  const internalRows = await db
-    .select({
-      req: internalRequests,
-      requesterName: profiles.fullName,
-    })
-    .from(internalRequests)
-    .leftJoin(profiles, eq(internalRequests.requestedBy, profiles.id))
-    .where(
-      inArray(internalRequests.status, ['pendiente', 'aprobada', 'en_proceso']),
-    )
-    .orderBy(desc(internalRequests.createdAt))
-    .limit(20)
+  // Pending internal requests
+  const { Items: reqItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.internalRequests,
+    FilterExpression: '#st IN (:p, :a, :e)',
+    ExpressionAttributeNames: { '#st': 'status' },
+    ExpressionAttributeValues: { ':p': 'pendiente', ':a': 'aprobada', ':e': 'en_proceso' },
+    Limit: 20,
+  }))
+  const internalRows = ((reqItems ?? []) as InternalRequest[])
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 20)
 
-  const pendingInternalRequests: PendingInternalRequest[] = internalRows.map((r) => ({
-    id: r.req.id,
-    code: r.req.code,
-    type: r.req.type,
-    title: r.req.title,
-    priority: r.req.priority,
-    status: r.req.status,
-    requesterName: r.requesterName,
-    createdAt: r.req.createdAt ?? new Date(),
+  const requesterIds = [...new Set(internalRows.map(r => r.requestedBy).filter(Boolean))]
+  const requesterNames = new Map<string, string>()
+  if (requesterIds.length > 0) {
+    const { Responses } = await ddb.send(new BatchGetCommand({
+      RequestItems: {
+        [TABLE.profiles]: {
+          Keys: requesterIds.map(pid => ({ profileId: pid })),
+          ProjectionExpression: 'profileId, fullName',
+        },
+      },
+    }))
+    for (const p of Responses?.[TABLE.profiles] ?? []) {
+      requesterNames.set(p.profileId as string, p.fullName as string)
+    }
+  }
+
+  const pendingInternalRequests: PendingInternalRequest[] = internalRows.map(r => ({
+    id: r.requestId,
+    code: r.code,
+    type: r.type,
+    title: r.title,
+    priority: r.priority,
+    status: r.status,
+    requesterName: r.requestedBy ? (requesterNames.get(r.requestedBy) ?? null) : null,
+    createdAt: r.createdAt,
   }))
 
   const activeCount = activeProfiles.length
 
   return {
     topContributors,
-    totalHoursThisMonth: Math.round(totalHoursThisMonth * 10) / 10,
+    totalHoursThisMonth,
     personnelDistribution: { byStatus, byGrade },
     pendingInternalRequests,
     stats: {
       activePersonnelCount: activeCount,
-      totalHoursThisMonth: Math.round(totalHoursThisMonth * 10) / 10,
+      totalHoursThisMonth,
       pendingRequestsCount: pendingInternalRequests.length,
       avgHoursPerPerson: activeCount > 0
         ? Math.round((totalHoursThisMonth / activeCount) * 10) / 10

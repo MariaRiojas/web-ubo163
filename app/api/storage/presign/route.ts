@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
-import { getUploadPresignedUrl, avatarKey, incidentAttachmentKey, inventoryDocKey } from "@/lib/storage/s3"
+import { getUploadPresignedUrl, avatarKey, incidentAttachmentKey, inventoryDocKey, libraryDocKey, courseMaterialKey } from "@/lib/storage/s3"
+import type { Permission } from "@/lib/auth/permissions"
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -9,21 +10,25 @@ const ALLOWED_TYPES = [
   "image/webp",
   "image/gif",
   "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  // Sin video/* — videos se referencian como URLs de YouTube/Vimeo (sin costo de S3 egress)
 ]
 
-const MAX_SIZE_MB = 10
+const MAX_SIZE_MB = 20
 
 const schema = z.object({
-  /** Categoría del archivo — determina la carpeta de destino en S3 */
-  category: z.enum(["avatar", "incident", "inventory"]),
-  /** Nombre original del archivo (para extensión) */
+  category: z.enum(["avatar", "incident", "inventory", "library", "course-material"]),
   filename: z.string().min(1).max(200),
-  /** MIME type del archivo */
   contentType: z.string().min(1),
-  /** ID del recurso al que pertenece el archivo */
   resourceId: z.string().min(1),
-  /** Tamaño en bytes (validación del lado del servidor) */
-  sizeBytes: z.number().positive().max(MAX_SIZE_MB * 1024 * 1024),
+  /** ID secundario (ej. lessonId para course-material) */
+  resourceId2: z.string().optional(),
+  sizeBytes: z.number().positive(),
 })
 
 export async function POST(request: Request) {
@@ -48,24 +53,25 @@ export async function POST(request: Request) {
     )
   }
 
-  const { category, filename, contentType, resourceId, sizeBytes } = parsed.data
+  const { category, filename, contentType, resourceId, resourceId2, sizeBytes } = parsed.data
 
-  // Validar tipo MIME
   if (!ALLOWED_TYPES.includes(contentType)) {
     return NextResponse.json(
-      { error: `Tipo de archivo no permitido. Permitidos: ${ALLOWED_TYPES.join(", ")}` },
+      { error: `Tipo de archivo no permitido` },
       { status: 400 }
     )
   }
 
-  // Extraer extensión del filename
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "bin"
+  if (sizeBytes > MAX_SIZE_MB * 1024 * 1024) {
+    return NextResponse.json({ error: `Archivo demasiado grande (máx ${MAX_SIZE_MB} MB)` }, { status: 400 })
+  }
 
-  // Construir key según categoría
+  const permissions = (session.user.permissions ?? []) as Permission[]
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "bin"
   let key: string
+
   switch (category) {
     case "avatar":
-      // Solo el propio usuario puede subir su avatar
       if (resourceId !== session.user.profileId) {
         return NextResponse.json({ error: "Sin permiso" }, { status: 403 })
       }
@@ -77,22 +83,27 @@ export async function POST(request: Request) {
     case "inventory":
       key = inventoryDocKey(resourceId, `${Date.now()}_${filename}`)
       break
+    case "library":
+      if (!permissions.includes("area.instruction.manage")) {
+        return NextResponse.json({ error: "Sin permiso" }, { status: 403 })
+      }
+      key = libraryDocKey(resourceId, `${Date.now()}_${filename}`)
+      break
+    case "course-material":
+      if (!permissions.includes("area.instruction.manage")) {
+        return NextResponse.json({ error: "Sin permiso" }, { status: 403 })
+      }
+      key = courseMaterialKey(resourceId, resourceId2 ?? "general", `${Date.now()}_${filename}`)
+      break
+    default:
+      return NextResponse.json({ error: "Categoría inválida" }, { status: 400 })
   }
 
   try {
     const presignedUrl = await getUploadPresignedUrl(key, contentType)
-    const publicUrl = `${process.env.S3_PUBLIC_URL}/${key}`
-
-    return NextResponse.json({
-      presignedUrl,
-      key,
-      publicUrl,
-    })
+    return NextResponse.json({ presignedUrl, key })
   } catch (err) {
     console.error("[presign] Error generando URL:", err)
-    return NextResponse.json(
-      { error: "No se pudo generar la URL de subida" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "No se pudo generar la URL de subida" }, { status: 500 })
   }
 }

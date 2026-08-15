@@ -8,6 +8,13 @@ import type { SectionRole } from '@/lib/db/schema/section-roles'
 import type { Section } from '@/lib/db/schema/sections'
 import { resolvePermissions } from './permissions'
 import { loginSchema } from '@/lib/validations/auth'
+import { isLockedOut, recordFailedAttempt, clearAttempts } from './rate-limit'
+
+/** Registra un intento fallido de login y devuelve null (para usar como `return failedLogin(username)`). */
+async function failedLogin(username: string): Promise<null> {
+  await recordFailedAttempt(username)
+  return null
+}
 
 /** Busca un perfil por email o DNI via GSIs en paralelo */
 async function findProfileByCredential(username: string): Promise<Profile | null> {
@@ -87,14 +94,17 @@ export const authConfig: NextAuthConfig = {
 
         const { username, password } = parsed.data
 
-        const profile = await findProfileByCredential(username)
-        if (!profile) {
-          console.log('[AUTH] Perfil no encontrado:', username)
+        if (await isLockedOut(username)) {
+          console.warn('[auth] intento de login rechazado: usuario bloqueado por rate limit')
           return null
         }
+
+        const profile = await findProfileByCredential(username)
+        if (!profile) {
+          return failedLogin(username)
+        }
         if (!profile.userId) {
-          console.log('[AUTH] Perfil sin userId vinculado:', profile.email)
-          return null
+          return failedLogin(username)
         }
 
         const userRes = await ddb.send(new GetCommand({
@@ -103,18 +113,18 @@ export const authConfig: NextAuthConfig = {
         }))
         const user = userRes.Item as User | undefined
         if (!user) {
-          console.log('[AUTH] Usuario no encontrado para userId:', profile.userId)
-          return null
+          return failedLogin(username)
         }
 
         const isValid = await bcrypt.compare(password, user.passwordHash)
         if (!isValid) {
-          console.log('[AUTH] Contraseña incorrecta:', username)
-          return null
+          return failedLogin(username)
         }
 
         const roles = await loadRolesWithSections(profile.profileId)
         const permissions = resolvePermissions(profile, roles)
+
+        await clearAttempts(username)
 
         return {
           id: profile.profileId,

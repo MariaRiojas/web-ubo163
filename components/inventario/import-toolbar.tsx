@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Download, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { ImportInventoryModal } from "./import-modal"
@@ -52,24 +51,23 @@ export function ImportToolbar({ canManage, contextAlmacen, onImported }: ImportT
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
           onClick={handleDownload}
           disabled={downloading}
-          className="gap-2"
         >
-          <Download className="w-4 h-4" />
-          {downloading ? "Generando..." : "Descargar plantilla"}
-        </Button>
-        <Button
-          size="sm"
+          <Download className="w-3.5 h-3.5" strokeWidth={1.8} />
+          {downloading ? "Generando…" : "Descargar plantilla"}
+        </button>
+        <button
+          type="button"
+          className="btn btn--primary btn--sm"
           onClick={() => setImportOpen(true)}
-          className="gap-2"
         >
-          <Upload className="w-4 h-4" />
+          <Upload className="w-3.5 h-3.5" strokeWidth={1.8} />
           Importar desde Excel
-        </Button>
+        </button>
       </div>
 
       <ImportInventoryModal

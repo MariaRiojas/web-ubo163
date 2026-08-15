@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 import ExcelJS from 'exceljs'
 import {
   INVENTORY_CATEGORIES,
@@ -12,6 +13,9 @@ import {
 } from '@/lib/db/schema/inventory'
 
 export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File

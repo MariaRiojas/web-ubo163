@@ -52,11 +52,8 @@
         "Environment": "dev",
         "ManagedBy": "cdk",
         "Owner": "bomberos-163",
-        "project": "manbuild",
-        "enviroment": "e02",
-        "customer": "manantial",
-        "business-unit": "cc01",
-        "owner": "manantial"
+        "Customer": "manantial",
+        "BusinessUnit": "cc01"
       }
     }
   }

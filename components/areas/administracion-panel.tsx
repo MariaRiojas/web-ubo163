@@ -67,7 +67,7 @@ export function AdministracionPanel({ extra }: { extra: AdministracionExtraData 
         <div className={`area-kpi ${stats.pendingRequestsCount > 0 ? 'area-kpi--warn' : ''}`}>
           <div className="area-kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <FileText className="w-3 h-3" strokeWidth={1.8} />
-            SOLICITUDES INTERNAS
+            REQUERIMIENTOS
           </div>
           <div className="area-kpi-value mono">{stats.pendingRequestsCount}</div>
           <div className="area-kpi-sub">pendientes / en proceso</div>
@@ -94,12 +94,12 @@ export function AdministracionPanel({ extra }: { extra: AdministracionExtraData 
         </section>
       )}
 
-      {/* Solicitudes internas pendientes */}
+      {/* Requerimientos pendientes */}
       {pendingInternalRequests.length > 0 && (
         <section>
           <h3 className="faena-section-title" style={{ marginBottom: 12 }}>
             <FileText className="w-5 h-5" strokeWidth={1.6} style={{ color: 'var(--red-glow)' }} />
-            Solicitudes internas pendientes ({pendingInternalRequests.length})
+            Requerimientos pendientes ({pendingInternalRequests.length})
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {pendingInternalRequests.map((r) => (

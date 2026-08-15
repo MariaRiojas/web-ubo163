@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { IntranetSidebar } from '@/components/intranet/sidebar'
 import { IntranetMobileNav } from '@/components/intranet/mobile-nav'
+import { IntranetThemeToggle } from '@/components/intranet/theme-toggle'
 import { getGreeting, GRADE_LABELS, formatShortName } from '@/components/intranet/_shared'
 
 export default async function IntranetLayout({
@@ -20,15 +21,15 @@ export default async function IntranetLayout({
   const gradeLabel = GRADE_LABELS[grade] ?? grade
 
   return (
-    <div className="intranet-theme min-h-screen flex relative">
+    <div className="intranet-theme h-screen overflow-hidden flex relative print:h-auto print:overflow-visible print:block">
       {/* Fondos atmosféricos — posición fixed, se renderizan detrás */}
-      <div className="bg-grid" aria-hidden />
-      <div className="bg-noise" aria-hidden />
-      <div className="bg-glow-red" aria-hidden />
-      <div className="bg-glow-brass" aria-hidden />
+      <div className="bg-grid print:hidden" aria-hidden />
+      <div className="bg-noise print:hidden" aria-hidden />
+      <div className="bg-glow-red print:hidden" aria-hidden />
+      <div className="bg-glow-brass print:hidden" aria-hidden />
 
       {/* Sidebar desktop (≥ md) */}
-      <div className="hidden md:flex relative z-10">
+      <div className="hidden md:flex relative z-10 print:hidden">
         <IntranetSidebar />
       </div>
 
@@ -57,14 +58,15 @@ export default async function IntranetLayout({
               {gradeLabel} {shortName}
             </div>
           </div>
+          <IntranetThemeToggle collapsed={false} />
         </header>
 
         {/* Contenido + footer con lema */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto print:overflow-visible print:h-auto">
           <div className="px-4 md:px-8 py-6 md:py-8 max-w-[1400px] mx-auto w-full">
             {children}
 
-            <footer className="footer-motto">
+            <footer className="footer-motto print:hidden">
               <div className="motto-line" />
               <div className="motto-text">Dios · Patria · Humanidad</div>
               <div className="motto-line" />

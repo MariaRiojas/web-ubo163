@@ -1,374 +1,199 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, Siren, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-
-import { PhoneCall, Clock, MapPin, Mail, Facebook, Twitter, Instagram, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
-import Link from "next/link"
+import { companyConfig } from "@/company.config"
+import { SiteText } from "@/components/site-content/site-text"
 
 export default function ContactoPage() {
-  const [formData, setFormData] = useState({
-    nombre: "",
-    email: "",
-    telefono: "",
-    asunto: "",
-    mensaje: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [formState, setFormState] = useState<"idle" | "sending" | "sent">("idle")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
-
-    // Simulamos el envío del formulario
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setSubmitSuccess(true)
-
-      // Resetear después de 3 segundos
-      setTimeout(() => {
-        setSubmitSuccess(false)
-        setFormData({
-          nombre: "",
-          email: "",
-          telefono: "",
-          asunto: "",
-          mensaje: "",
-        })
-      }, 3000)
-    }, 1500)
+    setFormState("sending")
+    setTimeout(() => setFormState("sent"), 1500)
   }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    })
-  }
-
-  const contactInfo = [
-    {
-      icon: PhoneCall,
-      titulo: "Emergencias",
-      info: "911",
-      descripcion: "Llamadas de emergencia 24/7",
-      color: "from-red-500 to-red-700",
-    },
-    {
-      icon: PhoneCall,
-      titulo: "Central",
-      info: "116",
-      descripcion: "Atención general y consultas",
-      color: "from-red-600 to-red-800",
-    },
-    {
-      icon: Mail,
-      titulo: "Email",
-      info: "contacto@bomberos163.pe",
-      descripcion: "Consultas y solicitudes",
-      color: "from-amber-500 to-red-600",
-    },
-    {
-      icon: MapPin,
-      titulo: "Dirección",
-      info: "Av. Principal S/N, Ancón",
-      descripcion: "Lima, Perú",
-      color: "from-red-700 to-amber-600",
-    },
-    {
-      icon: Clock,
-      titulo: "Horario",
-      info: "Lun - Vie: 8:00 AM - 6:00 PM",
-      descripcion: "Atención administrativa",
-      color: "from-amber-600 to-red-700",
-    },
-  ]
-
-  const faqs = [
-    {
-      pregunta: "¿Cómo reporto una emergencia?",
-      respuesta:
-        "Para reportar una emergencia, llama inmediatamente al 911. Proporciona tu ubicación exacta, describe la situación y sigue las instrucciones del operador. Mantén la calma y no cuelgues hasta que se te indique.",
-    },
-    {
-      pregunta: "¿Ofrecen servicios de inspección?",
-      respuesta:
-        "Sí, realizamos inspecciones de seguridad para viviendas, comercios e industrias. Puedes solicitar una inspección contactándonos al 116 o enviando un correo a contacto@bomberos163.pe. Nuestro equipo evaluará las condiciones de seguridad y te proporcionará recomendaciones.",
-    },
-    {
-      pregunta: "¿Cómo puedo unirme como bombero voluntario?",
-      respuesta:
-        "Para unirte como bombero voluntario, debes cumplir con ciertos requisitos de edad, salud y disponibilidad. Visita nuestra página de Admisión para conocer el proceso completo y los requisitos necesarios. También puedes contactarnos para más información sobre el próximo proceso de reclutamiento.",
-    },
-    {
-      pregunta: "¿Realizan capacitaciones a empresas?",
-      respuesta:
-        "Sí, ofrecemos cursos de capacitación especializados para empresas en temas como manejo de extintores, evacuación, primeros auxilios y prevención de incendios. Contáctanos para diseñar un programa de capacitación adaptado a las necesidades de tu organización.",
-    },
-  ]
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative py-20 md:py-32 bg-gradient-to-r from-primary to-red-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <Badge className="mb-6 bg-white/20 backdrop-blur-sm border-white/30 text-white text-sm">
-            Contáctanos
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Estamos Aquí para Ayudarte
-          </h1>
-          <p className="text-lg md:text-xl text-red-100 max-w-3xl leading-relaxed">
-            Ponte en contacto con nosotros para consultas, solicitudes o cualquier información que necesites
-          </p>
+      {/* ─── HERO ─── */}
+      <section className="relative min-h-[50vh] flex items-end overflow-hidden bg-black">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(220,38,38,0.1)_0%,_transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 relative z-10 pt-32 pb-20">
+          <div className="max-w-3xl space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="h-[1px] w-12 bg-red-500" />
+              <SiteText contentKey="contacto.hero.overline" fallback="Comunícate" className="text-red-400 text-sm font-mono tracking-[0.3em] uppercase" />
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[0.9] text-white">
+              <SiteText contentKey="contacto.hero.title" fallback="CONTACTO" />
+            </h1>
+            <div className="h-1 w-16 bg-red-500" />
+            <SiteText as="p" contentKey="contacto.hero.subtitle" className="text-lg text-zinc-400 max-w-lg leading-relaxed"
+              fallback="¿Tienes preguntas, quieres ser voluntario o necesitas coordinar una visita? Escríbenos." />
+          </div>
         </div>
       </section>
 
-      <main className="flex-1">
-        {/* Formulario y Contacto */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-              {/* Formulario */}
+      {/* ─── EMERGENCIA BANNER ─── */}
+      <section className="bg-red-600 py-4">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8">
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Siren className="w-5 h-5 text-white animate-pulse" />
+            <p className="text-white font-bold text-center">
+              Si tienes una EMERGENCIA, llama al <span className="text-2xl font-black mx-2">{companyConfig.contact.emergency}</span> o al <span className="text-2xl font-black mx-2">{companyConfig.contact.phone}</span>
+            </p>
+            <Siren className="w-5 h-5 text-white animate-pulse" />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CONTENIDO PRINCIPAL ─── */}
+      <section className="py-24 md:py-32 bg-zinc-950 relative">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            {/* Info lateral */}
+            <div className="lg:col-span-5 space-y-8">
               <div>
-                <Card className="glass border-primary/10">
-                  <CardHeader>
-                    <CardTitle className="text-2xl">Envíanos un Mensaje</CardTitle>
-                    <p className="text-muted-foreground">
-                      Completa el formulario y nos pondremos en contacto contigo lo antes posible
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    {submitSuccess ? (
-                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                          <CheckCircle2 className="h-8 w-8 text-green-600" />
-                        </div>
-                        <h3 className="text-xl font-bold text-center">¡Mensaje Enviado!</h3>
-                        <p className="text-center text-muted-foreground">
-                          Gracias por contactarnos. Te responderemos pronto.
-                        </p>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="nombre">Nombre Completo *</Label>
-                          <Input
-                            id="nombre"
-                            value={formData.nombre}
-                            onChange={handleChange}
-                            placeholder="Ingrese su nombre completo"
-                            required
-                            disabled={isSubmitting}
-                          />
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="email">Correo Electrónico *</Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              value={formData.email}
-                              onChange={handleChange}
-                              placeholder="correo@ejemplo.com"
-                              required
-                              disabled={isSubmitting}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="telefono">Teléfono</Label>
-                            <Input
-                              id="telefono"
-                              type="tel"
-                              value={formData.telefono}
-                              onChange={handleChange}
-                              placeholder="+51 999 000 000"
-                              disabled={isSubmitting}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="asunto">Asunto *</Label>
-                          <Input
-                            id="asunto"
-                            value={formData.asunto}
-                            onChange={handleChange}
-                            placeholder="¿Sobre qué deseas consultarnos?"
-                            required
-                            disabled={isSubmitting}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="mensaje">Mensaje *</Label>
-                          <Textarea
-                            id="mensaje"
-                            value={formData.mensaje}
-                            onChange={handleChange}
-                            placeholder="Escribe tu mensaje aquí..."
-                            className="min-h-[150px]"
-                            required
-                            disabled={isSubmitting}
-                          />
-                        </div>
-
-                        <Button
-                          type="submit"
-                          className="w-full bg-gradient-to-r from-primary to-red-800 hover:from-red-700 hover:to-red-900 text-white"
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Enviando...
-                            </>
-                          ) : (
-                            "Enviar Mensaje"
-                          )}
-                        </Button>
-                      </form>
-                    )}
-                  </CardContent>
-                </Card>
+                <SiteText contentKey="contacto.info.overline" fallback="Información" className="text-red-500 text-sm font-mono tracking-[0.3em] uppercase" />
+                <SiteText as="h2" contentKey="contacto.info.title" fallback="Encuéntranos" className="text-3xl md:text-4xl font-black text-white mt-4 leading-[1.1]" />
+                <div className="h-1 w-16 bg-red-500 mt-6" />
               </div>
 
-              {/* Información de Contacto */}
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-6">Información de Contacto</h2>
-                  <div className="space-y-4">
-                    {contactInfo.map((item, index) => (
-                      <Card key={index} className="glass border-primary/10 hover:border-primary/30 transition-all group">
-                        <CardContent className="p-6">
-                          <div className="flex items-start gap-4">
-                            <div
-                              className={`w-12 h-12 bg-gradient-to-br ${item.color} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}
-                            >
-                              <item.icon className="h-6 w-6 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-bold text-lg mb-1">{item.titulo}</h3>
-                              <p className="text-primary font-semibold">{item.info}</p>
-                              <p className="text-sm text-muted-foreground">{item.descripcion}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Redes Sociales */}
-                <Card className="glass border-primary/10">
-                  <CardContent className="p-6">
-                    <h3 className="font-bold text-lg mb-4">Síguenos en Redes Sociales</h3>
-                    <div className="flex gap-3">
-                      {[
-                        { Icon: Facebook, label: "Facebook" },
-                        { Icon: Twitter, label: "Twitter" },
-                        { Icon: Instagram, label: "Instagram" },
-                      ].map((social, index) => (
-                        <Link
-                          key={index}
-                          href="#"
-                          className="w-12 h-12 bg-gradient-to-br from-primary to-red-800 rounded-xl flex items-center justify-center text-white hover:scale-110 transition-transform"
-                        >
-                          <social.Icon className="h-5 w-5" />
-                        </Link>
-                      ))}
+              <div className="space-y-4">
+                {[
+                  { k: "1", icon: MapPin, label: "Dirección", value: companyConfig.location.address + ", " + companyConfig.location.district, sublabel: companyConfig.location.department + ", Perú" },
+                  { k: "2", icon: Phone, label: "Emergencias", value: companyConfig.contact.emergency, sublabel: "Central: " + companyConfig.contact.phone },
+                  { k: "3", icon: Mail, label: "Correo", value: companyConfig.contact.email, sublabel: "Respondemos en 24-48 horas" },
+                  { k: "4", icon: Clock, label: "Atención administrativa", value: "Lun - Sáb: 9:00 - 17:00", sublabel: "Emergencias: 24/7" },
+                ].map((item) => (
+                  <div key={item.k} className="flex items-start gap-4 p-5 border border-zinc-800/60 bg-zinc-900/30">
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 shrink-0">
+                      <item.icon className="w-5 h-5 text-red-400" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <SiteText as="p" contentKey={`contacto.info.${item.k}.label`} fallback={item.label} className="text-xs text-zinc-500 uppercase tracking-wider mb-1" />
+                      <SiteText as="p" contentKey={`contacto.info.${item.k}.value`} fallback={item.value} className="text-white font-medium" />
+                      <SiteText as="p" contentKey={`contacto.info.${item.k}.sublabel`} fallback={item.sublabel} className="text-sm text-zinc-500" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Mapa */}
-        <section className="py-16 md:py-24 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestra Ubicación</h2>
-              <p className="text-lg text-muted-foreground">Encuéntranos en Ancón, Lima</p>
-            </div>
-            <Card className="glass border-primary/10 overflow-hidden max-w-5xl mx-auto">
-              <div className="relative h-[400px] md:h-[500px] bg-gradient-to-br from-primary/10 to-red-800/10 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <MapPin className="h-16 w-16 text-primary mx-auto" />
-                  <p className="text-lg font-medium">Mapa de Ubicación</p>
-                  <p className="text-sm text-muted-foreground">Av. Principal S/N, Ancón, Lima, Perú</p>
+              {/* Social */}
+              <div className="p-5 border border-zinc-800/60 bg-zinc-900/30">
+                <SiteText as="p" contentKey="contacto.social.label" fallback="Síguenos" className="text-xs text-zinc-500 uppercase tracking-wider mb-3" />
+                <div className="flex gap-3">
+                  {companyConfig.social.facebook && (
+                    <a href={companyConfig.social.facebook} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors text-sm flex items-center gap-2">
+                      Facebook <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {companyConfig.social.instagram && (
+                    <a href={companyConfig.social.instagram} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors text-sm flex items-center gap-2">
+                      Instagram <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
-            </Card>
-          </div>
-        </section>
+            </div>
 
-        {/* FAQ */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto">
-              <div className="text-center mb-12">
-                <Badge variant="outline" className="mb-4 text-primary border-primary/30 px-4 py-2">
-                  Preguntas Frecuentes
-                </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">¿Tienes Dudas?</h2>
-                <p className="text-lg text-muted-foreground">
-                  Encuentra respuestas a las preguntas más comunes
-                </p>
-              </div>
+            {/* Formulario */}
+            <div className="lg:col-span-7">
+              <div className="p-8 md:p-10 border border-zinc-800/60 bg-zinc-900/30">
+                <SiteText as="h3" contentKey="contacto.form.title" fallback="Envíanos un mensaje" className="text-2xl font-black text-white mb-2" />
+                <SiteText as="p" contentKey="contacto.form.subtitle" fallback="Todos los campos marcados con * son obligatorios." className="text-zinc-500 text-sm mb-8" />
 
-              <Accordion type="single" collapsible className="space-y-4">
-                {faqs.map((faq, index) => (
-                  <AccordionItem
-                    key={index}
-                    value={`item-${index}`}
-                    className="glass border-primary/10 rounded-2xl px-6 overflow-hidden"
-                  >
-                    <AccordionTrigger className="text-left hover:no-underline py-6">
-                      <span className="font-bold text-lg">{faq.pregunta}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-6">
-                      {faq.respuesta}
-                      {faq.pregunta.includes("voluntario") && (
-                        <Link href="/admision" className="block mt-3 text-primary font-medium hover:underline">
-                          Ver proceso de admisión →
-                        </Link>
-                      )}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-
-              {/* Nota adicional */}
-              <Card className="mt-8 glass-strong border-primary/20 bg-gradient-to-r from-amber-500/10 to-red-800/10">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <AlertCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold mb-2">¿No encontraste lo que buscabas?</h3>
-                    <p className="text-muted-foreground text-sm">
-                      Si tu pregunta no está aquí, no dudes en contactarnos directamente. Estamos disponibles para
-                      ayudarte con cualquier consulta adicional.
-                    </p>
+                {formState === "sent" ? (
+                  <div className="text-center py-16 space-y-4">
+                    <CheckCircle2 className="w-12 h-12 text-red-500 mx-auto" />
+                    <SiteText as="h4" contentKey="contacto.form.sent.title" fallback="Mensaje enviado" className="text-xl font-bold text-white" />
+                    <SiteText as="p" contentKey="contacto.form.sent.text" fallback="Te responderemos en un máximo de 48 horas hábiles." className="text-zinc-400" />
+                    <Button onClick={() => setFormState("idle")} variant="outline" className="border-zinc-700 text-zinc-300 rounded-none mt-4">
+                      Enviar otro mensaje
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-zinc-400 mb-2">Nombre *</label>
+                        <input type="text" required className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors" placeholder="Tu nombre" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-zinc-400 mb-2">Apellido *</label>
+                        <input type="text" required className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors" placeholder="Tu apellido" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-2">Correo electrónico *</label>
+                      <input type="email" required className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors" placeholder="correo@ejemplo.com" />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-2">Teléfono</label>
+                      <input type="tel" className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors" placeholder="+51 999 999 999" />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-2">Asunto *</label>
+                      <select required className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+                        <option value="">Selecciona un asunto</option>
+                        <option value="admision">Información de admisión</option>
+                        <option value="visita">Coordinar visita al cuartel</option>
+                        <option value="capacitacion">Capacitación / Charlas</option>
+                        <option value="donacion">Donaciones</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-2">Mensaje *</label>
+                      <textarea required rows={5} className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors resize-none" placeholder="Escribe tu mensaje aquí..." />
+                    </div>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={formState === "sending"}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-6 rounded-none shadow-[0_0_40px_rgba(220,38,38,0.3)] hover:shadow-[0_0_60px_rgba(220,38,38,0.5)] transition-all duration-300 disabled:opacity-50"
+                    >
+                      {formState === "sending" ? (
+                        "Enviando..."
+                      ) : (
+                        <>Enviar mensaje <Send className="ml-2 h-4 w-4" /></>
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
+      {/* ─── MAPA PLACEHOLDER ─── */}
+      <section className="bg-black border-t border-zinc-800/50">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 py-16">
+          <div className="aspect-[21/9] border border-zinc-800/60 bg-zinc-900/30 flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(220,38,38,0.04)_0%,_transparent_60%)]" />
+            <div className="text-center space-y-3 relative z-10">
+              <MapPin className="w-10 h-10 text-red-500/40 mx-auto" />
+              <p className="text-zinc-500 font-mono text-sm">{companyConfig.location.address}</p>
+              <p className="text-zinc-600 text-xs">
+                {companyConfig.location.coordinates.lat}, {companyConfig.location.coordinates.lng}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── MOTTO ─── */}
+      <section className="bg-black py-12 border-t border-zinc-900">
+        <div className="container max-w-7xl mx-auto px-6 md:px-8 text-center">
+          <p className="text-zinc-700 text-sm font-mono tracking-[0.5em] uppercase">{companyConfig.motto}</p>
+        </div>
+      </section>
     </>
   )
 }

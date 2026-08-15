@@ -12,6 +12,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
+import { AnuncioRichEditor, isRichTextEmpty } from './anuncio-rich-editor'
 
 interface SectionOption {
   id: string
@@ -149,7 +150,7 @@ export function AnuncioComposer({
   })
 
   const handleSubmit = (mode: 'draft' | 'approval') => {
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || isRichTextEmpty(content)) {
       toast.error('Título y contenido son obligatorios')
       return
     }
@@ -231,12 +232,10 @@ export function AnuncioComposer({
 
           <div className="anuncio-composer-field">
             <label className="anuncio-composer-label">Contenido</label>
-            <textarea
-              className="anuncio-composer-textarea"
-              placeholder="Describa el anuncio con claridad. Puede usar saltos de línea para estructurar la información."
+            <AnuncioRichEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={6}
+              onChange={setContent}
+              placeholder="Describa el anuncio con claridad. Puede usar saltos de línea para estructurar la información."
             />
           </div>
 

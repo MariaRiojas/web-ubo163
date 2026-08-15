@@ -1,40 +1,31 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import {
-  emergencies,
-  emergencyVehicles,
-  emergencyTypes,
-  profiles,
-  serviceHours,
-  guardReservations,
-  incidents,
-  requests,
-} from '@/lib/db/schema'
-import { eq, desc, gte, sql, and, or, count } from 'drizzle-orm'
-
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS
-// ═══════════════════════════════════════════════════════════════════
+import { ddb, TABLE, ScanCommand, QueryCommand } from '@/lib/db/dynamodb'
+import type { Emergency } from '@/lib/db/schema/emergencies'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { ServiceHour } from '@/lib/db/schema/service-hours'
+import type { GuardReservation } from '@/lib/db/schema/guard-nocturna'
+import type { Incident } from '@/lib/db/schema/incidents'
+import type { Request } from '@/lib/db/schema/requests'
 
 export interface RecentEmergency {
-  id: number
+  id: string
   numeroParte: string
   tipo: string | null
   tipoDescripcion: string | null
   estado: string | null
-  fechaDespacho: Date | null
+  fechaDespacho: string | null
   direccion: string | null
   distrito: string | null
   alMandoTexto: string | null
-  vehiculos: string[]              // nombres o códigos
-  duracionMin: number | null       // minutos en escena
+  vehiculos: string[]
+  duracionMin: number | null
 }
 
 export interface CompanyMonthStats {
-  totalPersonnel: number           // profiles activos
+  totalPersonnel: number
   totalHoursThisMonth: number
   emergenciesThisMonth: number
-  guardiaThisMonth: number         // reservas nocturnas este mes
+  guardiaThisMonth: number
   openIncidents: number
   openRequests: number
 }
@@ -45,167 +36,136 @@ export interface JefaturaExtraData {
   emergencyCountByType: { tipo: string; count: number }[]
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════════
-
 export async function getJefaturaExtraData(): Promise<JefaturaExtraData> {
-  const now = new Date()
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const nowDate = new Date()
+  const firstOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).toISOString().slice(0, 10)
 
-  // ── Emergencias recientes (últimas 20) ────────────────────────
-  const emergencyRows = await db
-    .select({
-      em: emergencies,
-      tipoDescripcion: emergencyTypes.descripcion,
-    })
-    .from(emergencies)
-    .leftJoin(emergencyTypes, eq(emergencies.tipoEmergenciaId, emergencyTypes.id))
-    .orderBy(desc(emergencies.fechaDespacho))
-    .limit(20)
+  // Everything below is independent of everything else — one round-trip.
+  // The emergencies scan (used for the recent list + by-type breakdown) runs
+  // alongside the six COUNT/aggregate scans instead of before them.
+  const [
+    allEmg,
+    personnelCount,
+    emergenciesThisMonth,
+    guardiaThisMonth,
+    openIncidents,
+    openRequests,
+    hoursSum,
+  ] = await Promise.all([
+    // Recent emergencies (last 20 by date GSI)
+    ddb.send(new ScanCommand({
+      TableName: TABLE.emergencies,
+      Limit: 100,
+    })).then(r => {
+      const items = (r.Items ?? []) as Emergency[]
+      items.sort((a, b) => (b.fechaDespacho ?? '').localeCompare(a.fechaDespacho ?? ''))
+      return items
+    }),
 
-  // Vehículos por emergencia (batch)
-  const emergencyIds = emergencyRows.map((r) => r.em.id)
-  const vehiculosRows = emergencyIds.length > 0
-    ? await db
-        .select({
-          emergencyId: emergencyVehicles.emergencyId,
-          nombre: emergencyVehicles.nombreVehiculo,
-          codigo: emergencyVehicles.codigoVehiculo,
-        })
-        .from(emergencyVehicles)
-        .where(
-          sql`${emergencyVehicles.emergencyId} = ANY(ARRAY[${sql.raw(emergencyIds.join(','))}]::int[])`,
-        )
-    : []
+    // Personnel (activo + reserva)
+    ddb.send(new ScanCommand({
+      TableName: TABLE.profiles,
+      FilterExpression: '#st IN (:a, :r)',
+      ExpressionAttributeNames: { '#st': 'status' },
+      ExpressionAttributeValues: { ':a': 'activo', ':r': 'reserva' },
+      Select: 'COUNT',
+    })).then(r => r.Count ?? 0),
 
-  const vehiculosByEmergency = new Map<number, string[]>()
-  for (const v of vehiculosRows) {
-    const label = v.nombre ?? v.codigo
-    const arr = vehiculosByEmergency.get(v.emergencyId) ?? []
-    arr.push(label)
-    vehiculosByEmergency.set(v.emergencyId, arr)
-  }
+    // Emergencies this month
+    ddb.send(new ScanCommand({
+      TableName: TABLE.emergencies,
+      FilterExpression: '#d >= :from',
+      ExpressionAttributeNames: { '#d': 'date' },
+      ExpressionAttributeValues: { ':from': firstOfMonth },
+      Select: 'COUNT',
+    })).then(r => r.Count ?? 0),
 
-  const recentEmergencies: RecentEmergency[] = emergencyRows.map((r) => {
-    const despacho = r.em.fechaDespacho
-    const retorno = r.em.fechaRetorno
-    const duracionMin =
-      despacho && retorno
-        ? Math.round((new Date(retorno).getTime() - new Date(despacho).getTime()) / 60000)
-        : null
+    // Guard reservations this month
+    ddb.send(new ScanCommand({
+      TableName: TABLE.guardReservations,
+      FilterExpression: '#d >= :from AND #st = :activa',
+      ExpressionAttributeNames: { '#d': 'date', '#st': 'status' },
+      ExpressionAttributeValues: { ':from': firstOfMonth, ':activa': 'activa' },
+      Select: 'COUNT',
+    })).then(r => r.Count ?? 0),
+
+    // Open incidents
+    ddb.send(new ScanCommand({
+      TableName: TABLE.incidents,
+      FilterExpression: '#st IN (:p, :e)',
+      ExpressionAttributeNames: { '#st': 'status' },
+      ExpressionAttributeValues: { ':p': 'pendiente', ':e': 'en_proceso' },
+      Select: 'COUNT',
+    })).then(r => r.Count ?? 0),
+
+    // Open requests
+    ddb.send(new ScanCommand({
+      TableName: TABLE.requests,
+      FilterExpression: '#st IN (:p, :a, :e)',
+      ExpressionAttributeNames: { '#st': 'status' },
+      ExpressionAttributeValues: { ':p': 'pendiente', ':a': 'aprobada', ':e': 'en_proceso' },
+      Select: 'COUNT',
+    })).then(r => r.Count ?? 0),
+
+    // Hours this month (scan service-hours)
+    ddb.send(new ScanCommand({
+      TableName: TABLE.serviceHours,
+      FilterExpression: '#d >= :from',
+      ExpressionAttributeNames: { '#d': 'date' },
+      ExpressionAttributeValues: { ':from': firstOfMonth },
+      ProjectionExpression: 'hours',
+    })).then(r => {
+      const items = (r.Items ?? []) as ServiceHour[]
+      const total = items.reduce((acc, h) => acc + Number(h.hours ?? 0), 0)
+      return Math.round(total * 10) / 10
+    }),
+  ])
+
+  const emergencyRows = allEmg.slice(0, 20)
+
+  const recentEmergencies: RecentEmergency[] = emergencyRows.map(em => {
+    const despacho = em.fechaDespacho
+    const retorno = em.fechaRetorno
+    const duracionMin = despacho && retorno
+      ? Math.round((new Date(retorno).getTime() - new Date(despacho).getTime()) / 60000)
+      : null
+    const vehiculos = (em.vehiculos ?? []).map(v => v.nombreVehiculo ?? v.codigoVehiculo).filter(Boolean)
     return {
-      id: r.em.id,
-      numeroParte: r.em.numeroParte,
-      tipo: r.em.tipo,
-      tipoDescripcion: r.tipoDescripcion,
-      estado: r.em.estado,
-      fechaDespacho: r.em.fechaDespacho,
-      direccion: r.em.direccion,
-      distrito: r.em.distrito,
-      alMandoTexto: r.em.alMandoTexto,
-      vehiculos: vehiculosByEmergency.get(r.em.id) ?? [],
+      id: em.emergencyId,
+      numeroParte: em.numeroParte,
+      tipo: em.tipo ?? null,
+      tipoDescripcion: em.tipoEmergenciaDesc ?? null,
+      estado: em.estado ?? null,
+      fechaDespacho: em.fechaDespacho ?? null,
+      direccion: em.direccion ?? null,
+      distrito: em.distrito ?? null,
+      alMandoTexto: em.alMandoTexto ?? null,
+      vehiculos,
       duracionMin,
     }
   })
 
-  // ── Estadísticas del mes ──────────────────────────────────────
-  const [
-    personnelCount,
-    hoursSum,
-    emergenciesCount,
-    guardiaCount,
-    openIncidentsCount,
-    openRequestsCount,
-  ] = await Promise.all([
-    // Personal activo
-    db
-      .select({ count: count() })
-      .from(profiles)
-      .where(
-        or(
-          eq(profiles.status, 'activo'),
-          eq(profiles.status, 'reserva'),
-        ),
-      )
-      .then((r) => r[0]?.count ?? 0),
-
-    // Horas del mes
-    db
-      .select({ total: sql<string>`COALESCE(SUM(${serviceHours.hours}), 0)` })
-      .from(serviceHours)
-      .where(gte(serviceHours.date, firstOfMonth.toISOString().slice(0, 10)))
-      .then((r) => Math.round(Number(r[0]?.total ?? 0) * 10) / 10),
-
-    // Emergencias del mes
-    db
-      .select({ count: count() })
-      .from(emergencies)
-      .where(gte(emergencies.fechaDespacho, firstOfMonth))
-      .then((r) => r[0]?.count ?? 0),
-
-    // Guardias del mes (reservas activas)
-    db
-      .select({ count: count() })
-      .from(guardReservations)
-      .where(
-        and(
-          gte(guardReservations.date, firstOfMonth.toISOString().slice(0, 10)),
-          eq(guardReservations.status, 'activa'),
-        ),
-      )
-      .then((r) => r[0]?.count ?? 0),
-
-    // Incidencias abiertas
-    db
-      .select({ count: count() })
-      .from(incidents)
-      .where(
-        or(eq(incidents.status, 'pendiente'), eq(incidents.status, 'en_proceso')),
-      )
-      .then((r) => r[0]?.count ?? 0),
-
-    // Solicitudes abiertas
-    db
-      .select({ count: count() })
-      .from(requests)
-      .where(
-        or(
-          eq(requests.status, 'pendiente'),
-          eq(requests.status, 'aprobada'),
-          eq(requests.status, 'en_proceso'),
-        ),
-      )
-      .then((r) => r[0]?.count ?? 0),
-  ])
-
-  // ── Emergencias por tipo (este mes) ──────────────────────────
-  const typeCountRows = await db
-    .select({
-      tipo: sql<string>`COALESCE(${emergencyTypes.descripcion}, ${emergencies.tipo}, 'Sin clasificar')`,
-      count: count(),
-    })
-    .from(emergencies)
-    .leftJoin(emergencyTypes, eq(emergencies.tipoEmergenciaId, emergencyTypes.id))
-    .where(gte(emergencies.fechaDespacho, firstOfMonth))
-    .groupBy(emergencyTypes.descripcion, emergencies.tipo)
-    .orderBy(desc(count()))
-    .limit(8)
-
-  const emergencyCountByType = typeCountRows.map((r) => ({
-    tipo: r.tipo,
-    count: r.count,
-  }))
+  // Emergency count by type
+  const monthEmg = allEmg.filter(e => (e.date ?? '') >= firstOfMonth)
+  const typeCount = new Map<string, number>()
+  for (const e of monthEmg) {
+    const tipo = e.tipoEmergenciaDesc ?? e.tipo ?? 'Sin clasificar'
+    typeCount.set(tipo, (typeCount.get(tipo) ?? 0) + 1)
+  }
+  const emergencyCountByType = Array.from(typeCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([tipo, count]) => ({ tipo, count }))
 
   return {
     recentEmergencies,
     monthStats: {
-      totalPersonnel: Number(personnelCount),
+      totalPersonnel: personnelCount,
       totalHoursThisMonth: hoursSum,
-      emergenciesThisMonth: Number(emergenciesCount),
-      guardiaThisMonth: Number(guardiaCount),
-      openIncidents: Number(openIncidentsCount),
-      openRequests: Number(openRequestsCount),
+      emergenciesThisMonth,
+      guardiaThisMonth,
+      openIncidents,
+      openRequests,
     },
     emergencyCountByType,
   }

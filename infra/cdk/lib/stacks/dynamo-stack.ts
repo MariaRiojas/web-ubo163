@@ -48,6 +48,7 @@ export class DynamoStack extends cdk.Stack {
   public readonly trainingCoursesTable: dynamodb.Table
   public readonly trainingProgressTable: dynamodb.Table
   public readonly trainingCertificatesTable: dynamodb.Table
+  public readonly libraryDocumentsTable: dynamodb.Table
 
   // CGBVP (integración scraper)
   public readonly emergenciesTable: dynamodb.Table
@@ -294,6 +295,16 @@ export class DynamoStack extends cdk.Stack {
       { name: 'certificateId', type: dynamodb.AttributeType.STRING }
     )
 
+    // PK=docId — biblioteca institucional de documentos
+    this.libraryDocumentsTable = table('LibraryDocumentsTable', 'library-documents',
+      { name: 'docId', type: dynamodb.AttributeType.STRING }
+    )
+    this.libraryDocumentsTable.addGlobalSecondaryIndex({
+      indexName: 'category-uploadedAt-index',
+      partitionKey: { name: 'category', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'uploadedAt', type: dynamodb.AttributeType.STRING },
+    })
+
     // ─────────────────────────────────────────────────────────────────────
     // CGBVP — integración scraper
     // ─────────────────────────────────────────────────────────────────────
@@ -387,6 +398,7 @@ export class DynamoStack extends cdk.Stack {
       this.trainingCoursesTable,
       this.trainingProgressTable,
       this.trainingCertificatesTable,
+      this.libraryDocumentsTable,
       this.emergenciesTable,
       this.emergencyCrewTable,
       this.cgbvpAttendanceTable,

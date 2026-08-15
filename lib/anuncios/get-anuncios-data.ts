@@ -1,17 +1,8 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import {
-  announcements,
-  announcementReads,
-  profiles,
-  sections,
-  type Announcement,
-} from '@/lib/db/schema'
-import { and, eq, or, desc, sql, inArray, isNull, not } from 'drizzle-orm'
-
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS DE SALIDA
-// ═══════════════════════════════════════════════════════════════════
+import { ddb, TABLE, GetCommand, QueryCommand, ScanCommand, BatchGetCommand } from '@/lib/db/dynamodb'
+import type { Announcement } from '@/lib/db/schema/announcements'
+import type { Profile } from '@/lib/db/schema/profiles'
+import type { Section } from '@/lib/db/schema/sections'
 
 export interface AnuncioView {
   id: string
@@ -20,9 +11,9 @@ export interface AnuncioView {
   priority: 'normal' | 'importante' | 'urgente'
   status: string
   isPinned: boolean
-  publishedAt: Date | null
-  expiresAt: Date | null
-  createdAt: Date
+  publishedAt: string | null
+  expiresAt: string | null
+  createdAt: string
   author: {
     id: string
     fullName: string
@@ -34,28 +25,16 @@ export interface AnuncioView {
     key: string
     name: string
   } | null
-  /** Audiencia serializada en lenguaje humano */
   audienceSummary: string[]
-  /** Para vista de buzón: si el efectivo ya leyó */
   isRead?: boolean
-  /** Para revisión: notas del revisor */
   reviewNotes?: string | null
-  reviewer?: {
-    fullName: string
-    grade: string
-  } | null
-  /** Info de destinatario directo (si aplica) */
-  directRecipient?: {
-    fullName: string
-  } | null
+  reviewer?: { fullName: string; grade: string } | null
+  directRecipient?: { fullName: string } | null
 }
 
 export interface AnunciosData {
-  /** Vista del efectivo: anuncios cuya audiencia lo incluye */
   buzon: AnuncioView[]
-  /** Vista del autor: sus propios anuncios (borradores, pendientes, aprobados, rechazados) */
   misAnuncios: AnuncioView[]
-  /** Vista del Primer Jefe: pendientes de aprobar */
   pendientesAprobacion: AnuncioView[]
   counts: {
     buzonUnread: number
@@ -66,14 +45,10 @@ export interface AnunciosData {
     pendientesTotal: number
   }
   capabilities: {
-    canCreate: boolean      // announcements.create_draft
-    canPublish: boolean     // announcements.publish (Primer Jefe)
+    canCreate: boolean
+    canPublish: boolean
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════
 
 const GRADE_LABELS: Record<string, string> = {
   postulante: 'Postulantes',
@@ -89,256 +64,230 @@ const GRADE_LABELS: Record<string, string> = {
 }
 
 function buildAudienceSummary(a: Announcement, directRecipientName?: string | null): string[] {
+  if (a.directToProfileId && directRecipientName) return [`Directo: ${directRecipientName}`]
   const tags: string[] = []
-  if (a.directToProfileId && directRecipientName) {
-    tags.push(`Directo: ${directRecipientName}`)
-    return tags
-  }
-  if (a.audienceAllBomberos) {
-    tags.push('Todos los bomberos activos')
-  }
-  if (a.audienceGrades && a.audienceGrades.length > 0) {
-    for (const g of a.audienceGrades) {
-      tags.push(GRADE_LABELS[g] ?? g)
-    }
-  }
+  if (a.audienceAllBomberos) tags.push('Todos los bomberos activos')
+  for (const g of a.audienceGrades ?? []) tags.push(GRADE_LABELS[g] ?? g)
   if (a.audienceAspirantes) tags.push('Aspirantes')
   if (a.audiencePostulantes) tags.push('Postulantes')
   if (tags.length === 0) tags.push('Sin audiencia definida')
   return tags
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// API PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════
+function matchesAudience(
+  a: Announcement,
+  profileId: string,
+  myGrade: string,
+  myStatus: string,
+): boolean {
+  if (a.directToProfileId === profileId) return true
+  const isActivo = myStatus === 'activo' || myStatus === 'reserva'
+  const isAspirante = myStatus === 'aspirante_en_curso'
+  const isPostulante = myStatus === 'postulante'
+  if (a.audienceAllBomberos && isActivo) return true
+  if (a.audienceAspirantes && isAspirante) return true
+  if (a.audiencePostulantes && isPostulante) return true
+  if ((a.audienceGrades ?? []).includes(myGrade)) return true
+  return false
+}
+
+async function enrichProfiles(
+  announcements: Announcement[],
+): Promise<{
+  authorsById: Map<string, Profile>
+  sectionsById: Map<string, Section>
+  extraProfilesById: Map<string, Profile>
+}> {
+  const authorIds = [...new Set(announcements.map(a => a.authorId))]
+  const sectionIds = [...new Set(announcements.map(a => a.originSectionId).filter(Boolean) as string[])]
+  const extraIds = [...new Set([
+    ...announcements.map(a => a.directToProfileId).filter(Boolean) as string[],
+    ...announcements.map(a => a.reviewedBy).filter(Boolean) as string[],
+  ])]
+
+  const [authorsResult, sectionsResult, extraResult] = await Promise.all([
+    authorIds.length > 0
+      ? ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.profiles]: {
+              Keys: authorIds.map(id => ({ profileId: id })),
+              ProjectionExpression: 'profileId, fullName, grade, codigoCgbvp',
+            },
+          },
+        }))
+      : Promise.resolve({ Responses: {} }),
+    sectionIds.length > 0
+      ? ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.sections]: {
+              Keys: sectionIds.map(id => ({ sectionId: id })),
+              ProjectionExpression: 'sectionId, #k, #n',
+              ExpressionAttributeNames: { '#k': 'key', '#n': 'name' },
+            },
+          },
+        }))
+      : Promise.resolve({ Responses: {} }),
+    extraIds.length > 0
+      ? ddb.send(new BatchGetCommand({
+          RequestItems: {
+            [TABLE.profiles]: {
+              Keys: extraIds.map(id => ({ profileId: id })),
+              ProjectionExpression: 'profileId, fullName, grade',
+            },
+          },
+        }))
+      : Promise.resolve({ Responses: {} }),
+  ])
+
+  const authorsById = new Map<string, Profile>()
+  for (const p of authorsResult.Responses?.[TABLE.profiles] ?? []) {
+    authorsById.set(p.profileId as string, p as Profile)
+  }
+  const sectionsById = new Map<string, Section>()
+  for (const s of sectionsResult.Responses?.[TABLE.sections] ?? []) {
+    sectionsById.set(s.sectionId as string, s as Section)
+  }
+  const extraProfilesById = new Map<string, Profile>()
+  for (const p of extraResult.Responses?.[TABLE.profiles] ?? []) {
+    extraProfilesById.set(p.profileId as string, p as Profile)
+  }
+
+  return { authorsById, sectionsById, extraProfilesById }
+}
+
+function toView(
+  a: Announcement,
+  authorsById: Map<string, Profile>,
+  sectionsById: Map<string, Section>,
+  extraProfilesById: Map<string, Profile>,
+  options: { isRead?: boolean; profileId: string } = { profileId: '' },
+): AnuncioView {
+  const author = authorsById.get(a.authorId)
+  const section = a.originSectionId ? sectionsById.get(a.originSectionId) : null
+  const directRecipient = a.directToProfileId ? extraProfilesById.get(a.directToProfileId) : null
+  const reviewer = a.reviewedBy ? extraProfilesById.get(a.reviewedBy) : null
+  return {
+    id: a.announcementId,
+    title: a.title,
+    content: a.content,
+    priority: a.priority,
+    status: a.status,
+    isPinned: a.isPinned,
+    publishedAt: a.publishedAt ?? null,
+    expiresAt: a.expiresAt ?? null,
+    createdAt: a.createdAt,
+    author: {
+      id: a.authorId,
+      fullName: author?.fullName ?? '',
+      grade: author?.grade ?? '',
+      codigoCgbvp: author?.codigoCgbvp ?? null,
+    },
+    originSection: section
+      ? { id: section.sectionId, key: section.key, name: section.name }
+      : null,
+    audienceSummary: buildAudienceSummary(a, directRecipient?.fullName),
+    isRead: options.isRead,
+    reviewNotes: a.reviewNotes ?? null,
+    reviewer: reviewer ? { fullName: reviewer.fullName, grade: reviewer.grade } : null,
+    directRecipient: directRecipient ? { fullName: directRecipient.fullName } : null,
+  }
+}
 
 export async function getAnunciosData(
   profileId: string,
   capabilities: { canCreate: boolean; canPublish: boolean },
 ): Promise<AnunciosData> {
-  // Perfil del usuario actual
-  const me = await db.query.profiles.findFirst({ where: eq(profiles.id, profileId) })
-  if (!me) throw new Error('Profile not found')
-
+  const { Item: profileItem } = await ddb.send(new GetCommand({
+    TableName: TABLE.profiles,
+    Key: { profileId },
+  }))
+  if (!profileItem) throw new Error('Profile not found')
+  const me = profileItem as Profile
   const myGrade = me.grade
   const myStatus = me.status
-  const isPostulante = myStatus === 'postulante'
-  const isAspirante = myStatus === 'aspirante_en_curso'
-  const isActivo = myStatus === 'activo' || myStatus === 'reserva'
+  const nowIso = new Date().toISOString()
 
-  // ── Query reusable para JOIN con autor, sección y destinatario ───
-  type BaseRow = {
-    a: Announcement
-    author: {
-      id: string
-      fullName: string
-      grade: string
-      codigoCgbvp: string | null
-    }
-    sectionKey: string | null
-    sectionName: string | null
-    directName: string | null
-    reviewerName: string | null
-    reviewerGrade: string | null
-  }
+  // Parallel: scan approved for buzón, scan by author, query pending for jefe
+  const [approvedResult, authorResult, pendingResult] = await Promise.all([
+    ddb.send(new QueryCommand({
+      TableName: TABLE.announcements,
+      IndexName: 'status-createdAt-index',
+      KeyConditionExpression: '#st = :aprobado',
+      ExpressionAttributeNames: { '#st': 'status' },
+      ExpressionAttributeValues: { ':aprobado': 'aprobado' },
+      ScanIndexForward: false,
+      Limit: 100,
+    })),
+    capabilities.canCreate
+      ? ddb.send(new ScanCommand({
+          TableName: TABLE.announcements,
+          FilterExpression: 'authorId = :pid',
+          ExpressionAttributeValues: { ':pid': profileId },
+          Limit: 100,
+        }))
+      : Promise.resolve({ Items: [] }),
+    capabilities.canPublish
+      ? ddb.send(new QueryCommand({
+          TableName: TABLE.announcements,
+          IndexName: 'status-createdAt-index',
+          KeyConditionExpression: '#st = :pend',
+          ExpressionAttributeNames: { '#st': 'status' },
+          ExpressionAttributeValues: { ':pend': 'pendiente_aprobacion' },
+          ScanIndexForward: false,
+          Limit: 50,
+        }))
+      : Promise.resolve({ Items: [] }),
+  ])
 
-  async function querySelect(whereClause: any): Promise<BaseRow[]> {
-    const directAlias = profiles
-    const reviewerAlias = profiles
-    // Drizzle no soporta múltiples aliases del mismo tabla sin alias manual,
-    // así que hacemos dos queries separadas si hace falta — aquí simplificamos
-    // omitiendo reviewer/direct por ahora y los resolvemos después.
-    const rows = await db
-      .select({
-        a: announcements,
-        author: {
-          id: profiles.id,
-          fullName: profiles.fullName,
-          grade: profiles.grade,
-          codigoCgbvp: profiles.codigoCgbvp,
-        },
-        sectionKey: sections.key,
-        sectionName: sections.name,
-      })
-      .from(announcements)
-      .innerJoin(profiles, eq(announcements.authorId, profiles.id))
-      .leftJoin(sections, eq(announcements.originSectionId, sections.id))
-      .where(whereClause)
-      .orderBy(desc(announcements.isPinned), desc(announcements.publishedAt), desc(announcements.createdAt))
-      .limit(100)
+  // Filter approved announcements for buzón (audience + not expired)
+  const allApproved = (approvedResult.Items ?? []) as Announcement[]
+  const buzonRaw = allApproved.filter(a => {
+    if (a.expiresAt && a.expiresAt < nowIso) return false
+    return matchesAudience(a, profileId, myGrade, myStatus)
+  })
 
-    return rows.map((r) => ({
-      ...r,
-      directName: null,
-      reviewerName: null,
-      reviewerGrade: null,
-    }))
-  }
+  // Sort: pinned first, then by publishedAt desc
+  buzonRaw.sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+    return (b.publishedAt ?? b.createdAt).localeCompare(a.publishedAt ?? a.createdAt)
+  })
 
-  // Resolver nombres de destinatarios directos y revisores en un solo batch
-  async function enrichBatch(rows: BaseRow[]): Promise<BaseRow[]> {
-    const profileIds = new Set<string>()
-    for (const r of rows) {
-      if (r.a.directToProfileId) profileIds.add(r.a.directToProfileId)
-      if (r.a.reviewedBy) profileIds.add(r.a.reviewedBy)
-    }
-    if (profileIds.size === 0) return rows
+  const misAnunciosRaw = (authorResult.Items ?? []) as Announcement[]
+  misAnunciosRaw.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-    const extra = await db
-      .select({
-        id: profiles.id,
-        fullName: profiles.fullName,
-        grade: profiles.grade,
-      })
-      .from(profiles)
-      .where(inArray(profiles.id, Array.from(profileIds)))
+  const pendRaw = (pendingResult.Items ?? []) as Announcement[]
+  pendRaw.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-    const byId = new Map(extra.map((p) => [p.id, p]))
-    return rows.map((r) => ({
-      ...r,
-      directName: r.a.directToProfileId ? (byId.get(r.a.directToProfileId)?.fullName ?? null) : null,
-      reviewerName: r.a.reviewedBy ? (byId.get(r.a.reviewedBy)?.fullName ?? null) : null,
-      reviewerGrade: r.a.reviewedBy ? (byId.get(r.a.reviewedBy)?.grade ?? null) : null,
-    }))
-  }
+  // Enrich with profile/section data
+  const allAnnouncements = [...buzonRaw, ...misAnunciosRaw, ...pendRaw]
+  const { authorsById, sectionsById, extraProfilesById } = await enrichProfiles(allAnnouncements)
 
-  function toView(
-    row: BaseRow,
-    options: { isRead?: boolean } = {},
-  ): AnuncioView {
-    const a = row.a
-    return {
-      id: a.id,
-      title: a.title,
-      content: a.content,
-      priority: a.priority as 'normal' | 'importante' | 'urgente',
-      status: a.status,
-      isPinned: a.isPinned,
-      publishedAt: a.publishedAt,
-      expiresAt: a.expiresAt,
-      createdAt: a.createdAt ?? new Date(),
-      author: row.author,
-      originSection: row.sectionKey && row.sectionName
-        ? { id: a.originSectionId!, key: row.sectionKey, name: row.sectionName }
-        : null,
-      audienceSummary: buildAudienceSummary(a, row.directName),
-      isRead: options.isRead,
-      reviewNotes: a.reviewNotes,
-      reviewer: row.reviewerName
-        ? { fullName: row.reviewerName, grade: row.reviewerGrade ?? '' }
-        : null,
-      directRecipient: row.directName ? { fullName: row.directName } : null,
-    }
-  }
+  // Read tracking: reads are stored as string[] on each announcement item
+  const buzon = buzonRaw.map(a => {
+    const isRead = (a.reads ?? []).includes(profileId)
+    return toView(a, authorsById, sectionsById, extraProfilesById, { isRead, profileId })
+  })
+  const buzonUnread = buzon.filter(a => !a.isRead).length
 
-  // ═══════════════════════════════════════════════════════════════════
-  // VISTA 1: BUZÓN DEL EFECTIVO
-  // ═══════════════════════════════════════════════════════════════════
-
-  // Condiciones de audiencia:
-  // - Anuncio aprobado
-  // - No expirado
-  // - Cumple al menos una condición:
-  //   * directToProfileId = me
-  //   * audienceAllBomberos = true Y me es activo/reserva
-  //   * me es postulante y audiencePostulantes = true
-  //   * me es aspirante y audienceAspirantes = true
-  //   * mi grado está en audienceGrades
-
-  const audienceConditions = [
-    eq(announcements.directToProfileId, profileId),
-  ]
-  if (isActivo) {
-    audienceConditions.push(eq(announcements.audienceAllBomberos, true))
-  }
-  if (isAspirante) {
-    audienceConditions.push(eq(announcements.audienceAspirantes, true))
-  }
-  if (isPostulante) {
-    audienceConditions.push(eq(announcements.audiencePostulantes, true))
-  }
-  // Grado específico — usamos ANY para array
-  audienceConditions.push(
-    sql`${myGrade} = ANY(${announcements.audienceGrades})`,
+  const misAnuncios = misAnunciosRaw.map(a =>
+    toView(a, authorsById, sectionsById, extraProfilesById, { profileId }),
   )
-
-  const now = new Date()
-  const buzonRowsRaw = await querySelect(
-    and(
-      eq(announcements.status, 'aprobado'),
-      or(
-        isNull(announcements.expiresAt),
-        sql`${announcements.expiresAt} > ${now}`,
-      ),
-      or(...audienceConditions),
-    ),
-  )
-  const buzonRows = await enrichBatch(buzonRowsRaw)
-
-  // Marcas de lectura
-  const buzonIds = buzonRows.map((r) => r.a.id)
-  const myReads = buzonIds.length > 0
-    ? await db
-        .select({ announcementId: announcementReads.announcementId })
-        .from(announcementReads)
-        .where(
-          and(
-            eq(announcementReads.profileId, profileId),
-            inArray(announcementReads.announcementId, buzonIds),
-          ),
-        )
-    : []
-  const readSet = new Set(myReads.map((r) => r.announcementId))
-
-  const buzon = buzonRows.map((r) => toView(r, { isRead: readSet.has(r.a.id) }))
-  const buzonUnread = buzon.filter((a) => !a.isRead).length
-
-  // ═══════════════════════════════════════════════════════════════════
-  // VISTA 2: MIS ANUNCIOS (como autor)
-  // ═══════════════════════════════════════════════════════════════════
-
-  let misAnuncios: AnuncioView[] = []
   const myCounts = {
-    misBorradores: 0,
-    misPendientes: 0,
-    misAprobados: 0,
-    misRechazados: 0,
-  }
-  if (capabilities.canCreate) {
-    const misRowsRaw = await querySelect(eq(announcements.authorId, profileId))
-    const misRows = await enrichBatch(misRowsRaw)
-    misAnuncios = misRows.map((r) => toView(r))
-
-    for (const a of misAnuncios) {
-      if (a.status === 'borrador') myCounts.misBorradores++
-      else if (a.status === 'pendiente_aprobacion') myCounts.misPendientes++
-      else if (a.status === 'aprobado') myCounts.misAprobados++
-      else if (a.status === 'rechazado') myCounts.misRechazados++
-    }
+    misBorradores: misAnuncios.filter(a => a.status === 'borrador').length,
+    misPendientes: misAnuncios.filter(a => a.status === 'pendiente_aprobacion').length,
+    misAprobados: misAnuncios.filter(a => a.status === 'aprobado').length,
+    misRechazados: misAnuncios.filter(a => a.status === 'rechazado').length,
   }
 
-  // ═══════════════════════════════════════════════════════════════════
-  // VISTA 3: PENDIENTES DE APROBACIÓN (Primer Jefe)
-  // ═══════════════════════════════════════════════════════════════════
-
-  let pendientesAprobacion: AnuncioView[] = []
-  if (capabilities.canPublish) {
-    const pendRowsRaw = await querySelect(
-      eq(announcements.status, 'pendiente_aprobacion'),
-    )
-    const pendRows = await enrichBatch(pendRowsRaw)
-    pendientesAprobacion = pendRows.map((r) => toView(r))
-  }
+  const pendientesAprobacion = pendRaw.map(a =>
+    toView(a, authorsById, sectionsById, extraProfilesById, { profileId }),
+  )
 
   return {
     buzon,
     misAnuncios,
     pendientesAprobacion,
-    counts: {
-      buzonUnread,
-      ...myCounts,
-      pendientesTotal: pendientesAprobacion.length,
-    },
+    counts: { buzonUnread, ...myCounts, pendientesTotal: pendientesAprobacion.length },
     capabilities,
   }
 }

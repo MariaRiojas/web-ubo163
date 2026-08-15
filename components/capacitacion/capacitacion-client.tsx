@@ -113,15 +113,19 @@ export function CapacitacionClient({
       </section>
 
       {/* ESBAS */}
-      {data.esbas && (
+      {data.esbasModules.length > 0 && (
         <section className="cap-section">
           <div className="cap-section-header">
             <h2 className="cap-section-title">
               <GraduationCap className="w-5 h-5" strokeWidth={1.6} style={{ color: 'var(--brass)' }} />
-              Curso ESBAS
+              Escuela Básica de Bomberos (ESBAS)
             </h2>
           </div>
-          <EsbasCard esbas={data.esbas} promotionOverride={esbasPromotionFromProfile} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {data.esbasModules.map((esbas) => (
+              <EsbasCard key={esbas.id} esbas={esbas} promotionOverride={esbasPromotionFromProfile} />
+            ))}
+          </div>
         </section>
       )}
 
@@ -390,12 +394,8 @@ function EsbasCard({
         <Shield strokeWidth={0.8} />
       </div>
       <div className="cap-esbas-body">
-        <div className="cap-esbas-meta">CURSO FUNDACIONAL DEL CGBVP</div>
-        <h3 className="cap-esbas-title">Escuela Básica de Bomberos (ESBAS)</h3>
-        <p className="cap-esbas-desc">
-          Obligatorio para postulantes y aspirantes. Disponible de forma libre para bomberos
-          que deseen repasar los fundamentos del servicio voluntario.
-        </p>
+        <div className="cap-esbas-meta">ESBAS · {esbas.moduleLabel}</div>
+        <h3 className="cap-esbas-title">{esbas.title}</h3>
 
         <div className="cap-esbas-stats">
           <div className="cap-esbas-stat">

@@ -4,16 +4,18 @@
  */
 import type { Page } from 'puppeteer'
 import type * as cheerio from 'cheerio'
-import { db, emergencies, emergencyVehicles, emergencyTypes, hiredDrivers, profiles } from '../db'
-import { eq, and, ilike, sql } from 'drizzle-orm'
+import { ddb, TABLE, GetCommand, PutCommand, ScanCommand, now } from '../db'
+import type { Profile } from '../../../lib/db/schema/profiles'
 import { parseHtml, clean, parseFecha, toInt } from '../utils'
-import { log, sleep, ensureSession } from '../browser'
+import { log, sleep, ensureSession, login } from '../browser'
+
+const stripAcc = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 const URL_PARTES = 'http://www.bomberosperu.gob.pe/extranet/depa/ceem/partesycomi/CEEMParteComiLis.asp'
 
 const VEHICULOS_CIA: Record<string, string> = {
-  '0570': 'RES-150', '1288': 'M150-1', '1377': 'AMB-150',
-  '1544': 'M150-3', '1737': 'RESLIG-150', '2002': 'CIST-150',
+  '1104': 'AMB-163', '1304': 'M163-1', '0986': 'RES-163',
+  '0605': 'AUX-163',
 }
 
 const DISTRITOS_CONOCIDOS = [
@@ -25,34 +27,39 @@ const DISTRITOS_CONOCIDOS = [
 
 function extraerDistrito(direccion: string | null): string | null {
   if (!direccion) return null
-  const texto = direccion.replace(/\s+/g, ' ').trim().toUpperCase()
-  return DISTRITOS_CONOCIDOS.find((d) => texto.endsWith(d)) ?? null
+  const texto = stripAcc(direccion.replace(/\s+/g, ' ').trim().toUpperCase())
+  // Buscar el distrito conocido que aparezca en cualquier parte de la dirección
+  // (antes solo matcheaba si estaba al final → muchos partes quedaban "sin distrito").
+  // Se prefiere el nombre más largo para evitar falsos positivos (p. ej. "LIMA").
+  let mejor: string | null = null
+  let mejorLen = 0
+  for (const d of DISTRITOS_CONOCIDOS) {
+    const dn = stripAcc(d)
+    if (texto.includes(dn) && dn.length > mejorLen) { mejor = d; mejorLen = dn.length }
+  }
+  return mejor
 }
 
+/** Busca profileId por nombre usando ScanCommand con contains (case-sensitive, nombres en mayúsculas) */
 async function buscarBomberoAlMando(texto: string | null): Promise<{ id: string | null; texto: string | null }> {
   if (!texto || texto === '--') return { id: null, texto: null }
-  const limpio = texto.replace(/\s+/g, ' ').trim()
+  const limpio = texto.replace(/\s+/g, ' ').trim().toUpperCase()
   const palabras = limpio.split(' ')
   if (palabras.length < 2) return { id: null, texto: limpio }
 
   for (let i = 1; i < palabras.length - 1; i++) {
     const candidato = `${palabras[i]} ${palabras[i + 1]}`
-    const result = await db.query.profiles.findFirst({
-      where: ilike(profiles.fullName, `%${candidato}%`),
-      columns: { id: true },
-    })
-    if (result) return { id: result.id, texto: limpio }
+    const { Items } = await ddb.send(new ScanCommand({
+      TableName: TABLE.profiles,
+      FilterExpression: 'contains(fullName, :kw)',
+      ExpressionAttributeValues: { ':kw': candidato },
+      Limit: 50,
+    }))
+    if (Items && Items.length > 0) {
+      return { id: (Items[0] as Profile).profileId, texto: limpio }
+    }
   }
   return { id: null, texto: limpio }
-}
-
-async function buscarOCrearTipoEmergencia(descripcion: string | null): Promise<number | null> {
-  if (!descripcion || descripcion === '--') return null
-  const desc = descripcion.trim()
-  const existing = await db.query.emergencyTypes.findFirst({ where: eq(emergencyTypes.descripcion, desc) })
-  if (existing) return existing.id
-  const [created] = await db.insert(emergencyTypes).values({ descripcion: desc }).returning()
-  return created.id
 }
 
 function buildParams(dia: Date, codVehi: string) {
@@ -86,71 +93,110 @@ async function procesarFila(tds: cheerio.Cheerio<any>, $: cheerio.CheerioAPI, co
 
   const tipoParte = $(tds[1]).text().trim()
   const fechaDespacho = parseFecha($(tds[5]).text().trim())
-  const fechaSalida = parseFecha($(tds[6]).text().trim())
-  const fechaLlegada = parseFecha($(tds[7]).text().trim())
   const fechaRetorno = parseFecha($(tds[8]).text().trim())
-  const fechaIngreso = parseFecha($(tds[9]).text().trim())
   const tipoEmerg = limpiarCampo($(tds[10]).text().trim())
   const observacion = limpiarCampo($(tds[11]).text().trim())
   const direccion = limpiarCampo($(tds[12]).text().trim())
   const alMandoRaw = limpiarCampo($(tds[13]).text().trim())
-  const numEfectivos = toInt($(tds[14]).text().trim())
-  const pilotoNombre = limpiarCampo($(tds[15]).text().trim())
   const kmSalida = toInt($(tds[16]).text().trim())
   const kmIngreso = toInt($(tds[17]).text().trim())
+  const fechaIngreso = parseFecha($(tds[9]).text().trim())
 
   const { id: alMandoId, texto: alMandoTexto } = await buscarBomberoAlMando(alMandoRaw)
-  const tipoEmergenciaId = await buscarOCrearTipoEmergencia(tipoEmerg)
   const distrito = extraerDistrito(direccion)
   const estado = fechaIngreso ? 'CERRADO' : 'ATENDIENDO'
 
-  const [emergency] = await db.insert(emergencies).values({
-    numeroParte, tipo: tipoParte, estado, direccion, distrito,
-    fechaDespacho, fechaRetorno, observaciones: observacion,
-    alMandoId, alMandoTexto, tipoEmergenciaId,
-  }).onConflictDoUpdate({
-    target: emergencies.numeroParte,
-    set: {
-      estado, updatedAt: new Date(),
-      direccion: sql`COALESCE(EXCLUDED.direccion, ${emergencies.direccion})`,
-      fechaRetorno: sql`COALESCE(EXCLUDED.fecha_retorno, ${emergencies.fechaRetorno})`,
-      alMandoId: sql`COALESCE(EXCLUDED.al_mando_id, ${emergencies.alMandoId})`,
-      tipoEmergenciaId: sql`COALESCE(EXCLUDED.tipo_emergencia_id, ${emergencies.tipoEmergenciaId})`,
-      distrito: sql`COALESCE(EXCLUDED.distrito, ${emergencies.distrito})`,
+  const emergencyId = `EMG-${numeroParte}`
+  const date = fechaDespacho ? fechaDespacho.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+
+  // Get existing to merge vehicles
+  const { Item: existing } = await ddb.send(new GetCommand({
+    TableName: TABLE.emergencies,
+    Key: { emergencyId },
+  }))
+
+  const existingVehiculos: any[] = existing?.vehiculos ?? []
+  const alreadyHas = existingVehiculos.some((v: any) => v.codigoVehiculo === codTexto)
+  const vehiculos = alreadyHas
+    ? existingVehiculos.map((v: any) =>
+        v.codigoVehiculo === codTexto
+          ? { ...v, kmSalida: kmSalida ?? v.kmSalida, kmRetorno: kmIngreso ?? v.kmRetorno }
+          : v,
+      )
+    : [
+        ...existingVehiculos,
+        {
+          codigoVehiculo: codTexto,
+          nombreVehiculo: codTexto,
+          ...(kmSalida != null ? { kmSalida } : {}),
+          ...(kmIngreso != null ? { kmRetorno: kmIngreso } : {}),
+        },
+      ]
+
+  await ddb.send(new PutCommand({
+    TableName: TABLE.emergencies,
+    Item: {
+      emergencyId,
+      numeroParte,
+      tipo: tipoParte || undefined,
+      estado,
+      ...(fechaDespacho ? { fechaDespacho: fechaDespacho.toISOString() } : {}),
+      ...(fechaRetorno ? { fechaRetorno: fechaRetorno.toISOString() } : {}),
+      date,
+      direccion: direccion ?? existing?.direccion,
+      distrito: distrito ?? existing?.distrito,
+      alMandoId: alMandoId ?? existing?.alMandoId,
+      alMandoTexto: alMandoTexto ?? existing?.alMandoTexto,
+      tipoEmergenciaDesc: tipoEmerg ?? existing?.tipoEmergenciaDesc,
+      observaciones: observacion ?? existing?.observaciones,
+      vehiculos,
+      createdAt: existing?.createdAt ?? now(),
+      updatedAt: now(),
     },
-  }).returning()
+  }))
 
-  // Vincular vehículo
-  await db.insert(emergencyVehicles).values({
-    emergencyId: emergency.id, codigoVehiculo: codTexto, nombreVehiculo: codTexto,
-    kmSalida, kmRetorno: kmIngreso,
-  }).onConflictDoNothing()
+  return numeroParte
+}
 
-  return emergency
+/**
+ * Navega a una URL del CGBVP y devuelve el HTML decodificado con el charset
+ * correcto (Windows-1252). La página ASP del CGBVP está en Windows-1252, pero
+ * Chrome la asume UTF-8 y rompe los acentos (Á → "�"). Leyendo los bytes crudos
+ * de la respuesta y decodificándolos con Windows-1252 se preservan los acentos
+ * en origen (ej. "CAPITÁN" en vez de "CAPIT�N").
+ */
+async function gotoDecoded(page: Page, url: string): Promise<string> {
+  let resp: Awaited<ReturnType<Page['goto']>> = null
+  for (let intento = 0; intento < 3; intento++) {
+    resp = await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 })
+    await sleep(3000)
+    if (!page.url().includes('localhost') && !page.url().includes('ini.asp')) break
+    await ensureSession(page)
+  }
+  if (resp) {
+    try {
+      const buf = await resp.buffer()
+      return new TextDecoder('windows-1252').decode(buf)
+    } catch { /* si falla el buffer, se usa el DOM decodificado por el navegador */ }
+  }
+  return await page.content()
 }
 
 /** Scrape de partes del día actual por vehículo */
 export async function scrapePartesCia(page: Page) {
   const hoy = new Date()
-  let nuevos = 0, actualizados = 0
+  let procesados = 0
 
   for (const [codVehi, codTexto] of Object.entries(VEHICULOS_CIA)) {
     try {
       const params = buildParams(hoy, codVehi)
-      for (let intento = 0; intento < 3; intento++) {
-        await page.goto(`${URL_PARTES}?${params}`, { waitUntil: 'networkidle2', timeout: 30000 })
-        await sleep(3000)
-        if (!page.url().includes('localhost') && !page.url().includes('ini.asp')) break
-        await ensureSession(page)
-      }
-
-      const $ = parseHtml(await page.content())
+      const $ = parseHtml(await gotoDecoded(page, `${URL_PARTES}?${params}`))
       const filas = $('tr[onmouseover], tr[onMouseOver]')
 
       for (let i = 0; i < filas.length; i++) {
         const tds = $(filas[i]).find('td')
         const result = await procesarFila(tds, $, codTexto)
-        if (result) nuevos++
+        if (result) procesados++
       }
 
       log(`  ${codTexto}: ${filas.length} partes procesados`)
@@ -159,12 +205,13 @@ export async function scrapePartesCia(page: Page) {
     }
   }
 
-  log(`Partes CIA — ${nuevos} procesados`)
+  log(`Partes CIA — ${procesados} procesados`)
 }
 
 /** Scrape de rango de fechas (carga histórica) */
-export async function scrapePartesCiaRango(page: Page, fechaInicio: Date, fechaFin: Date) {
+export async function scrapePartesCiaRango(pageInicial: Page, fechaInicio: Date, fechaFin: Date) {
   let total = 0
+  let page = pageInicial
   const dia = new Date(fechaInicio)
 
   while (dia <= fechaFin) {
@@ -172,14 +219,7 @@ export async function scrapePartesCiaRango(page: Page, fechaInicio: Date, fechaF
     const params = buildParams(dia, '') // sin filtro de vehículo
 
     try {
-      for (let intento = 0; intento < 3; intento++) {
-        await page.goto(`${URL_PARTES}?${params}`, { waitUntil: 'networkidle2', timeout: 30000 })
-        await sleep(3000)
-        if (!page.url().includes('localhost') && !page.url().includes('ini.asp')) break
-        await ensureSession(page)
-      }
-
-      const $ = parseHtml(await page.content())
+      const $ = parseHtml(await gotoDecoded(page, `${URL_PARTES}?${params}`))
       const filas = $('tr[onmouseover], tr[onMouseOver]')
 
       for (let i = 0; i < filas.length; i++) {
@@ -192,6 +232,22 @@ export async function scrapePartesCiaRango(page: Page, fechaInicio: Date, fechaF
       log(`    ${filas.length} filas procesadas`)
     } catch (e) {
       log(`    ERROR ${dia.toLocaleDateString('es-PE')}: ${e}`)
+      // Recuperación del bug "Attempted to use detached Frame": el sitio ASP con
+      // frames desprende el frame al re-navegar y, sin esto, TODOS los días
+      // siguientes fallaban. Se recrea la página y se re-loguea para continuar.
+      if (/detached|Frame|Target closed|Session closed/i.test(String(e))) {
+        try {
+          const browser = page.browser()
+          const fresh = await browser.newPage()
+          await page.close().catch(() => {})
+          page = fresh
+          await login(page)
+          log('    ↻ página recreada y sesión restaurada tras frame desprendido')
+        } catch (re) {
+          log(`    No se pudo recuperar la sesión (se detiene el histórico): ${re}`)
+          break
+        }
+      }
     }
 
     dia.setDate(dia.getDate() + 1)

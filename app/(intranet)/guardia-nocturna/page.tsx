@@ -1,8 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { db } from '@/lib/db'
-import { profiles } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { ddb, TABLE, GetCommand } from '@/lib/db/dynamodb'
 import { getGuardiaData } from '@/lib/guardia-nocturna/get-guardia-data'
 import type { Permission } from '@/lib/auth/permissions'
 import { GuardiaNocturnaClient } from '@/components/guardia/guardia-client'
@@ -10,13 +8,15 @@ import { companyConfig } from '@/company.config'
 
 export const dynamic = 'force-dynamic'
 
-export default async function GuardiaNocturnaPage() {
+export default async function GuardiaNocturnaPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+  const params = await searchParams
   const session = await auth()
   if (!session?.user?.profileId) redirect('/login')
 
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.id, session.user.profileId),
-  })
+  const { Item: profile } = await ddb.send(new GetCommand({
+    TableName: TABLE.profiles,
+    Key: { profileId: session.user.profileId },
+  }))
   if (!profile) redirect('/login')
 
   const permissions = (session.user.permissions as Permission[]) ?? []
@@ -52,8 +52,9 @@ export default async function GuardiaNocturnaPage() {
     ? permissions.includes('guard.manage_male') || permissions.includes('guard.config_beds_male')
     : permissions.includes('guard.manage_female') || permissions.includes('guard.config_beds_female')
 
-  const data = await getGuardiaData(profile.id, {
+  const data = await getGuardiaData(profile.profileId as string, {
     gender: userGender,
+    date: params.date,
     canManage,
   })
 

@@ -1,39 +1,25 @@
 import 'server-only'
-import { db } from '@/lib/db'
-import {
-  guardDormitories,
-  guardBunks,
-  guardBedsV2,
-  guardReservations,
-  profiles,
-  type GuardBedV2,
-  type GuardReservation,
-  type Gender,
-} from '@/lib/db/schema'
-import { and, eq, gte, lte, desc, asc, sql } from 'drizzle-orm'
+import { ddb, TABLE, QueryCommand, ScanCommand, BatchGetCommand } from '@/lib/db/dynamodb'
+import type { GuardDormitory, GuardBunk, GuardBed, GuardReservation } from '@/lib/db/schema/guard-nocturna'
+import type { Profile } from '@/lib/db/schema/profiles'
 
 export type DormitoryGender = 'masculino' | 'femenino'
 
-// ═══════════════════════════════════════════════════════════════════
-// TIPOS DE SALIDA
-// ═══════════════════════════════════════════════════════════════════
-
 export interface BedWithReservation {
-  bed: GuardBedV2
+  bed: GuardBed
   reservation: {
-    id: string
+    date: string
     profileId: string
     profileName: string
     profileGrade: string
     profileCodigoCgbvp: string | null
     status: string
   } | null
-  /** true si es del usuario actual */
   isMine: boolean
 }
 
 export interface BunkWithBeds {
-  id: string
+  bunkId: string
   label: string
   displayOrder: number
   notes: string | null
@@ -46,14 +32,12 @@ export interface DormitorySnapshot {
   gender: DormitoryGender
   notes: string | null
   totalBeds: number
-  /** Camarotes con sus camas — ordenados por displayOrder */
   bunks: BunkWithBeds[]
-  /** Camas sueltas (sin camarote) — si existen */
   looseBeds: BedWithReservation[]
 }
 
 export interface DayReservationStats {
-  date: string         // ISO yyyy-mm-dd
+  date: string
   totalBeds: number
   reserved: number
   isFull: boolean
@@ -62,7 +46,7 @@ export interface DayReservationStats {
 
 export interface EfectivoStats {
   nextReservation: {
-    date: string                    // ISO
+    date: string
     bedNumber: number
     bunkLabel: string | null
     position: string | null
@@ -73,14 +57,13 @@ export interface EfectivoStats {
 }
 
 export interface JefeDashboardItem {
-  id: string
   date: string
   bedNumber: number
   bunkLabel: string | null
   position: string | null
   status: string
   profile: {
-    id: string
+    profileId: string
     fullName: string
     grade: string
     codigoCgbvp: string | null
@@ -88,31 +71,20 @@ export interface JefeDashboardItem {
 }
 
 export interface GuardiaData {
-  /** Dormitorio que corresponde al género del efectivo */
   dormitory: DormitorySnapshot
-  /** Fecha seleccionada para la vista del efectivo (default: hoy) */
   selectedDate: string
-  /** Estadísticas diarias del mes (para pintar el calendario) */
   monthStats: DayReservationStats[]
-  /** KPIs del efectivo */
   stats: EfectivoStats
-  /** Mes activo */
-  monthLabel: string             // "Mayo · 2026"
-  monthYear: string              // ISO "2026-05"
-  /** Para el Jefe de Guardia (si aplica): reservas próximas */
+  monthLabel: string
+  monthYear: string
   jefeUpcoming: JefeDashboardItem[] | null
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════
-
 function monthBoundsIso(year: number, month1Based: number): [string, string] {
-  const first = new Date(year, month1Based - 1, 1)
-  const last = new Date(year, month1Based, 0)
+  const last = new Date(year, month1Based, 0).getDate()
   return [
-    first.toISOString().slice(0, 10),
-    last.toISOString().slice(0, 10),
+    `${year}-${String(month1Based).padStart(2, '0')}-01`,
+    `${year}-${String(month1Based).padStart(2, '0')}-${String(last).padStart(2, '0')}`,
   ]
 }
 
@@ -121,147 +93,135 @@ const MESES_LARGOS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
-// ═══════════════════════════════════════════════════════════════════
-// API PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Trae todos los datos para la página de guardia nocturna desde el punto
- * de vista del efectivo. Si el usuario tiene manage_* para su género, el
- * server action luego puede mostrar también la vista del Jefe de Guardia.
- *
- * @param profileId ID del efectivo actual
- * @param opts.gender Género a consultar (normalmente viene de profile.gender)
- * @param opts.date Fecha seleccionada (ISO) — default hoy
- * @param opts.canManage Si el usuario es Jefe de Guardia de ese género
- */
 export async function getGuardiaData(
   profileId: string,
-  opts: {
-    gender: DormitoryGender
-    date?: string
-    canManage: boolean
-  },
+  opts: { gender: DormitoryGender; date?: string; canManage: boolean },
 ): Promise<GuardiaData | null> {
   const { gender, canManage } = opts
   const todayIso = new Date().toISOString().slice(0, 10)
   const selectedDate = opts.date ?? todayIso
 
-  // ── Dormitorio del género ────────────────────────────────────
-  const dormitory = await db.query.guardDormitories.findFirst({
-    where: and(eq(guardDormitories.gender, gender), eq(guardDormitories.active, true)),
-  })
+  // Find dormitory for this gender
+  const { Items: dormItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.guardDormitories,
+    FilterExpression: 'gender = :g AND active = :t',
+    ExpressionAttributeValues: { ':g': gender, ':t': true },
+  }))
+  const dormitory = (dormItems?.[0] ?? null) as GuardDormitory | null
   if (!dormitory) return null
 
-  // ── Camarotes ordenados ──────────────────────────────────────
-  const bunks = await db
-    .select()
-    .from(guardBunks)
-    .where(eq(guardBunks.dormitoryId, dormitory.id))
-    .orderBy(asc(guardBunks.displayOrder), asc(guardBunks.label))
+  const dormId = dormitory.dormId
 
-  // ── Camas del dormitorio ordenadas por número ────────────────
-  const beds = await db
-    .select()
-    .from(guardBedsV2)
-    .where(eq(guardBedsV2.dormitoryId, dormitory.id))
-    .orderBy(asc(guardBedsV2.number))
+  // Bunks + Beds + Day reservations in parallel
+  const [bunksResult, bedsResult, dayReservationsResult] = await Promise.all([
+    ddb.send(new QueryCommand({
+      TableName: TABLE.guardBunks,
+      KeyConditionExpression: 'dormId = :did',
+      ExpressionAttributeValues: { ':did': dormId },
+    })),
+    ddb.send(new ScanCommand({
+      TableName: TABLE.guardBeds,
+      FilterExpression: 'dormId = :did',
+      ExpressionAttributeValues: { ':did': dormId },
+    })),
+    ddb.send(new QueryCommand({
+      TableName: TABLE.guardReservations,
+      KeyConditionExpression: '#d = :date',
+      ExpressionAttributeNames: { '#d': 'date' },
+      ExpressionAttributeValues: { ':date': selectedDate },
+    })),
+  ])
 
-  // ── Reservas del día seleccionado (con datos del efectivo) ───
-  const dayReservations = await db
-    .select({
-      reservation: guardReservations,
-      profile: {
-        id: profiles.id,
-        fullName: profiles.fullName,
-        grade: profiles.grade,
-        codigoCgbvp: profiles.codigoCgbvp,
-      },
-    })
-    .from(guardReservations)
-    .innerJoin(profiles, eq(guardReservations.profileId, profiles.id))
-    .where(
-      and(
-        eq(guardReservations.date, selectedDate),
-        sql`${guardReservations.bedId} IN (
-          SELECT id FROM ${guardBedsV2} WHERE ${guardBedsV2.dormitoryId} = ${dormitory.id}
-        )`,
-      ),
-    )
+  const bunks = ((bunksResult.Items ?? []) as GuardBunk[]).sort((a, b) =>
+    a.displayOrder - b.displayOrder || a.label.localeCompare(b.label),
+  )
+  const beds = ((bedsResult.Items ?? []) as GuardBed[]).sort((a, b) => a.number - b.number)
 
-  const resByBedId = new Map<string, typeof dayReservations[number]>()
-  for (const r of dayReservations) {
-    resByBedId.set(r.reservation.bedId, r)
+  // Filter day reservations to only those in this dormitory
+  const bedIdsToDormBed = new Map<string, GuardBed>()
+  for (const bed of beds) bedIdsToDormBed.set(bed.bedId, bed)
+
+  const dayReservations = ((dayReservationsResult.Items ?? []) as GuardReservation[]).filter(r =>
+    r.dormId === dormId,
+  )
+
+  // Batch-get profile data for reservation holders
+  const reservationProfileIds = [...new Set(dayReservations.map(r => r.profileId))]
+  const profileMap = new Map<string, Profile>()
+  if (reservationProfileIds.length > 0) {
+    const chunkSize = 100
+    for (let i = 0; i < reservationProfileIds.length; i += chunkSize) {
+      const chunk = reservationProfileIds.slice(i, i + chunkSize)
+      const { Responses } = await ddb.send(new BatchGetCommand({
+        RequestItems: {
+          [TABLE.profiles]: {
+            Keys: chunk.map(pid => ({ profileId: pid })),
+            ProjectionExpression: 'profileId, fullName, grade, codigoCgbvp',
+          },
+        },
+      }))
+      for (const p of Responses?.[TABLE.profiles] ?? []) {
+        profileMap.set(p.profileId as string, p as Profile)
+      }
+    }
   }
 
-  // ── Componer las camas con info de reserva ───────────────────
-  const bedToWithReservation = (bed: GuardBedV2): BedWithReservation => {
-    const r = resByBedId.get(bed.id)
+  // Build reservation map by bedId
+  const resByBedId = new Map<string, GuardReservation & { profile: Profile | undefined }>()
+  for (const r of dayReservations) {
+    resByBedId.set(r.bedId, { ...r, profile: profileMap.get(r.profileId) })
+  }
+
+  const bedToWithReservation = (bed: GuardBed): BedWithReservation => {
+    const r = resByBedId.get(bed.bedId)
     if (!r) return { bed, reservation: null, isMine: false }
     return {
       bed,
       reservation: {
-        id: r.reservation.id,
-        profileId: r.profile.id,
-        profileName: r.profile.fullName,
-        profileGrade: r.profile.grade,
-        profileCodigoCgbvp: r.profile.codigoCgbvp,
-        status: r.reservation.status,
+        date: r.date,
+        profileId: r.profileId,
+        profileName: r.profile?.fullName ?? r.profileId,
+        profileGrade: r.profile?.grade ?? '',
+        profileCodigoCgbvp: r.profile?.codigoCgbvp ?? null,
+        status: r.status,
       },
-      isMine: r.profile.id === profileId,
+      isMine: r.profileId === profileId,
     }
   }
 
-  // Agrupar camas por camarote (respetando displayOrder)
-  const bunksWithBeds: BunkWithBeds[] = bunks.map((b) => ({
-    id: b.id,
+  // Build bunk groups
+  const bunksWithBeds: BunkWithBeds[] = bunks.map(b => ({
+    bunkId: b.bunkId,
     label: b.label,
     displayOrder: b.displayOrder,
-    notes: b.notes,
-    beds: beds
-      .filter((bed) => bed.bunkId === b.id)
-      .map(bedToWithReservation),
+    notes: b.notes ?? null,
+    beds: beds.filter(bed => bed.bunkId === b.bunkId).map(bedToWithReservation),
   }))
-
-  const looseBeds = beds
-    .filter((bed) => bed.bunkId === null)
-    .map(bedToWithReservation)
+  const looseBeds = beds.filter(bed => !bed.bunkId).map(bedToWithReservation)
 
   const dormitorySnapshot: DormitorySnapshot = {
-    id: dormitory.id,
+    id: dormId,
     name: dormitory.name,
-    gender: dormitory.gender as DormitoryGender,
-    notes: dormitory.notes,
+    gender: dormitory.gender,
+    notes: dormitory.notes ?? null,
     totalBeds: beds.length,
     bunks: bunksWithBeds,
     looseBeds,
   }
 
-  // ── Estadísticas diarias del mes (para calendar) ─────────────
-  const selectedYear = new Date(selectedDate).getFullYear()
-  const selectedMonth = new Date(selectedDate).getMonth() + 1
+  // Monthly stats
+  const selectedYear = parseInt(selectedDate.slice(0, 4))
+  const selectedMonth = parseInt(selectedDate.slice(5, 7))
   const [firstOfMonth, lastOfMonth] = monthBoundsIso(selectedYear, selectedMonth)
 
-  const monthReservations = await db
-    .select({
-      date: guardReservations.date,
-      bedId: guardReservations.bedId,
-      profileId: guardReservations.profileId,
-      status: guardReservations.status,
-    })
-    .from(guardReservations)
-    .where(
-      and(
-        gte(guardReservations.date, firstOfMonth),
-        lte(guardReservations.date, lastOfMonth),
-        sql`${guardReservations.bedId} IN (
-          SELECT id FROM ${guardBedsV2} WHERE ${guardBedsV2.dormitoryId} = ${dormitory.id}
-        )`,
-        sql`${guardReservations.status} != 'cancelada'`,
-      ),
-    )
+  const { Items: monthResItems } = await ddb.send(new ScanCommand({
+    TableName: TABLE.guardReservations,
+    FilterExpression: '#d >= :from AND #d <= :to AND dormId = :did AND #st <> :cancelled',
+    ExpressionAttributeNames: { '#d': 'date', '#st': 'status' },
+    ExpressionAttributeValues: { ':from': firstOfMonth, ':to': lastOfMonth, ':did': dormId, ':cancelled': 'cancelada' },
+  }))
+  const monthReservations = (monthResItems ?? []) as GuardReservation[]
 
-  // Agrupar por día
   const reservationsByDate = new Map<string, { count: number; hasMine: boolean }>()
   for (const r of monthReservations) {
     const curr = reservationsByDate.get(r.date) ?? { count: 0, hasMine: false }
@@ -270,10 +230,9 @@ export async function getGuardiaData(
     reservationsByDate.set(r.date, curr)
   }
 
-  // Construir un array con todas las fechas del mes
   const lastDayOfMonth = new Date(selectedYear, selectedMonth, 0).getDate()
+  const availableBedsCount = beds.filter(b => b.status !== 'indisponible').length
   const monthStats: DayReservationStats[] = []
-  const availableBedsCount = beds.filter((b) => b.status !== 'indisponible').length
   for (let day = 1; day <= lastDayOfMonth; day++) {
     const dateIso = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const stats = reservationsByDate.get(dateIso) ?? { count: 0, hasMine: false }
@@ -286,124 +245,105 @@ export async function getGuardiaData(
     })
   }
 
-  // ── KPIs del efectivo ────────────────────────────────────────
-  // Próxima reserva del efectivo
-  const upcomingMine = await db
-    .select({
-      reservation: guardReservations,
-      bed: guardBedsV2,
-      bunk: guardBunks,
-    })
-    .from(guardReservations)
-    .innerJoin(guardBedsV2, eq(guardReservations.bedId, guardBedsV2.id))
-    .leftJoin(guardBunks, eq(guardBedsV2.bunkId, guardBunks.id))
-    .where(
-      and(
-        eq(guardReservations.profileId, profileId),
-        gte(guardReservations.date, todayIso),
-        sql`${guardReservations.status} IN ('activa')`,
-      ),
-    )
-    .orderBy(asc(guardReservations.date))
-    .limit(1)
-
-  const nextRes = upcomingMine[0]
-  const nextReservation = nextRes
-    ? {
-        date: nextRes.reservation.date,
-        bedNumber: nextRes.bed.number,
-        bunkLabel: nextRes.bunk?.label ?? null,
-        position: nextRes.bed.position,
-      }
-    : null
-
-  // Cumplidas en el mes en curso (usa la fecha real de hoy, no la seleccionada)
+  // KPIs — use profileId-index GSI to query by profileId
   const realToday = new Date()
   const realYear = realToday.getFullYear()
   const realMonth = realToday.getMonth() + 1
   const [firstReal, lastReal] = monthBoundsIso(realYear, realMonth)
 
-  const [completedRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(guardReservations)
-    .where(
-      and(
-        eq(guardReservations.profileId, profileId),
-        gte(guardReservations.date, firstReal),
-        lte(guardReservations.date, lastReal),
-        eq(guardReservations.status, 'cumplida'),
-      ),
-    )
+  const { Items: myResItems } = await ddb.send(new QueryCommand({
+    TableName: TABLE.guardReservations,
+    IndexName: 'profileId-index',
+    KeyConditionExpression: 'profileId = :pid',
+    ExpressionAttributeValues: { ':pid': profileId },
+  }))
+  const myReservations = (myResItems ?? []) as GuardReservation[]
 
-  // Pendientes (reservas activas futuras o del día)
-  const [pendingRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(guardReservations)
-    .where(
-      and(
-        eq(guardReservations.profileId, profileId),
-        gte(guardReservations.date, todayIso),
-        eq(guardReservations.status, 'activa'),
-      ),
-    )
+  const completedThisMonth = myReservations.filter(r =>
+    r.status === 'cumplida' && r.date >= firstReal && r.date <= lastReal,
+  ).length
+  const pendingReservations = myReservations.filter(r =>
+    r.status === 'activa' && r.date >= todayIso,
+  ).length
 
-  const completedThisMonth = Number(completedRow?.count ?? 0)
-  const pendingReservations = Number(pendingRow?.count ?? 0)
-  // Cada guardia nocturna = 12 horas (20h–08h). Horas acreditadas del mes.
-  const hoursCreditedThisMonth = completedThisMonth * 12
+  const upcoming = myReservations.filter(r => r.status === 'activa' && r.date >= todayIso)
+  upcoming.sort((a, b) => a.date.localeCompare(b.date))
+  const nextRes = upcoming[0] ?? null
+
+  let nextReservation: EfectivoStats['nextReservation'] = null
+  if (nextRes) {
+    const bed = bedIdsToDormBed.get(nextRes.bedId)
+    const bunk = bed?.bunkId ? bunks.find(b => b.bunkId === bed.bunkId) : null
+    nextReservation = {
+      date: nextRes.date,
+      bedNumber: bed?.number ?? 0,
+      bunkLabel: bunk?.label ?? null,
+      position: bed?.position ?? null,
+    }
+  }
 
   const stats: EfectivoStats = {
     nextReservation,
     completedThisMonth,
     pendingReservations,
-    hoursCreditedThisMonth,
+    hoursCreditedThisMonth: completedThisMonth * 12,
   }
 
-  // ── Vista del Jefe de Guardia ────────────────────────────────
+  // Jefe dashboard
   let jefeUpcoming: JefeDashboardItem[] | null = null
   if (canManage) {
     const sevenDaysFromNow = new Date()
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
-    const sevenDaysIso = sevenDaysFromNow.toISOString().slice(0, 10)
-
     const threeDaysAgo = new Date()
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-    const threeDaysAgoIso = threeDaysAgo.toISOString().slice(0, 10)
 
-    const rows = await db
-      .select({
-        reservation: guardReservations,
-        bed: guardBedsV2,
-        bunk: guardBunks,
-        profile: {
-          id: profiles.id,
-          fullName: profiles.fullName,
-          grade: profiles.grade,
-          codigoCgbvp: profiles.codigoCgbvp,
-        },
-      })
-      .from(guardReservations)
-      .innerJoin(guardBedsV2, eq(guardReservations.bedId, guardBedsV2.id))
-      .leftJoin(guardBunks, eq(guardBedsV2.bunkId, guardBunks.id))
-      .innerJoin(profiles, eq(guardReservations.profileId, profiles.id))
-      .where(
-        and(
-          eq(guardBedsV2.dormitoryId, dormitory.id),
-          gte(guardReservations.date, threeDaysAgoIso),
-          lte(guardReservations.date, sevenDaysIso),
-        ),
-      )
-      .orderBy(asc(guardReservations.date), asc(guardBedsV2.number))
-
-    jefeUpcoming = rows.map((r) => ({
-      id: r.reservation.id,
-      date: r.reservation.date,
-      bedNumber: r.bed.number,
-      bunkLabel: r.bunk?.label ?? null,
-      position: r.bed.position,
-      status: r.reservation.status,
-      profile: r.profile,
+    const { Items: jefeResItems } = await ddb.send(new ScanCommand({
+      TableName: TABLE.guardReservations,
+      FilterExpression: '#d >= :from AND #d <= :to AND dormId = :did',
+      ExpressionAttributeNames: { '#d': 'date' },
+      ExpressionAttributeValues: {
+        ':from': threeDaysAgo.toISOString().slice(0, 10),
+        ':to': sevenDaysFromNow.toISOString().slice(0, 10),
+        ':did': dormId,
+      },
     }))
+    const jefeReservations = (jefeResItems ?? []) as GuardReservation[]
+    jefeReservations.sort((a, b) => a.date.localeCompare(b.date) || a.bedId.localeCompare(b.bedId))
+
+    const jefeProfileIds = [...new Set(jefeReservations.map(r => r.profileId))]
+    const jefeProfileMap = new Map<string, Profile>()
+    if (jefeProfileIds.length > 0) {
+      const { Responses } = await ddb.send(new BatchGetCommand({
+        RequestItems: {
+          [TABLE.profiles]: {
+            Keys: jefeProfileIds.map(pid => ({ profileId: pid })),
+            ProjectionExpression: 'profileId, fullName, grade, codigoCgbvp',
+          },
+        },
+      }))
+      for (const p of Responses?.[TABLE.profiles] ?? []) {
+        jefeProfileMap.set(p.profileId as string, p as Profile)
+      }
+    }
+
+    jefeUpcoming = jefeReservations.map(r => {
+      const bed = bedIdsToDormBed.get(r.bedId)
+      const bunk = bed?.bunkId ? bunks.find(b => b.bunkId === bed.bunkId) : null
+      const profile = jefeProfileMap.get(r.profileId)
+      return {
+        date: r.date,
+        bedNumber: bed?.number ?? 0,
+        bunkLabel: bunk?.label ?? null,
+        position: bed?.position ?? null,
+        status: r.status,
+        profile: {
+          profileId: r.profileId,
+          fullName: profile?.fullName ?? r.profileId,
+          grade: profile?.grade ?? '',
+          codigoCgbvp: profile?.codigoCgbvp ?? null,
+        },
+      }
+    })
   }
 
   return {

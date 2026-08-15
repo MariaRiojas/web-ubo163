@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { hasPermission, type Permission } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
-import { inventory, inventoryAttachments, INVENTORY_ATTACHMENT_TYPES } from '@/lib/db/schema'
+import { ddb, TABLE, GetCommand, QueryCommand, PutCommand, BatchGetCommand, generateId, now } from '@/lib/db/dynamodb'
+import { INVENTORY_ATTACHMENT_TYPES, type InventoryAttachment } from '@/lib/db/schema/inventory'
 import { getDownloadPresignedUrl } from '@/lib/storage/s3'
+import { writeAuditLog, auditActor } from '@/lib/audit/write-audit'
 
 /**
  * GET /api/inventory/[id]/attachments
@@ -36,35 +36,54 @@ export async function GET(
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
 
-  const { id } = await params
+  const { id: itemId } = await params
 
-  // El ítem debe existir
-  const item = await db.query.inventory.findFirst({
-    where: eq(inventory.id, id),
-    columns: { id: true },
-  })
-  if (!item) {
+  // Verificar que el ítem existe
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.inventory,
+    Key: { itemId },
+    ProjectionExpression: 'itemId',
+  }))
+  if (!Item) {
     return NextResponse.json({ error: 'Ítem no encontrado' }, { status: 404 })
   }
 
-  const attachments = await db.query.inventoryAttachments.findMany({
-    where: eq(inventoryAttachments.inventoryId, id),
-    orderBy: desc(inventoryAttachments.uploadedAt),
-    with: {
-      uploadedByProfile: { columns: { fullName: true } },
-    },
-  })
+  // Obtener todos los adjuntos del ítem (PK = itemId)
+  const { Items } = await ddb.send(new QueryCommand({
+    TableName: TABLE.inventoryAttachments,
+    KeyConditionExpression: 'itemId = :iid',
+    ExpressionAttributeValues: { ':iid': itemId },
+    ScanIndexForward: false,
+  }))
+  const attachments = (Items ?? []) as InventoryAttachment[]
+
+  // Obtener nombres de los uploader en batch si hay perfiles
+  const uploaderIds = [...new Set(attachments.map((a) => a.uploadedBy).filter(Boolean) as string[])]
+  const uploaderNames = new Map<string, string>()
+  if (uploaderIds.length > 0) {
+    const { Responses } = await ddb.send(new BatchGetCommand({
+      RequestItems: {
+        [TABLE.profiles]: {
+          Keys: uploaderIds.map((pid) => ({ profileId: pid })),
+          ProjectionExpression: 'profileId, fullName',
+        },
+      },
+    }))
+    for (const p of Responses?.[TABLE.profiles] ?? []) {
+      uploaderNames.set(p.profileId as string, p.fullName as string)
+    }
+  }
 
   // Generar URLs firmadas de descarga (válidas 1h)
   const withUrls = await Promise.all(
     attachments.map(async (a) => ({
-      id: a.id,
+      id: a.attachmentId,
       type: a.type,
       fileName: a.fileName,
       fileSizeBytes: a.fileSizeBytes,
       mimeType: a.mimeType,
       uploadedAt: a.uploadedAt,
-      uploadedBy: a.uploadedByProfile?.fullName ?? 'Desconocido',
+      uploadedBy: a.uploadedBy ? (uploaderNames.get(a.uploadedBy) ?? 'Desconocido') : 'Desconocido',
       notes: a.notes,
       downloadUrl: await getDownloadPresignedUrl(a.fileKey),
     }))
@@ -90,14 +109,16 @@ export async function POST(
     )
   }
 
-  const { id } = await params
+  const { id: itemId } = await params
 
-  // Validar ítem
-  const item = await db.query.inventory.findFirst({
-    where: eq(inventory.id, id),
-    columns: { id: true },
-  })
-  if (!item) {
+  // Validar ítem (traer nombre para la bitácora)
+  const { Item } = await ddb.send(new GetCommand({
+    TableName: TABLE.inventory,
+    Key: { itemId },
+    ProjectionExpression: 'itemId, #n, assignedCodigo',
+    ExpressionAttributeNames: { '#n': 'name' },
+  }))
+  if (!Item) {
     return NextResponse.json({ error: 'Ítem no encontrado' }, { status: 404 })
   }
 
@@ -118,11 +139,13 @@ export async function POST(
   }
 
   // Quota por ítem
-  const existing = await db.query.inventoryAttachments.findMany({
-    where: eq(inventoryAttachments.inventoryId, id),
-    columns: { id: true },
-  })
-  if (existing.length >= MAX_ATTACHMENTS_PER_ITEM) {
+  const { Count: existingCount } = await ddb.send(new QueryCommand({
+    TableName: TABLE.inventoryAttachments,
+    KeyConditionExpression: 'itemId = :iid',
+    ExpressionAttributeValues: { ':iid': itemId },
+    Select: 'COUNT',
+  }))
+  if ((existingCount ?? 0) >= MAX_ATTACHMENTS_PER_ITEM) {
     return NextResponse.json(
       { error: `Máximo ${MAX_ATTACHMENTS_PER_ITEM} adjuntos por ítem` },
       { status: 409 }
@@ -130,20 +153,41 @@ export async function POST(
   }
 
   const profileId = (session.user as any).profileId as string | undefined
+  const attachmentId = generateId()
+  const ts = now()
 
-  const [created] = await db
-    .insert(inventoryAttachments)
-    .values({
-      inventoryId: id,
-      type: parsed.data.type,
-      fileName: parsed.data.fileName,
-      fileKey: parsed.data.fileKey,
-      fileSizeBytes: parsed.data.fileSizeBytes,
-      mimeType: parsed.data.mimeType,
-      uploadedBy: profileId ?? null,
-      notes: parsed.data.notes ?? null,
-    })
-    .returning()
+  const newAttachment: InventoryAttachment = {
+    itemId,
+    attachmentId,
+    type: parsed.data.type,
+    fileName: parsed.data.fileName,
+    fileKey: parsed.data.fileKey,
+    fileSizeBytes: parsed.data.fileSizeBytes,
+    mimeType: parsed.data.mimeType,
+    uploadedBy: profileId,
+    uploadedAt: ts,
+    notes: parsed.data.notes,
+  }
 
-  return NextResponse.json({ attachment: created }, { status: 201 })
+  await ddb.send(new PutCommand({
+    TableName: TABLE.inventoryAttachments,
+    Item: newAttachment,
+  }))
+
+  // ── Auditoría: la subida de un acta de asignación firmada deja traza permanente ──
+  const isActa = parsed.data.type === 'acta_entrega'
+  const itemName = (Item as any).name ?? itemId
+  await writeAuditLog({
+    entityType: 'inventory',
+    entityId: itemId,
+    entityLabel: itemName,
+    action: 'upload',
+    ...auditActor(session),
+    summary: isActa
+      ? `Adjuntó el acta de asignación firmada del ítem «${itemName}»`
+      : `Adjuntó documento (${parsed.data.type}) al ítem «${itemName}»`,
+    metadata: { attachmentId, type: parsed.data.type, fileName: parsed.data.fileName },
+  })
+
+  return NextResponse.json({ attachment: { ...newAttachment, id: attachmentId } }, { status: 201 })
 }
