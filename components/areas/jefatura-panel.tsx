@@ -231,7 +231,7 @@ function EmergencyCard({ emergency }: { emergency: RecentEmergency }) {
   )
 }
 
-function formatDateTime(d: Date): string {
+function formatDateTime(d: Date | string): string {
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
   const date = new Date(d)
   return `${date.getDate().toString().padStart(2, '0')} ${meses[date.getMonth()]} · ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`

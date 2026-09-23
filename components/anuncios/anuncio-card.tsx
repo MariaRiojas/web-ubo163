@@ -374,15 +374,22 @@ function shortName(fullName: string): string {
   return `${nombre} ${apellidos}`
 }
 
-function formatDate(d: Date): string {
+/**
+ * Las fechas llegan como string ISO desde el servidor (AnuncioView), no como
+ * Date: aceptar ambos evita el `d.getTime is not a function` que tumbaba las
+ * pestañas "Mis anuncios" y "Pendientes de aprobación".
+ */
+function formatDate(d: Date | string): string {
   const dd = new Date(d)
   const day = dd.getDate().toString().padStart(2, '0')
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
   return `${day}·${months[dd.getMonth()]}·${dd.getFullYear()}`
 }
 
-function timeAgo(d: Date): string {
-  const secs = Math.floor((Date.now() - d.getTime()) / 1000)
+function timeAgo(d: Date | string): string {
+  const fecha = d instanceof Date ? d : new Date(d)
+  if (isNaN(fecha.getTime())) return ''
+  const secs = Math.floor((Date.now() - fecha.getTime()) / 1000)
   if (secs < 60) return 'ahora mismo'
   const mins = Math.floor(secs / 60)
   if (mins < 60) return `hace ${mins} min`

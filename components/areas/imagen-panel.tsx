@@ -403,7 +403,7 @@ function formatCalendarDate(dateStr: string): string {
   return `${day?.toString().padStart(2, '0')} ${meses[(month ?? 1) - 1]} ${year}`
 }
 
-function formatTimeAgo(d: Date): string {
+function formatTimeAgo(d: Date | string): string {
   const secs = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
   if (secs < 60) return 'ahora'
   const mins = Math.floor(secs / 60)

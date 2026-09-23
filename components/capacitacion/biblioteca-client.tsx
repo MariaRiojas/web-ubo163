@@ -38,12 +38,15 @@ function formatMimeType(mime: string | null): string {
   return mime.split('/')[1]?.toUpperCase() ?? 'ARCHIVO'
 }
 
-function formatUploadMonth(d: Date): string {
+function formatUploadMonth(d: Date | string): string {
   const meses = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
   ]
-  return `${meses[d.getMonth()]} ${d.getFullYear()}`
+  // Las fechas llegan como string ISO desde el servidor.
+  const fecha = d instanceof Date ? d : new Date(d)
+  if (isNaN(fecha.getTime())) return ''
+  return `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`
 }
 
 export function BibliotecaClient({ library }: { library: LibraryCardData[] }) {

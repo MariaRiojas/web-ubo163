@@ -357,7 +357,7 @@ function shortName(fullName: string): string {
   return `${nombre} ${apellidos}`
 }
 
-function timeAgo(d: Date): string {
+function timeAgo(d: Date | string): string {
   const secs = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
   if (secs < 60) return 'ahora'
   const mins = Math.floor(secs / 60)
