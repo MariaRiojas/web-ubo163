@@ -5,7 +5,7 @@ import {
   Truck, Wrench, HeartPulse, Camera, Briefcase,
   Radio, BarChart3, TrendingUp, Award, ListChecks, Users,
   Settings, Shield, UserCog, Bed, Calendar,
-  Package, Inbox, Send,
+  Package, Inbox, Send, CalendarCheck,
 } from 'lucide-react'
 import type { MenuIcon } from '@/lib/navigation/menu-builder'
 import type { ComponentType, SVGProps } from 'react'
@@ -46,6 +46,7 @@ export const MENU_ICON_MAP: Record<MenuIcon, ComponentType<SVGProps<SVGSVGElemen
   package: Package,
   inbox: Inbox,
   send: Send,
+  'calendar-check': CalendarCheck,
 }
 
 /**

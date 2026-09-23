@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
-import { ddb, TABLE, GetCommand, PutCommand, generateId, now } from '@/lib/db/dynamodb'
+import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, generateId, now } from '@/lib/db/dynamodb'
 import { getUploadPresignedUrl, getDownloadPresignedUrl } from '@/lib/storage/s3'
 import { describeToday } from './horario'
 import { distanceToCompany, GEOFENCE_RADIUS_M } from './geo'
@@ -124,4 +124,58 @@ export async function registrarMiAsistencia(input: {
 
   revalidatePath('/asistencia-instruccion')
   return { ok: true, status: item.status }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Revisión por el área de Instrucción
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * El instructor valida u observa un registro de asistencia tras mirar la
+ * evidencia fotográfica y la ubicación. Un registro OBSERVADO deja de contar
+ * para el % (y la nota) de asistencia del aspirante.
+ */
+export async function revisarAsistencia(input: {
+  profileId: string
+  date: string
+  decision: 'validada' | 'observada' | 'pendiente'
+  nota?: string
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await auth()
+  if (!session?.user) return { ok: false, error: 'No autenticado' }
+  const perms = (session.user.permissions ?? []) as string[]
+  if (!perms.includes('area.instruction.manage'))
+    return { ok: false, error: 'Sin permiso para revisar asistencias' }
+
+  const nota = (input.nota ?? '').trim()
+  if (input.decision === 'observada' && !nota)
+    return { ok: false, error: 'Indica el motivo de la observación' }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date))
+    return { ok: false, error: 'Fecha inválida' }
+
+  const ts = now()
+  try {
+    await ddb.send(new UpdateCommand({
+      TableName: TABLE.instructionAttendance,
+      Key: { profileId: input.profileId, date: input.date },
+      UpdateExpression:
+        'SET reviewStatus = :s, reviewedBy = :by, reviewedByName = :bn, reviewedAt = :at, reviewNote = :n, updatedAt = :at',
+      ConditionExpression: 'attribute_exists(profileId)',
+      ExpressionAttributeValues: {
+        ':s': input.decision,
+        ':by': session.user.profileId as string,
+        ':bn': (session.user.name as string) ?? '',
+        ':at': ts,
+        ':n': nota,
+      },
+    }))
+  } catch (e: any) {
+    if (e?.name === 'ConditionalCheckFailedException')
+      return { ok: false, error: 'El registro ya no existe' }
+    return { ok: false, error: 'No se pudo guardar la revisión' }
+  }
+
+  revalidatePath('/areas/instruccion/asistencias')
+  revalidatePath('/areas/instruccion/aspirantes-y-postulantes')
+  return { ok: true }
 }

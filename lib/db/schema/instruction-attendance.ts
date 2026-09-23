@@ -18,6 +18,15 @@ export type AttendanceDayType = (typeof ATTENDANCE_DAY_TYPES)[number]
 export const ATTENDANCE_STATUSES = ['presente', 'tardanza'] as const
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
+/**
+ * Revisión del área de Instrucción sobre la evidencia adjunta.
+ *   pendiente → recién registrada, nadie la ha mirado
+ *   validada  → la foto y la ubicación corresponden; cuenta para la nota
+ *   observada → evidencia dudosa/inválida; NO cuenta para la nota de asistencia
+ */
+export const ATTENDANCE_REVIEW_STATUSES = ['pendiente', 'validada', 'observada'] as const
+export type AttendanceReviewStatus = (typeof ATTENDANCE_REVIEW_STATUSES)[number]
+
 export interface InstructionAttendance {
   profileId: string          // PK
   date: string               // SK — YYYY-MM-DD (fecha de Lima)
@@ -36,6 +45,13 @@ export interface InstructionAttendance {
   distanceM?: number         // distancia calculada a la compañía (m)
   geoValidated?: boolean     // true si estaba dentro del geocerco
   selfieKey?: string         // S3 key de la foto de evidencia (selfie)
+
+  // Revisión del área de Instrucción (los registros sin campo = 'pendiente')
+  reviewStatus?: AttendanceReviewStatus
+  reviewedBy?: string        // profileId del instructor que revisó
+  reviewedByName?: string    // nombre para mostrar sin re-consultar el perfil
+  reviewedAt?: string        // ISO
+  reviewNote?: string        // observación del instructor (obligatoria si 'observada')
 
   createdAt: string
   updatedAt: string

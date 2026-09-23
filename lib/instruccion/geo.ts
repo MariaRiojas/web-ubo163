@@ -8,8 +8,17 @@
  */
 import { companyConfig } from '@/company.config'
 
-/** Radio permitido alrededor de la compañía, en metros. */
-export const GEOFENCE_RADIUS_M = 250
+/**
+ * Radio permitido alrededor de la compañía, en metros.
+ *
+ * Ajustado al predio de la estación (antes 250 m, demasiado permisivo: alcanzaba
+ * media cuadra a la redonda). 80 m cubre el patio, la sala de máquinas y la vereda
+ * del frente, absorbiendo el error típico del GPS de un celular (10–30 m).
+ * Se puede afinar sin redeploy con la variable de entorno GEOFENCE_RADIUS_M.
+ */
+export const GEOFENCE_RADIUS_M = Number(process.env.GEOFENCE_RADIUS_M) > 0
+  ? Number(process.env.GEOFENCE_RADIUS_M)
+  : 80
 
 export const COMPANY_COORDS = companyConfig.location.coordinates // { lat, lng }
 
