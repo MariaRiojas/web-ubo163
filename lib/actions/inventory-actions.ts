@@ -1,6 +1,7 @@
 'use server'
 
 import { auth } from '@/lib/auth'
+import { canWriteInventory } from '@/lib/inventario/can-write'
 import { ddb, TABLE, QueryCommand, PutCommand, generateId, now } from '@/lib/db/dynamodb'
 import type { Section } from '@/lib/db/schema/sections'
 import { revalidatePath } from 'next/cache'
@@ -40,6 +41,7 @@ export async function createInventoryItemAction(areaKey: string, formData: FormD
   try {
     const session = await auth()
     if (!session?.user) return { success: false, error: 'No autorizado' }
+    if (!canWriteInventory(session)) return { success: false, error: 'Sin permiso para modificar el inventario' }
 
     const name = (formData.get('name') as string | null)?.trim()
     const category = (formData.get('category') as string | null)?.trim()

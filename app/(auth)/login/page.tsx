@@ -81,10 +81,10 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 16 }}>
-              <label htmlFor="username" style={labelStyle}>Usuario (DNI o correo)</label>
+              <label htmlFor="username" style={labelStyle}>Código CGBVP</label>
               <input
                 id="username" value={username} onChange={(e) => setUsername(e.target.value)}
-                required autoComplete="username" placeholder="Ingrese su DNI o correo"
+                required autoComplete="username" placeholder="Ej.: A09600 — o su DNI"
                 style={inputStyle}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "var(--brass)")}
                 onBlur={(e) => (e.currentTarget.style.borderColor = "var(--ink-line)")}
@@ -108,6 +108,13 @@ export default function LoginPage() {
                 ? <><Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.8} /> Accediendo…</>
                 : <><Lock className="w-4 h-4" strokeWidth={1.8} /> Acceder al sistema</>}
             </button>
+
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <Link href="/recuperar"
+                style={{ fontSize: 12.5, color: "var(--steel)", textDecoration: "none" }}>
+                Olvidé mi contraseña
+              </Link>
+            </div>
           </form>
         </div>
 

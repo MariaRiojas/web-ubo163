@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { canWriteInventory } from '@/lib/inventario/can-write'
 import { ddb, TABLE, GetCommand, UpdateCommand, DeleteCommand, BatchWriteCommand } from '@/lib/db/dynamodb'
 import { now } from '@/lib/db/dynamodb'
 import { writeAuditLog, auditActor } from '@/lib/audit/write-audit'
@@ -8,6 +9,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!canWriteInventory(session)) return NextResponse.json({ error: 'Sin permiso para modificar el inventario' }, { status: 403 })
 
     const body = await req.json()
     const { itemId, ...fields } = body
@@ -78,6 +80,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!canWriteInventory(session)) return NextResponse.json({ error: 'Sin permiso para modificar el inventario' }, { status: 403 })
 
     const body = await req.json()
     const { itemId, itemIds } = body

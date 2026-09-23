@@ -29,6 +29,7 @@ export const { auth } = NextAuth({
         token.grade      = (user as any).grade
         token.status     = (user as any).status
         token.permissions = (user as any).permissions
+        token.mustChangePassword = (user as any).mustChangePassword
       }
       return token
     },
@@ -38,6 +39,7 @@ export const { auth } = NextAuth({
         session.user.grade       = token.grade       as string
         session.user.status      = token.status      as string
         session.user.permissions = token.permissions as Permission[]
+        ;(session.user as any).mustChangePassword = token.mustChangePassword as boolean | undefined
       }
       return session
     },

@@ -18,24 +18,35 @@ async function failedLogin(username: string): Promise<null> {
 
 /** Busca un perfil por email o DNI via GSIs en paralelo */
 async function findProfileByCredential(username: string): Promise<Profile | null> {
-  const [byEmail, byDni] = await Promise.all([
+  const plano = username.trim()
+  const codigo = plano.toUpperCase()   // los códigos CGBVP se guardan en mayúsculas (A09600)
+
+  const [byCodigo, byDni, byEmail] = await Promise.all([
     ddb.send(new QueryCommand({
       TableName: TABLE.profiles,
-      IndexName: 'email-index',
-      KeyConditionExpression: 'email = :v',
-      ExpressionAttributeValues: { ':v': username },
+      IndexName: 'codigoCgbvp-index',
+      KeyConditionExpression: 'codigoCgbvp = :v',
+      ExpressionAttributeValues: { ':v': codigo },
       Limit: 1,
     })),
     ddb.send(new QueryCommand({
       TableName: TABLE.profiles,
       IndexName: 'dni-index',
       KeyConditionExpression: 'dni = :v',
-      ExpressionAttributeValues: { ':v': username },
+      ExpressionAttributeValues: { ':v': plano },
+      Limit: 1,
+    })),
+    ddb.send(new QueryCommand({
+      TableName: TABLE.profiles,
+      IndexName: 'email-index',
+      KeyConditionExpression: 'email = :v',
+      ExpressionAttributeValues: { ':v': plano.toLowerCase() },
       Limit: 1,
     })),
   ])
 
-  const item = byEmail.Items?.[0] ?? byDni.Items?.[0]
+  // El código CGBVP es el identificador oficial: tiene prioridad.
+  const item = byCodigo.Items?.[0] ?? byDni.Items?.[0] ?? byEmail.Items?.[0]
   return (item as Profile | undefined) ?? null
 }
 
@@ -134,18 +145,27 @@ export const authConfig: NextAuthConfig = {
           grade: profile.grade,
           status: profile.status,
           permissions,
+          // Clave temporal entregada por el jefe: obliga a definir una propia
+          // y registrar el correo personal antes de usar el sistema.
+          mustChangePassword: user.mustChangePassword === true,
         }
       },
     }),
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: updated }) {
       if (user) {
         token.profileId = (user as any).profileId
         token.grade    = (user as any).grade
         token.status   = (user as any).status
         token.permissions = (user as any).permissions
+        token.mustChangePassword = (user as any).mustChangePassword
+      }
+      // Tras el primer ingreso, el cliente llama update() para bajar la bandera
+      // sin obligar a cerrar sesión.
+      if (trigger === 'update' && (updated as any)?.mustChangePassword === false) {
+        token.mustChangePassword = false
       }
       return token
     },
@@ -155,6 +175,7 @@ export const authConfig: NextAuthConfig = {
         session.user.grade       = token.grade as string
         session.user.status      = token.status as string
         session.user.permissions = token.permissions as import('./permissions').Permission[]
+        ;(session.user as any).mustChangePassword = token.mustChangePassword as boolean | undefined
       }
       return session
     },

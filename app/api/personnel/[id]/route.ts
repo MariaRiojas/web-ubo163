@@ -82,10 +82,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
       const sectionId = SECTION_MAP[body.sectionKey]
       if (sectionId) {
+        // Solo alta como 'miembro' si no tenía cargo en esa sección: sin la condición,
+        // el Put pisaba un jefe_seccion/adjunto existente y lo degradaba a miembro.
         await ddb.send(new PutCommand({
           TableName: TABLE.sectionRoles,
-          Item: { profileId: id, sectionId, role: 'efectivo', isActive: true, createdAt: now(), updatedAt: now() },
-        })).catch(() => {}) // Ignore if already exists (same PK)
+          Item: { profileId: id, sectionId, role: 'miembro', isActive: true, assignedAt: now(), createdAt: now(), updatedAt: now() },
+          ConditionExpression: 'attribute_not_exists(profileId)',
+        })).catch(() => {}) // ConditionalCheckFailed → ya tenía cargo; se respeta
       }
     }
 

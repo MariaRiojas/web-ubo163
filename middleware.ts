@@ -9,7 +9,7 @@ const PROTECTED_PREFIXES = [
   '/configuracion', '/jefatura',
   '/operatividad', '/estadisticas', '/partes-emergencia',
   '/bomberos', '/asistencias', '/analisis',
-  '/areas', '/faena', '/capacitacion', '/biblioteca', '/anuncios',
+  '/areas', '/faena', '/capacitacion', '/biblioteca', '/anuncios', '/actividades',
   '/auditoria',
 ]
 
@@ -23,15 +23,25 @@ export default auth((req) => {
   const { nextUrl, auth: session } = req
   const isLoggedIn = !!session?.user
   const pathname = nextUrl.pathname
+  const mustChangePassword = (session?.user as any)?.mustChangePassword === true
 
   // Redirige a login si intenta acceder a intranet sin sesión
   if (isProtectedRoute(pathname) && !isLoggedIn) {
     return NextResponse.redirect(new URL('/login', nextUrl))
   }
 
+  // Primer ingreso: con clave temporal no se puede usar el resto del sistema
+  // hasta definir una clave propia y registrar el correo personal.
+  if (isLoggedIn && mustChangePassword && pathname !== '/primer-ingreso') {
+    return NextResponse.redirect(new URL('/primer-ingreso', nextUrl))
+  }
+  if (pathname === '/primer-ingreso' && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', nextUrl))
+  }
+
   // Redirige al dashboard si ya está logueado e intenta entrar al login
   if (pathname === '/login' && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', nextUrl))
+    return NextResponse.redirect(new URL(mustChangePassword ? '/primer-ingreso' : '/dashboard', nextUrl))
   }
 
   return NextResponse.next()

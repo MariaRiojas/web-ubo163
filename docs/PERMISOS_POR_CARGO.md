@@ -170,12 +170,16 @@ Permisos base de efectivo activo +
 |----------------------------------|----------------------------------------------|
 | `section.view` / `edit`          | Ver y editar su sección                      |
 | `personnel.view_section`         | Ver personal de la sección                   |
-| `area.instruction.view`          | Ver panel de instrucción (sin manage)        |
+| `area.instruction.view`          | Ver panel de instrucción                     |
+| `area.instruction.manage`        | Gestionar workspace de aspirantes: editar datos personales, notas, pases, licencias, altas, convocatorias; validar/observar asistencias |
 | `esbas.instruct`                 | Dictar clases ESBAS                          |
 | `training.issue_certificate`     | Emitir certificados                          |
+| `training.access_esbas` / `access_escuela_tecnica` | Acceso a contenidos de formación |
 | `faena.receive_incident_instruction` / `receive_request_instruction` | Bandejas |
 
-> **Nota:** El adjunto de instrucción NO tiene `area.instruction.manage`, por lo que no puede crear/cerrar cohortes ni gestionar convocatorias. Si se le asigna esa tarea, debe subirse el rol a `jefe_seccion`.
+> **Nota:** A diferencia de los adjuntos de otras áreas no críticas, el adjunto de instrucción SÍ recibe `area.instruction.manage` (ver `resolvePermissions` en `lib/auth/permissions.ts`). Lo que NO tiene respecto del jefe: `training.manage` (calificar redacciones del LMS), `esbas.manage` y `training.view_all_progress`.
+>
+> **Miembro de sección** (cualquier rol activo, incluido `miembro`): el bloque final de `resolvePermissions` le da `area.<sección>.view` y `section.view`. En **Instrucción** además recibe `area.instruction.manage`, `esbas.instruct` y `training.issue_certificate`, porque todo miembro es instructor. Por eso un miembro de Instrucción ya puede editar datos y notas de aspirantes sin ser adjunto. El valor legado `efectivo` que creaba `/personal` también recibía estos permisos; ya no se genera y ahora se crea `miembro`.
 
 ---
 

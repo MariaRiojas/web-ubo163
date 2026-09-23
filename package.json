@@ -14,13 +14,16 @@
     "scraper:start": "tsx --env-file=.env.local scripts/scraper/main.ts",
     "scraper:bomberos": "tsx --env-file=.env.local -e \"import{initBrowser,login,closeBrowser}from'./scripts/scraper/browser';import{scrapeBomberos}from'./scripts/scraper/scrapers/bomberos';(async()=>{const p=await initBrowser();await login(p);await scrapeBomberos(p);await closeBrowser()})()\"",
     "scraper:historico": "tsx --env-file=.env.local -e \"import{initBrowser,login,closeBrowser}from'./scripts/scraper/browser';import{scrapePartesCiaRango}from'./scripts/scraper/scrapers/partes-cia';(async()=>{const p=await initBrowser();await login(p);const fin=new Date();const ini=new Date(fin);ini.setDate(ini.getDate()-60);await scrapePartesCiaRango(p,ini,fin);await closeBrowser()})()\"",
-    "scraper:bomberos:http": "tsx --env-file=.env.local -e \"import{httpLogin}from'./scripts/scraper/http-client';import{scrapeBomberosHttp}from'./scripts/scraper/scrapers/bomberos';(async()=>{const s=await httpLogin();await scrapeBomberosHttp(s)})()\""
+    "scraper:bomberos:http": "tsx --env-file=.env.local -e \"import{httpLogin}from'./scripts/scraper/http-client';import{scrapeBomberosHttp}from'./scripts/scraper/scrapers/bomberos';(async()=>{const s=await httpLogin();await scrapeBomberosHttp(s)})()\"",
+    "scraper:start:http": "tsx --env-file=.env.local scripts/scraper/http-main.ts",
+    "scraper:historico:http": "tsx --env-file=.env.local -e \"import{httpLogin}from'./scripts/scraper/http-client';import{scrapePartesCiaRangoHttp}from'./scripts/scraper/scrapers/partes-cia';(async()=>{const s=await httpLogin();const fin=new Date();const ini=new Date(fin);ini.setDate(ini.getDate()-60);await scrapePartesCiaRangoHttp(s,ini,fin)})()\""
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1044.0",
     "@aws-sdk/client-lambda": "^3.1044.0",
     "@aws-sdk/client-s3": "^3.1030.0",
     "@aws-sdk/client-secrets-manager": "^3.1044.0",
+    "@aws-sdk/client-sesv2": "^3.1138.0",
     "@aws-sdk/lib-dynamodb": "^3.1044.0",
     "@aws-sdk/s3-request-presigner": "^3.1030.0",
     "@hookform/resolvers": "^3.9.1",

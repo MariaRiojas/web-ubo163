@@ -4,7 +4,9 @@ import { ddb, TABLE, UpdateCommand } from '@/lib/db/dynamodb'
 import { now } from '@/lib/db/dynamodb'
 
 // Campos que el propio usuario puede editar
-const SELF_EDITABLE = ['phone', 'personalEmail', 'address', 'bloodType', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation', 'gender']
+// 'gender' NO va acá: define qué dormitorio de guardia ve el efectivo, así que
+// lo cambia personal/administración, no el propio usuario.
+const SELF_EDITABLE = ['phone', 'personalEmail', 'address', 'bloodType', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation']
 
 export async function PUT(req: NextRequest) {
   try {

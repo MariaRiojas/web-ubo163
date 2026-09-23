@@ -1,17 +1,35 @@
 /**
- * Abstracción de correo electrónico con nodemailer.
+ * Abstracción de correo electrónico.
  *
- * - Desarrollo: Mailpit (docker compose up -d mailpit) — UI en http://localhost:8025
- * - Producción: Configurar SMTP_HOST/PORT/USER/PASS con SES, Resend, SendGrid, etc.
+ * - En Lambda (producción): API de SES v2 usando el rol de ejecución. No hace
+ *   falta usuario SMTP ni credenciales guardadas; solo que el remitente
+ *   (MAIL_FROM) sea una identidad verificada en SES.
+ * - En desarrollo: SMTP con nodemailer (Mailpit en localhost:1025).
  *
- * Configurar en .env.local:
- *   SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM
+ * Variables: MAIL_FROM (remitente verificado) · EMAIL_TRANSPORT ('ses'|'smtp')
+ * para forzar uno · SMTP_HOST/PORT/SECURE/USER/PASS para el modo SMTP.
  */
 
 import nodemailer from "nodemailer"
 import type { Transporter } from "nodemailer"
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2"
 
-// ── Singleton del transporter ─────────────────────────────────────
+// ── Elección de transporte ────────────────────────────────────────
+
+/** En Lambda no hay SMTP configurado: se usa la API de SES. */
+function transporte(): "ses" | "smtp" {
+  const forzado = process.env.EMAIL_TRANSPORT
+  if (forzado === "ses" || forzado === "smtp") return forzado
+  return process.env.AWS_LAMBDA_FUNCTION_NAME ? "ses" : "smtp"
+}
+
+let _ses: SESv2Client | null = null
+function sesClient(): SESv2Client {
+  if (!_ses) _ses = new SESv2Client({ region: process.env.SES_REGION ?? process.env.AWS_REGION ?? "us-east-1" })
+  return _ses
+}
+
+// ── Singleton del transporter SMTP (solo desarrollo) ──────────────
 
 let _transporter: Transporter | null = null
 
@@ -60,10 +78,30 @@ export interface SendMailOptions {
  * })
  */
 export async function sendMail(options: SendMailOptions): Promise<void> {
-  const transporter = getTransporter()
-  const from = options.from ?? process.env.SMTP_FROM ?? "CUARTEL-CRM <no-reply@localhost>"
+  const from = options.from
+    ?? process.env.MAIL_FROM
+    ?? process.env.SMTP_FROM
+    ?? "Compania 163 <no-reply@localhost>"
+  const to = Array.isArray(options.to) ? options.to : [options.to]
 
-  await transporter.sendMail({
+  if (transporte() === "ses") {
+    await sesClient().send(new SendEmailCommand({
+      FromEmailAddress: from,
+      Destination: { ToAddresses: to },
+      Content: {
+        Simple: {
+          Subject: { Data: options.subject, Charset: "UTF-8" },
+          Body: {
+            Html: { Data: options.html, Charset: "UTF-8" },
+            ...(options.text ? { Text: { Data: options.text, Charset: "UTF-8" } } : {}),
+          },
+        },
+      },
+    }))
+    return
+  }
+
+  await getTransporter().sendMail({
     from,
     to: options.to,
     subject: options.subject,
