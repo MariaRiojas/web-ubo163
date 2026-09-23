@@ -265,7 +265,10 @@ export async function markAnnouncementAsRead(announcementId: string) {
   const { Item } = await ddb.send(new GetCommand({
     TableName: TABLE.announcements,
     Key: { announcementId },
-    ProjectionExpression: 'reads',
+    // 'reads' es palabra reservada en DynamoDB: hay que aliasarla o la
+    // consulta falla con ValidationException y tumba la vista.
+    ProjectionExpression: '#reads',
+    ExpressionAttributeNames: { '#reads': 'reads' },
   }))
   if (!Item) return { ok: false as const, error: 'Anuncio no encontrado' }
 
@@ -276,7 +279,8 @@ export async function markAnnouncementAsRead(announcementId: string) {
   await ddb.send(new UpdateCommand({
     TableName: TABLE.announcements,
     Key: { announcementId },
-    UpdateExpression: 'SET reads = list_append(if_not_exists(reads, :empty), :pid)',
+    UpdateExpression: 'SET #reads = list_append(if_not_exists(#reads, :empty), :pid)',
+    ExpressionAttributeNames: { '#reads': 'reads' },
     ExpressionAttributeValues: { ':empty': [], ':pid': [profileId] },
   }))
 
