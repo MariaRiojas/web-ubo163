@@ -1,0 +1,24 @@
+{
+  "TableName": "ubo163-dev-activities",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    { "AttributeName": "activityId", "AttributeType": "S" },
+    { "AttributeName": "date", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "activityId", "KeyType": "HASH" }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "date-index",
+      "KeySchema": [
+        { "AttributeName": "date", "KeyType": "HASH" },
+        { "AttributeName": "activityId", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ],
+  "Tags": [
+    { "Key": "aws-apn-id", "Value": "pc:3ane5a9qkvyu1sguzgkqxqkuv" }
+  ]
+}

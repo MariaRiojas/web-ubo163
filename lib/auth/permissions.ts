@@ -129,6 +129,9 @@ export type Permission =
   | 'system.admin'
   | 'system.manage_users'
 
+  // ─── Calendario de actividades ───
+  | 'activities.manage'
+
 
 export const ALL_PERMISSIONS: Permission[] = [
   'company.manage', 'company.view_all', 'company.approve_requests',
@@ -163,6 +166,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   'announcements.view', 'announcements.create', 'announcements.create_draft', 'announcements.publish',
   'reports.generate', 'reports.view_section', 'reports.view_all',
   'system.admin', 'system.manage_users',
+  'activities.manage',
 ]
 
 // ════════════════════════════════════════════════════════════════════
@@ -288,6 +292,7 @@ export function resolvePermissions(
       'system.manage_users',
       'inventory.manage_all',
       'training.view_all_progress',
+      'activities.manage',
     ]
     segundoJefePerms.forEach((p) => permissions.add(p))
 
@@ -354,6 +359,7 @@ export function resolvePermissions(
         permissions.add('training.access_escuela_tecnica')
         break
       case 'administracion':
+        permissions.add('activities.manage')
         permissions.add('personnel.edit')
         permissions.add('profile.edit_any')
         permissions.add('reports.generate')
@@ -395,6 +401,10 @@ export function resolvePermissions(
     }
 
     // Casos especiales
+    if (sectionKey === 'administracion') {
+      // Administración lleva el calendario de actividades de la compañía.
+      permissions.add('activities.manage')
+    }
     if (sectionKey === 'instruccion') {
       permissions.add('area.instruction.manage')
       permissions.add('esbas.instruct')

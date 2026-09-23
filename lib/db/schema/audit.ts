@@ -22,6 +22,7 @@ export const AUDIT_ENTITY_TYPES = [
   'personnel',   // altas/bajas, cambios de grado, cargo, roles
   'admission',   // postulaciones y su gestión
   'training',    // cursos, certificados, evaluaciones
+  'activity',    // calendario de actividades de la compañía
   'system',      // configuración, usuarios
 ] as const
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number]
@@ -60,6 +61,7 @@ export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
   personnel:  'Personal y roles',
   admission:  'Admisión',
   training:   'Capacitación',
+  activity:   'Actividades',
   system:     'Sistema',
 }
 

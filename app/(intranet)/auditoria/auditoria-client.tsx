@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import {
   ShieldCheck, Package, FileText, Gift, Users, GraduationCap,
-  Settings, ChevronDown, ChevronUp, Lock, Filter,
+  Settings, ChevronDown, ChevronUp, Lock, Filter, CalendarDays,
 } from 'lucide-react'
 import { loadAuditPage } from './actions'
 import {
@@ -18,6 +18,7 @@ const ENTITY_ICON: Record<AuditEntityType, typeof Package> = {
   personnel: Users,
   admission: GraduationCap,
   training: GraduationCap,
+  activity: CalendarDays,
   system: Settings,
 }
 

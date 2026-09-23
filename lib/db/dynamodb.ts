@@ -87,6 +87,7 @@ export const TABLE = {
   cgbvpStatus:            `${PREFIX}-cgbvp-status`,
   announcements:          `${PREFIX}-announcements`,
   contentCalendar:        `${PREFIX}-content-calendar`,
+  activities:             `${PREFIX}-activities`,
   ics:                    `${PREFIX}-ics`,
   trainingCohorts:        `${PREFIX}-training-cohorts`,
   trainingEvaluations:    `${PREFIX}-training-evaluations`,

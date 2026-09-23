@@ -28,7 +28,7 @@ export type MenuIcon =
   | 'truck' | 'wrench' | 'heart-pulse' | 'camera' | 'briefcase'
   | 'radio' | 'chart-bar' | 'chart-line' | 'award' | 'list-checks' | 'users'
   | 'settings' | 'shield' | 'user-cog' | 'bed' | 'calendar'
-  | 'package' | 'inbox' | 'send'
+  | 'package' | 'inbox' | 'send' | 'calendar-check'
 
 export interface MenuItem {
   href: string
@@ -104,6 +104,12 @@ export function buildMenu(ctx: MenuBuildContext): MenuSection[] {
     icon: 'megaphone',
     badge: ctx.counts?.unreadAnnouncements,
     badgeStyle: 'default',
+  })
+
+  personalItems.push({
+    href: '/actividades',
+    label: 'Actividades',
+    icon: 'calendar',
   })
 
   // Checklist del parque motor — ruta libre para efectivos activos (seccionario+).
@@ -203,6 +209,7 @@ export function buildMenu(ctx: MenuBuildContext): MenuSection[] {
       items: [
         { href: '/areas/instruccion',                       label: 'Tablero',           icon: 'graduation-cap' },
         { href: '/areas/instruccion/aspirantes-y-postulantes', label: 'Aspirantes y Postulantes', icon: 'users' },
+        { href: '/areas/instruccion/asistencias',           label: 'Revisión de asistencias', icon: 'calendar-check' },
         { href: '/areas/instruccion/cursos',                label: 'Formación y Cursos', icon: 'book-open' },
         { href: '/areas/instruccion/biblioteca',            label: 'Biblioteca',        icon: 'library' },
         { href: '/areas/instruccion/bandeja-solicitudes',   label: 'Solicitudes',       icon: 'inbox' },

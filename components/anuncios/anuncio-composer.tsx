@@ -206,7 +206,10 @@ export function AnuncioComposer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* `intranet-theme` es imprescindible: el Dialog se renderiza por portal fuera
+          del contenedor con el tema, y sin esta clase ningún estilo institucional
+          (ni las variables de color) alcanza al formulario. */}
+      <DialogContent className="intranet-theme max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editing ? 'Editar anuncio' : 'Nuevo anuncio'}
