@@ -8,6 +8,7 @@ import { ddb, TABLE, GetCommand, PutCommand, ScanCommand, now } from '../db'
 import type { Profile } from '../../../lib/db/schema/profiles'
 import { parseHtml, clean, parseFecha, toInt } from '../utils'
 import { log, sleep, ensureSession, login } from '../browser'
+import type { HttpSession } from '../http-client'
 
 const stripAcc = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
 
@@ -254,5 +255,53 @@ export async function scrapePartesCiaRango(pageInicial: Page, fechaInicio: Date,
     await sleep(2000)
   }
 
+  log(`Histórico completo — ${total} partes procesados`)
+}
+
+// ── Versiones SIN navegador (HTTP) ───────────────────────────────────────────
+const fetchPartesHttp = (session: HttpSession, params: URLSearchParams) =>
+  session.fetchHtml(`${URL_PARTES}?${params}`, URL_PARTES, 'windows-1252')
+
+/** Partes del día actual por vehículo — HTTP. */
+export async function scrapePartesCiaHttp(session: HttpSession) {
+  const hoy = new Date()
+  let procesados = 0
+  for (const [codVehi, codTexto] of Object.entries(VEHICULOS_CIA)) {
+    try {
+      const $ = parseHtml(await fetchPartesHttp(session, buildParams(hoy, codVehi)))
+      const filas = $('tr[onmouseover], tr[onMouseOver]')
+      for (let i = 0; i < filas.length; i++) {
+        const tds = $(filas[i]).find('td')
+        if (await procesarFila(tds, $, codTexto)) procesados++
+      }
+      log(`  ${codTexto}: ${filas.length} partes procesados`)
+    } catch (e) {
+      log(`  ERROR partes ${codTexto}: ${e}`)
+    }
+  }
+  log(`Partes CIA — ${procesados} procesados`)
+}
+
+/** Rango de fechas (histórico) — HTTP. */
+export async function scrapePartesCiaRangoHttp(session: HttpSession, fechaInicio: Date, fechaFin: Date) {
+  let total = 0
+  const dia = new Date(fechaInicio)
+  while (dia <= fechaFin) {
+    log(`  Procesando ${dia.toLocaleDateString('es-PE')}...`)
+    try {
+      const $ = parseHtml(await fetchPartesHttp(session, buildParams(dia, '')))
+      const filas = $('tr[onmouseover], tr[onMouseOver]')
+      for (let i = 0; i < filas.length; i++) {
+        const tds = $(filas[i]).find('td')
+        const codVehTexto = $(tds[4]).text().trim()
+        if (await procesarFila(tds, $, codVehTexto)) total++
+      }
+      log(`    ${filas.length} filas procesadas`)
+    } catch (e) {
+      log(`    ERROR ${dia.toLocaleDateString('es-PE')}: ${e}`)
+    }
+    dia.setDate(dia.getDate() + 1)
+    await sleep(2000)
+  }
   log(`Histórico completo — ${total} partes procesados`)
 }

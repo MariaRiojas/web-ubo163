@@ -7,8 +7,58 @@ import { ddb, TABLE, QueryCommand, PutCommand, now } from '../db'
 import type { Profile } from '../../../lib/db/schema/profiles'
 import { parseHtml, clean, toInt } from '../utils'
 import { log, sleep, ensureSession, login } from '../browser'
+import type { HttpSession } from '../http-client'
 
 const URL_ASISTENCIA = 'http://www.bomberosperu.gob.pe/extranet/depa/ceem/asistencia_bomberos/CEEMAsisLis.asp'
+
+function asistenciaUrl(mes: number, anio: number): string {
+  const params = new URLSearchParams({
+    NivelArbol: '../../../', txtOrden: 'numParte', txtOrdenSentido: 'asc',
+    txtOrdenAnterior: '', txtCodIdenEst: '', chk: 'checkbox',
+    txtCodEstructura: '', txtValoresCadenaDependencia: '', txtCodigoUbigeo: '',
+    cboMes: String(mes), cboAnio: String(anio),
+    txtTitulo: 'ESTADO DE COMPANIAS', opc: '1',
+  })
+  return `${URL_ASISTENCIA}?${params}`
+}
+
+/** Parseo + upsert de una tabla de asistencia. Reusado por navegador y HTTP. */
+async function processAsistencia(html: string, mes: number, anio: number): Promise<number> {
+  const $ = parseHtml(html)
+  const filas = $('table tr')
+  let procesados = 0
+  for (let i = 0; i < filas.length; i++) {
+    const tds = $(filas[i]).find('td')
+    if (tds.length < 8) continue
+    const primerTexto = clean($(tds[0]).text())
+    if (!/^\d+$/.test(primerTexto)) continue
+    const codigo = clean($(tds[1]).text())
+    if (!codigo) continue
+    const profile = await findProfileByCodigo(codigo)
+    if (!profile) continue
+    await ddb.send(new PutCommand({
+      TableName: TABLE.cgbvpAttendance,
+      Item: {
+        profileId: profile.profileId,
+        date: `${anio}-${String(mes).padStart(2, '0')}`,
+        mes, anio,
+        diasAsistidos: toInt(clean($(tds[4]).text())) ?? 0,
+        diasGuardia: toInt(clean($(tds[5]).text())) ?? 0,
+        horasAcumuladas: toInt(clean($(tds[6]).text())) ?? 0,
+        numEmergencias: toInt(clean($(tds[7]).text())) ?? 0,
+        updatedAt: now(),
+      },
+    }))
+    procesados++
+  }
+  return procesados
+}
+
+/** Versión SIN navegador (HTTP). */
+export async function scrapeAsistenciaMensualHttp(session: HttpSession, mes: number, anio: number) {
+  const procesados = await processAsistencia(await session.fetchHtml(asistenciaUrl(mes, anio)), mes, anio)
+  log(`Asistencia ${String(mes).padStart(2, '0')}/${anio} — ${procesados} procesados`)
+}
 
 async function findProfileByCodigo(codigo: string): Promise<Profile | null> {
   const { Items } = await ddb.send(new QueryCommand({

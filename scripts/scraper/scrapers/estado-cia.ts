@@ -65,24 +65,30 @@ async function actualizarEstadoBombero(profileId: string, nuevoEstado: string) {
   }))
 }
 
-export async function scrapeEstadoCia(page: Page) {
-  const cookies = await getCookies(page)
-  let html: string
+const ESTADO_URL = `${URL_ESTADO}?CodigoCia=${CODIGO_CIA}`
 
+/** Versión con navegador (puppeteer). */
+export async function scrapeEstadoCia(page: Page) {
+  let html: string
   try {
-    html = await fetchWithCookies(`${URL_ESTADO}?CodigoCia=${CODIGO_CIA}`, cookies)
+    html = await fetchWithCookies(ESTADO_URL, await getCookies(page))
   } catch {
     await ensureSession(page)
-    const newCookies = await getCookies(page)
-    html = await fetchWithCookies(`${URL_ESTADO}?CodigoCia=${CODIGO_CIA}`, newCookies)
+    html = await fetchWithCookies(ESTADO_URL, await getCookies(page))
   }
-
   if (html.includes('localhost') || html.length < 500) {
     await ensureSession(page)
-    const newCookies = await getCookies(page)
-    html = await fetchWithCookies(`${URL_ESTADO}?CodigoCia=${CODIGO_CIA}`, newCookies)
+    html = await fetchWithCookies(ESTADO_URL, await getCookies(page))
   }
+  await processEstado(html)
+}
 
+/** Versión SIN navegador (HTTP). */
+export async function scrapeEstadoCiaHttp(session: import('../http-client').HttpSession) {
+  await processEstado(await session.fetchHtml(ESTADO_URL))
+}
+
+async function processEstado(html: string) {
   const $ = parseHtml(html)
   const tablas = $('table')
   if (tablas.length < 3) {

@@ -30,8 +30,9 @@ function collectCookies(res: Response, jar: Record<string, string>): void {
 
 export interface HttpSession {
   cookie: string
-  /** Descarga una página del intranet (decodifica latin1) con la sesión. */
-  fetchHtml(url: string, referer?: string): Promise<string>
+  /** Descarga una página del intranet con la sesión. `charset` por defecto latin1;
+   *  usar 'windows-1252' para páginas con acentos (partes). */
+  fetchHtml(url: string, referer?: string, charset?: string): Promise<string>
 }
 
 /** Inicia sesión en el CGBVP por HTTP y devuelve una sesión con la cookie. */
@@ -80,10 +81,10 @@ export async function httpLogin(): Promise<HttpSession> {
 
   return {
     cookie: cookieStr(),
-    async fetchHtml(url: string, referer = BASE) {
+    async fetchHtml(url: string, referer = BASE, charset = 'latin1') {
       const res = await fetch(url, { headers: { 'User-Agent': UA, Referer: referer, Cookie: cookieStr() } })
       collectCookies(res, jar)
-      return latin1(await res.arrayBuffer())
+      return new TextDecoder(charset).decode(await res.arrayBuffer())
     },
   }
 }
