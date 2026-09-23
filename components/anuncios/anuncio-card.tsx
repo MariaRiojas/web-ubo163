@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import {
   Check, X, AlertCircle, ChevronDown, ChevronUp, Edit,
   Trash2, Send, Archive, Pin, Clock,
@@ -58,11 +58,18 @@ export function AnuncioCard({
     anuncio.isPinned && 'anuncio-card--pinned',
   )
 
+  const marcadoLeido = useRef(false)
+
+  /**
+   * Marcar como leído es un efecto de fondo del hover: NO debe pasar por el
+   * mismo useTransition que las acciones, porque `pending` gobierna todos los
+   * botones y el revisor veía "Aprobando…" con solo pasar el mouse.
+   * Además solo aplica al buzón: "leído" es del destinatario, no del que revisa.
+   */
   const handleMarkRead = () => {
-    if (anuncio.isRead) return
-    startTransition(async () => {
-      await markAnnouncementAsRead(anuncio.id)
-    })
+    if (mode !== 'buzon' || anuncio.isRead || marcadoLeido.current) return
+    marcadoLeido.current = true
+    void markAnnouncementAsRead(anuncio.id).catch(() => { marcadoLeido.current = false })
   }
 
   const handleSubmit = () => {
