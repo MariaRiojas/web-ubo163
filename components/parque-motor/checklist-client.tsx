@@ -31,9 +31,14 @@ export function ChecklistMaquinaClient({ data, canFill }: { data: MaquinaInspecc
       <header className="area-hero" style={{ marginBottom: 16 }}>
         <div className="area-hero-seal"><Truck className="w-6 h-6" strokeWidth={1.6} /></div>
         <div className="area-hero-body">
-          <div className="area-hero-ref">CHECKLIST DE UNIDAD</div>
+          <div className="area-hero-ref">CHECKLIST DE UNIDAD · TURNO {data.turno.label.toUpperCase()}</div>
           <h1 className="area-hero-title">{data.ref}</h1>
-          <p className="area-hero-desc">{data.totalItems} ítems en {data.gabinetes.length} gabinete{data.gabinetes.length === 1 ? '' : 's'} · {data.marcados}/{data.totalItems} verificados hoy ({pct}%)</p>
+          <p className="area-hero-desc">{data.totalItems} ítems en {data.gabinetes.length} gabinete{data.gabinetes.length === 1 ? '' : 's'} · {data.marcados}/{data.totalItems} verificados en este turno ({pct}%)</p>
+        </div>
+        <div className="area-hero-jefe">
+          <span className="area-hero-jefe-label">Turno {data.turno.label}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, fontWeight: 700, color: 'var(--brass)' }}>{data.turno.rango}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--graphite)' }}>termina en {data.turno.restanteLabel}</span>
         </div>
       </header>
 

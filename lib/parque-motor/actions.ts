@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { ddb, TABLE, GetCommand, PutCommand, UpdateCommand, now } from '@/lib/db/dynamodb'
-import { limaDateStr } from '@/lib/instruccion/horario'
+import { detectarTurno, periodoKey } from '@/lib/turnos'
 import { esEfectivoActivo } from './get-data'
 import {
   INSPECTION_ITEM_STATUSES, type InspectionItemStatus,
@@ -26,7 +26,10 @@ async function requireActivo(): Promise<ActivoCtx> {
   return { ok: true, profileId, name: (profile as any).fullName as string }
 }
 
-/** Marca (o actualiza) el resultado de un ítem en la inspección de HOY de una máquina. */
+/**
+ * Marca (o actualiza) el resultado de un ítem en el checklist del TURNO VIGENTE.
+ * La cadencia es por turno de piloto (07:00 / 15:00 / 23:00), no por día.
+ */
 export async function marcarItemInspeccion(input: {
   maquinaRef: string
   itemId: string
@@ -40,7 +43,8 @@ export async function marcarItemInspeccion(input: {
   if ((input.status === 'faltante' || input.status === 'danado') && !input.observacion?.trim())
     return { ok: false, error: 'Agrega una observación para ítems faltantes o dañados' }
 
-  const date = limaDateStr()
+  const t = detectarTurno()
+  const periodo = periodoKey(t.fecha, t.turno)
   const ts = now()
   const result: InspectionItemResult = {
     status: input.status,
@@ -50,17 +54,20 @@ export async function marcarItemInspeccion(input: {
     at: ts,
   }
 
-  // Asegurar que el registro del día exista, luego setear el resultado del ítem.
-  const base: MachineInspection = { maquinaRef: input.maquinaRef, date, results: {}, createdAt: ts, updatedAt: ts }
+  // Asegurar que exista el registro del turno, luego setear el resultado del ítem.
+  const base: MachineInspection = {
+    maquinaRef: input.maquinaRef, date: periodo, fecha: t.fecha, turno: t.turno,
+    results: {}, createdAt: ts, updatedAt: ts,
+  }
   await ddb.send(new PutCommand({
     TableName: TABLE.machineInspections,
     Item: base,
     ConditionExpression: 'attribute_not_exists(maquinaRef)',
-  })).catch(() => { /* ya existe */ })
+  })).catch(() => { /* ya existe el del turno */ })
 
   await ddb.send(new UpdateCommand({
     TableName: TABLE.machineInspections,
-    Key: { maquinaRef: input.maquinaRef, date },
+    Key: { maquinaRef: input.maquinaRef, date: periodo },
     UpdateExpression: 'SET results.#i = :r, updatedAt = :u',
     ExpressionAttributeNames: { '#i': input.itemId },
     ExpressionAttributeValues: { ':r': result, ':u': ts },
@@ -75,10 +82,10 @@ export async function marcarItemInspeccion(input: {
 export async function limpiarItemInspeccion(input: { maquinaRef: string; itemId: string }): Promise<Result> {
   const ctx = await requireActivo()
   if (!ctx.ok) return { ok: false, error: ctx.error }
-  const date = limaDateStr()
+  const t = detectarTurno()
   await ddb.send(new UpdateCommand({
     TableName: TABLE.machineInspections,
-    Key: { maquinaRef: input.maquinaRef, date },
+    Key: { maquinaRef: input.maquinaRef, date: periodoKey(t.fecha, t.turno) },
     UpdateExpression: 'REMOVE results.#i SET updatedAt = :u',
     ExpressionAttributeNames: { '#i': input.itemId },
     ExpressionAttributeValues: { ':u': now() },

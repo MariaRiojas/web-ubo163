@@ -1,6 +1,7 @@
 import 'server-only'
 import { ddb, TABLE, QueryCommand, ScanCommand, GetCommand, BatchGetCommand } from '@/lib/db/dynamodb'
 import type { Machine, MachineCompartment, ChecklistExecution, ChecklistItemResult } from '@/lib/db/schema/machines'
+import { detectarTurno } from '@/lib/turnos'
 import type { InventoryItem } from '@/lib/db/schema/inventory'
 import type { Incident } from '@/lib/db/schema/incidents'
 import type { Request } from '@/lib/db/schema/requests'
@@ -101,38 +102,25 @@ export interface ChecklistExecutionDetail {
   }[]
 }
 
+/**
+ * Turno vigente. Delega en lib/turnos para no duplicar la regla y, sobre todo,
+ * porque la versión anterior usaba now.getHours(): en Lambda el reloj es UTC,
+ * así que en producción el turno salía corrido 5 horas (a las 20:00 de Lima
+ * mostraba "Noche").
+ */
 export function detectCurrentShift(now: Date = new Date()): CurrentShift {
-  const h = now.getHours()
-  let key: ShiftKey
-  let startHour: number
-  let endHour: number
-  let label: string
-  let frequency: CurrentShift['frequency']
-
-  if (h >= 7 && h < 15) {
-    key = 'manana'; startHour = 7; endHour = 15
-    label = 'Mañana (07:00 – 15:00)'; frequency = 'turno_manana'
-  } else if (h >= 15 && h < 23) {
-    key = 'tarde'; startHour = 15; endHour = 23
-    label = 'Tarde (15:00 – 23:00)'; frequency = 'turno_tarde'
-  } else {
-    key = 'noche'; startHour = 23; endHour = 7
-    label = 'Noche (23:00 – 07:00)'; frequency = 'turno_noche'
+  const t = detectarTurno(now)
+  const startHour = t.turno === 'manana' ? 7 : t.turno === 'tarde' ? 15 : 23
+  const endHour = t.turno === 'manana' ? 15 : t.turno === 'tarde' ? 23 : 7
+  return {
+    key: t.turno,
+    label: `${t.label} (${t.rango})`,
+    frequency: `turno_${t.turno}` as CurrentShift['frequency'],
+    startHour,
+    endHour,
+    remainingMinutes: t.restanteMin,
+    remainingLabel: t.restanteLabel,
   }
-
-  let endDate: Date
-  if (key === 'noche' && h >= 23) {
-    endDate = new Date(now); endDate.setDate(endDate.getDate() + 1); endDate.setHours(7, 0, 0, 0)
-  } else if (key === 'noche' && h < 7) {
-    endDate = new Date(now); endDate.setHours(7, 0, 0, 0)
-  } else {
-    endDate = new Date(now); endDate.setHours(endHour, 0, 0, 0)
-  }
-
-  const remainingMinutes = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / 60000))
-  const hours = Math.floor(remainingMinutes / 60)
-  const mins = remainingMinutes % 60
-  return { key, label, frequency, startHour, endHour, remainingMinutes, remainingLabel: `${hours} h ${String(mins).padStart(2, '0')} m` }
 }
 
 function mapIncidentCategorySlug(cat: string | null): string {

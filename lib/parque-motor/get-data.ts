@@ -2,7 +2,10 @@ import 'server-only'
 import { ddb, TABLE, ScanCommand, GetCommand } from '@/lib/db/dynamodb'
 import type { InventoryItem } from '@/lib/db/schema/inventory'
 import type { MachineInspection, InspectionItemResult } from '@/lib/db/schema/machine-inspection'
-import { limaDateStr } from '@/lib/instruccion/horario'
+import {
+  detectarTurno, turnosDeLaFecha, turnoYaEmpezo, periodoKey,
+  type TurnoInfo, type TurnoKey,
+} from '@/lib/turnos'
 import { GRADES } from '@/lib/db/schema/profiles'
 
 /** Un efectivo puede usar el checklist si es activo (seccionario o superior). */
@@ -26,24 +29,63 @@ async function scanMachineInventory(): Promise<InventoryItem[]> {
   return (Items ?? []) as InventoryItem[]
 }
 
+/** Inspecciones de una fecha (los tres turnos). */
+async function inspeccionesDe(fecha: string): Promise<MachineInspection[]> {
+  const { Items } = await ddb.send(new ScanCommand({
+    TableName: TABLE.machineInspections,
+    FilterExpression: 'fecha = :f',
+    ExpressionAttributeValues: { ':f': fecha },
+  }))
+  return (Items ?? []) as MachineInspection[]
+}
+
+function resumir(insp: MachineInspection | undefined) {
+  if (!insp) return null
+  const results = Object.values(insp.results ?? {})
+  let lastAt: string | null = null, lastBy: string | null = null
+  for (const r of results) if (!lastAt || r.at > lastAt) { lastAt = r.at; lastBy = r.byName }
+  return {
+    marcados: results.length,
+    faltantes: results.filter(r => r.status === 'faltante').length,
+    danados: results.filter(r => r.status === 'danado').length,
+    lastBy, lastAt,
+  }
+}
+
+export interface TurnoEstado {
+  turno: TurnoKey
+  label: string
+  rango: string
+  marcados: number
+  completo: boolean
+  /** El turno ya arrancó y la unidad no está revisada del todo. */
+  pendiente: boolean
+  esActual: boolean
+}
+
 export interface ParqueMotorMachine {
   ref: string
   itemCount: number
   gabineteCount: number
-  hoy: { marcados: number; faltantes: number; danados: number; lastBy: string | null; lastAt: string | null } | null
+  /** Progreso del turno vigente. */
+  actual: { marcados: number; faltantes: number; danados: number; lastBy: string | null; lastAt: string | null } | null
+  /** Cumplimiento de los tres turnos de la fecha en curso. */
+  turnosDia: TurnoEstado[]
 }
 
-/** Lista de máquinas del parque motor (derivada del inventario) + progreso de hoy. */
-export async function getParqueMotorList(): Promise<{ machines: ParqueMotorMachine[]; date: string }> {
-  const date = limaDateStr()
-  const [inv, inspRes] = await Promise.all([
+export interface ParqueMotorList {
+  machines: ParqueMotorMachine[]
+  turno: TurnoInfo
+  /** Unidades sin completar en el turno vigente. */
+  pendientesTurno: number
+}
+
+/** Unidades del parque motor (derivadas del inventario) + cumplimiento por turno. */
+export async function getParqueMotorList(): Promise<ParqueMotorList> {
+  const turno = detectarTurno()
+  const [inv, inspecciones] = await Promise.all([
     scanMachineInventory(),
-    ddb.send(new ScanCommand({
-      TableName: TABLE.machineInspections,
-      FilterExpression: '#d = :today',
-      ExpressionAttributeNames: { '#d': 'date' },
-      ExpressionAttributeValues: { ':today': date },
-    })),
+    inspeccionesDe(turno.fecha),
   ])
 
   const byRef = new Map<string, { items: Set<string>; gabinetes: Set<string> }>()
@@ -55,27 +97,43 @@ export async function getParqueMotorList(): Promise<{ machines: ParqueMotorMachi
     byRef.set(ref, g)
   }
 
-  const inspByRef = new Map<string, MachineInspection>()
-  for (const r of (inspRes.Items ?? []) as MachineInspection[]) inspByRef.set(r.maquinaRef, r)
+  // periodo → inspección, por unidad
+  const porRefPeriodo = new Map<string, MachineInspection>()
+  for (const r of inspecciones) porRefPeriodo.set(`${r.maquinaRef}|${r.date}`, r)
 
   const machines: ParqueMotorMachine[] = [...byRef.entries()].map(([ref, g]) => {
-    const insp = inspByRef.get(ref)
-    let hoy: ParqueMotorMachine['hoy'] = null
-    if (insp) {
-      const results = Object.values(insp.results ?? {})
-      let lastAt: string | null = null, lastBy: string | null = null
-      for (const r of results) if (!lastAt || r.at > lastAt) { lastAt = r.at; lastBy = r.byName }
-      hoy = {
-        marcados: results.length,
-        faltantes: results.filter(r => r.status === 'faltante').length,
-        danados: results.filter(r => r.status === 'danado').length,
-        lastBy, lastAt,
+    const total = g.items.size
+    const actualInsp = porRefPeriodo.get(`${ref}|${turno.periodo}`)
+
+    const turnosDia: TurnoEstado[] = turnosDeLaFecha(turno.fecha).map(t => {
+      const insp = porRefPeriodo.get(`${ref}|${t.periodo}`)
+      const marcados = Object.keys(insp?.results ?? {}).length
+      const completo = total > 0 && marcados >= total
+      return {
+        turno: t.turno,
+        label: t.label,
+        rango: t.rango,
+        marcados,
+        completo,
+        pendiente: turnoYaEmpezo(turno.fecha, t.turno) && !completo,
+        esActual: t.turno === turno.turno,
       }
+    })
+
+    return {
+      ref,
+      itemCount: total,
+      gabineteCount: g.gabinetes.size,
+      actual: resumir(actualInsp),
+      turnosDia,
     }
-    return { ref, itemCount: g.items.size, gabineteCount: g.gabinetes.size, hoy }
   }).sort((a, b) => a.ref.localeCompare(b.ref))
 
-  return { machines, date }
+  const pendientesTurno = machines.filter(
+    m => (m.actual?.marcados ?? 0) < m.itemCount,
+  ).length
+
+  return { machines, turno, pendientesTurno }
 }
 
 export interface InspItem {
@@ -89,23 +147,23 @@ export interface InspItem {
 export interface InspGabinete { nombre: string; items: InspItem[] }
 export interface MaquinaInspeccion {
   ref: string
-  date: string
+  turno: TurnoInfo
   gabinetes: InspGabinete[]
   totalItems: number
   marcados: number
 }
 
-/** Detalle del checklist de una máquina: ítems por gabinete + resultados de hoy. */
+/** Detalle del checklist de una unidad: ítems por gabinete + resultados del turno vigente. */
 export async function getMaquinaInspeccion(ref: string): Promise<MaquinaInspeccion> {
-  const date = limaDateStr()
+  const turno = detectarTurno()
   const inv = await scanMachineInventory()
   const mine = inv.filter(i => machineRefOf(i) === ref)
 
   const { Item } = await ddb.send(new GetCommand({
-    TableName: TABLE.machineInspections, Key: { maquinaRef: ref, date },
+    TableName: TABLE.machineInspections,
+    Key: { maquinaRef: ref, date: periodoKey(turno.fecha, turno.turno) },
   }))
-  const insp = Item as MachineInspection | undefined
-  const results = insp?.results ?? {}
+  const results = (Item as MachineInspection | undefined)?.results ?? {}
 
   const byGab = new Map<string, InspItem[]>()
   for (const it of mine) {
@@ -126,8 +184,11 @@ export async function getMaquinaInspeccion(ref: string): Promise<MaquinaInspecci
     .map(([nombre, items]) => ({ nombre, items: items.sort((a, b) => a.name.localeCompare(b.name)) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
 
-  const totalItems = mine.length
-  const marcados = mine.filter(i => results[i.itemId]).length
-
-  return { ref, date, gabinetes, totalItems, marcados }
+  return {
+    ref,
+    turno,
+    gabinetes,
+    totalItems: mine.length,
+    marcados: mine.filter(i => results[i.itemId]).length,
+  }
 }

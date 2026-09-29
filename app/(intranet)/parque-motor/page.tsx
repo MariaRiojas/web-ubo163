@@ -15,11 +15,11 @@ export default async function ParqueMotorPage() {
   }))
   const canFill = !!profile && esEfectivoActivo(profile.grade as string, profile.status as string)
 
-  const { machines, date } = await getParqueMotorList()
+  const data = await getParqueMotorList()
 
   return (
     <div className="max-w-[1100px]">
-      <ParqueMotorListClient machines={machines} date={date} canFill={canFill} />
+      <ParqueMotorListClient data={data} canFill={canFill} />
     </div>
   )
 }

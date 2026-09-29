@@ -112,12 +112,6 @@ export function buildMenu(ctx: MenuBuildContext): MenuSection[] {
     icon: 'calendar',
   })
 
-  // Checklist del parque motor — ruta libre para efectivos activos (seccionario+).
-  const ACTIVE_GRADES = ['seccionario', 'subteniente', 'teniente', 'capitan', 'teniente_brigadier', 'brigadier', 'brigadier_mayor', 'brigadier_general']
-  if (ACTIVE_GRADES.includes(ctx.grade) && ctx.status !== 'retirado') {
-    personalItems.push({ href: '/parque-motor', label: 'Parque Motor', icon: 'truck' })
-  }
-
   sections.push({ label: 'Personal', items: personalItems })
 
   // ─── B · Faena y Servicio (efectivos activos) ───────────────────
@@ -131,6 +125,13 @@ export function buildMenu(ctx: MenuBuildContext): MenuSection[] {
       badge: ctx.counts?.pendingChecklists,
       badgeStyle: 'urgent',
     })
+
+    // Checklist de unidades: pertenece a Faena y Servicio (capa B del
+    // ARQUITECTURA_MENU), no a Personal. Lo ejecuta todo efectivo activo.
+    const ACTIVE_GRADES = ['seccionario', 'subteniente', 'teniente', 'capitan', 'teniente_brigadier', 'brigadier', 'brigadier_mayor', 'brigadier_general']
+    if (ACTIVE_GRADES.includes(ctx.grade) && ctx.status !== 'retirado') {
+      faenaItems.push({ href: '/parque-motor', label: 'Checklist de Unidades', icon: 'truck' })
+    }
 
     if (faenaItems.length > 0) {
       sections.push({ label: 'Faena y Servicio', items: faenaItems })
